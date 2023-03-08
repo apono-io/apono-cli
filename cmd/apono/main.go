@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/cli"
 	"os"
 	"time"
+
+	"github.com/apono-io/apono-cli/pkg/cli"
 )
 
 var (

@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/output"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"github.com/apono-io/apono-cli/pkg/output"
 )
 
 type VersionInfo struct {
@@ -25,7 +27,7 @@ func VersionCommand(info VersionInfo) *cobra.Command {
 			case output.Plain:
 				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Version: v%s\n", info.Version)
 				return err
-			case output.JsonFormat:
+			case output.JSONFormat:
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetIndent("", "  ")
 				return encoder.Encode(info)
@@ -43,7 +45,7 @@ func VersionCommand(info VersionInfo) *cobra.Command {
 	}
 
 	flags := cmd.PersistentFlags()
-	flags.VarP(output.FormatFlag(format), "output", "o", "One of 'yaml' or 'json'")
+	output.AddFormatFlag(flags, format)
 
 	return cmd
 }
