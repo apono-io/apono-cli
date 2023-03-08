@@ -20,8 +20,9 @@ type VersionInfo struct {
 func VersionCommand(info VersionInfo) *cobra.Command {
 	format := new(output.Format)
 	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print the version information",
+		Use:     "version",
+		Short:   "Print the version information",
+		GroupID: otherCommandsGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch *format {
 			case output.Plain:
