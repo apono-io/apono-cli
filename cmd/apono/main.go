@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"github.com/apono-io/apono-cli/pkg/cli"
-	"log"
 	"os"
 	"time"
 )
@@ -24,6 +24,8 @@ func main() {
 
 	err := runner.Run(os.Args[1:])
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Error:", err.Error())
+		fmt.Println("See 'apono --help' for usage.")
+		os.Exit(1)
 	}
 }

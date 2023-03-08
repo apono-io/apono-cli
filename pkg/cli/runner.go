@@ -7,10 +7,11 @@ import (
 func NewRunner(opts *RunnerOptions) *Runner {
 	r := &Runner{
 		rootCmd: &cobra.Command{
-			Use:     "apono",
-			Short:   "Oneliner description about apono CLI",
-			Long:    "More in dept description about apono CLI",
-			Version: opts.Version,
+			Use:           "apono",
+			Short:         "Oneliner description about apono CLI",
+			Long:          "More in dept description about apono CLI",
+			SilenceErrors: true,
+			SilenceUsage:  true,
 		},
 		opts: opts,
 	}
