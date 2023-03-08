@@ -1,18 +1,29 @@
 package main
 
 import (
-	"fmt"
+	"github.com/apono-io/apono-cli/pkg/cli"
+	"log"
+	"os"
+	"time"
 )
 
 var (
-	commit  string
-	date    string
-	version string
+	commit  = "dev"
+	date    = time.Now().String()
+	version = "0.0.0"
 )
 
 func main() {
-	fmt.Println("Welcome to Apono CLI")
-	fmt.Println("Commit:", commit)
-	fmt.Println("Build Date:", date)
-	fmt.Println("Version:", version)
+	runner := cli.NewRunner(&cli.RunnerOptions{
+		VersionInfo: cli.VersionInfo{
+			BuildDate: date,
+			Commit:    commit,
+			Version:   version,
+		},
+	})
+
+	err := runner.Run(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
 }
