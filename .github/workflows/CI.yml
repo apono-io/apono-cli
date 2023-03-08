@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-go@v3.5.0
         with:
           go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
 
       - name: Build
         run: make ci
