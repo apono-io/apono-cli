@@ -3,8 +3,10 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
+
 	"github.com/spf13/cobra"
+
+	"github.com/apono-io/apono-cli/pkg/config"
 )
 
 var ErrProfileNotExists = errors.New("profile not exists")

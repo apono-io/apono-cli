@@ -1,8 +1,8 @@
 package config
 
 import (
-	"golang.org/x/oauth2"
 	"time"
+
 )
 
 type Config struct {

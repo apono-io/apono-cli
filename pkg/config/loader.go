@@ -4,26 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/kirsle/configdir"
 	"io"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+
+	"github.com/kirsle/configdir"
 )
 
-var configDirPath = configdir.LocalConfig("apono-cli")
-var configFilePath = path.Join(configDirPath, "config.json")
-
-func init() {
-	err := configdir.MakePath(configDirPath) // Ensure it exists.
-	if err != nil {
-		panic(err)
-	}
-}
+var (
+	configDirPath  = configdir.LocalConfig("apono-cli")
+	configFilePath = path.Join(configDirPath, "config.json")
+)
 
 func Get() (*Config, error) {
 	cfg := new(Config)
-	configFile, err := os.Open(configFilePath)
+	configFile, err := os.Open(filepath.Clean(configFilePath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &Config{}, nil
@@ -33,7 +30,7 @@ func Get() (*Config, error) {
 	}
 
 	defer func(file *os.File) {
-		err := file.Close()
+		err = file.Close()
 		if err != nil {
 			log.Printf("failed to close config file: %s", err.Error())
 		}
@@ -57,13 +54,20 @@ func Save(cfg *Config) error {
 		return fmt.Errorf("failed to serialize config: %w", err)
 	}
 
-	configFile, err := os.Create(configFilePath)
+	if _, err = os.Stat("/path/to/whatever"); os.IsNotExist(err) {
+		err = configdir.MakePath(configDirPath) // Ensure it exists.
+		if err != nil {
+			return err
+		}
+	}
+
+	configFile, err := os.Create(filepath.Clean(configFilePath))
 	if err != nil {
 		return fmt.Errorf("failed to open config file: %w", err)
 	}
 
 	defer func(file *os.File) {
-		err := file.Close()
+		err = file.Close()
 		if err != nil {
 			log.Printf("failed to close config file: %s", err.Error())
 		}

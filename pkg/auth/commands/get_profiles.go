@@ -2,9 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
+
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
+
+	"github.com/apono-io/apono-cli/pkg/config"
 )
 
 func GetProfiles() *cobra.Command {

@@ -25,7 +25,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		fmt.Println("Failed to create runner: %w", err)
+		fmt.Println("Failed to start CLI: %w", err)
 		os.Exit(1)
 	}
 

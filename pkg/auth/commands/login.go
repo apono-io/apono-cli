@@ -2,10 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
-	"github.com/golang-jwt/jwt/v5"
 	"log"
 	"time"
+
 
 	"github.com/int128/oauth2cli"
 	"github.com/int128/oauth2cli/oauth2params"
