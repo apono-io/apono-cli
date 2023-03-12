@@ -17,7 +17,13 @@ import (
 )
 
 func Login() *cobra.Command {
-	profileName := new(string)
+	var (
+		profileName string
+		clientID    string
+		authURL     string
+		tokenURL    string
+	)
+
 	cmd := &cobra.Command{
 		Use:     "login",
 		GroupID: Group.ID,
@@ -32,10 +38,11 @@ func Login() *cobra.Command {
 			defer close(ready)
 			cfg := oauth2cli.Config{
 				OAuth2Config: oauth2.Config{
-					ClientID: "799bbf9e-5e85-4fd1-9071-4368c7abfb57",
+					ClientID: clientID,
 					Endpoint: oauth2.Endpoint{
-						AuthURL:  "http://localhost:9000/oauth/authorize",
-						TokenURL: "http://localhost:9000/oauth/token",
+						AuthURL:   authURL,
+						TokenURL:  tokenURL,
+						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
 						"requests:new",
@@ -69,7 +76,7 @@ func Login() *cobra.Command {
 				}
 
 				log.Printf("You got a valid token until %s", token.Expiry)
-				return storeProfileToken(*profileName, token)
+				return storeProfileToken(profileName, clientID, authURL, tokenURL, token)
 			})
 			if err := eg.Wait(); err != nil {
 				log.Fatalf("authorization error: %s", err)
@@ -79,11 +86,18 @@ func Login() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(profileName, "profile", "p", "default", "Profile name")
+	flags := cmd.Flags()
+	flags.StringVarP(&profileName, "profile", "p", "default", "profile name")
+	flags.StringVarP(&clientID, "client-id", "c", "799bbf9e-5e85-4fd1-9071-4368c7abfb57", "oauth client id")
+	flags.StringVarP(&authURL, "auth-url", "a", "http://localhost:9000/oauth/authorize", "oauth authorization url")
+	flags.StringVarP(&tokenURL, "token-url", "t", "http://localhost:9000/oauth/token", "oauth token url")
+	_ = flags.MarkHidden("client-id")
+	_ = flags.MarkHidden("auth-url")
+	_ = flags.MarkHidden("token-url")
 	return cmd
 }
 
-func storeProfileToken(profileName string, token *oauth2.Token) error {
+func storeProfileToken(profileName, clientID, authURL, tokenUrl string, token *oauth2.Token) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -114,6 +128,9 @@ func storeProfileToken(profileName string, token *oauth2.Token) error {
 	}
 
 	cfg.Auth.Profiles[pn] = config.SessionConfig{
+		ClientID:  clientID,
+		AuthURL:   authURL,
+		TokenURL:  tokenUrl,
 		AccountID: claims.AccountID,
 		UserID:    claims.UserID,
 		Token:     *token,

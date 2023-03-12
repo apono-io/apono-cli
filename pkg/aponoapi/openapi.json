@@ -1,0 +1,1105 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Apono",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.apono.io",
+      "description": "Apono Public Api"
+    }
+  ],
+  "security": [
+    {
+      "Authorization": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Access Requests"
+    },
+    {
+      "name": "Connectors"
+    },
+    {
+      "name": "Integrations"
+    },
+    {
+      "name": "Users"
+    }
+  ],
+  "paths": {
+    "/api/v2/connectors": {
+      "get": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "list connectors",
+        "operationId": "listConnectors",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connector"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "list integrations",
+        "operationId": "listIntegrationsV2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseIntegrationModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "create integration",
+        "operationId": "createIntegrationV2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/integrations-catalog": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "list integration configs",
+        "operationId": "listIntegrationConfigs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseIntegrationConfigPublicModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/integrations-catalog/{type}": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "get integration config",
+        "operationId": "getIntegrationConfig",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/integrations/{id}": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "get integration",
+        "operationId": "getIntegrationV2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "update integration",
+        "operationId": "updateIntegrationV2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Integration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "delete integration",
+        "operationId": "deleteIntegrationV2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/integrations/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "refresh integration",
+        "operationId": "refreshIntegrationV2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "list users",
+        "operationId": "listUsers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseUserModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "get user",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/access-requests": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "list access requests",
+        "operationId": "listAccessRequests",
+        "parameters": [
+          {
+            "name": "days_offset",
+            "in": "query",
+            "schema": {
+              "format": "int64",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseAccessRequestV3"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "create access request",
+        "operationId": "createAccessRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/access-requests/{id}": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get access request",
+        "operationId": "getAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/selectable-integrations": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get selectable integrations",
+        "operationId": "getSelectableIntegrations",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseSelectableIntegrationV3"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/selectable-integrations/{integration_id}/permissions": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get selectable permissions",
+        "operationId": "getSelectablePermissions",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectablePermissionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/selectable-integrations/{integration_id}/resources": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get selectable resources",
+        "operationId": "getSelectableResources",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseSelectableResourceV3"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessRequest": {
+        "required": [
+          "request_id",
+          "friendly_request_id",
+          "user_id",
+          "status",
+          "integration_id",
+          "resource_ids",
+          "permissions",
+          "justification"
+        ],
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "friendly_request_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AccessStatusModel"
+          },
+          "integration_id": {
+            "type": "string"
+          },
+          "resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "justification": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessStatusModel": {
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "GRANTED",
+          "REVOKING",
+          "EXPIRED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "ConnectionMetadata": {
+        "type": "object"
+      },
+      "Connector": {
+        "required": [
+          "connector_id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "connector_id": {
+            "type": "string"
+          },
+          "last_connected": {
+            "type": "string",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAccessRequest": {
+        "required": [
+          "user_id",
+          "integration_id",
+          "resource_ids",
+          "permissions",
+          "justification"
+        ],
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "integration_id": {
+            "type": "string"
+          },
+          "resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "justification": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateIntegration": {
+        "required": [
+          "name",
+          "type",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "provisioner_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "secret_config": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SecretConfig"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "Instant": {
+        "format": "date-time",
+        "type": "string",
+        "example": "2022-03-10T16:15:50Z"
+      },
+      "Integration": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "status",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntegrationStatus"
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "provisioner_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "connection": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionMetadata"
+              }
+            ],
+            "nullable": true
+          },
+          "last_sync_time": {
+            "type": "string",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "secret_config": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SecretConfig"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "IntegrationConfig": {
+        "required": [
+          "name",
+          "type",
+          "description",
+          "params",
+          "requires_secret",
+          "supported_secret_types"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationConfigParam"
+            }
+          },
+          "requires_secret": {
+            "type": "boolean"
+          },
+          "supported_secret_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "IntegrationConfigParam": {
+        "required": [
+          "id",
+          "label",
+          "values",
+          "default"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "type": "string"
+          }
+        }
+      },
+      "IntegrationStatus": {
+        "enum": [
+          "Initializing",
+          "Refreshing",
+          "Active",
+          "Error",
+          "Warning",
+          "Disabled"
+        ],
+        "type": "string"
+      },
+      "MessageResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginatedResponseAccessRequestV3": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessRequest"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseIntegrationConfigPublicModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationConfig"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseIntegrationModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Integration"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseSelectableIntegrationV3": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectableIntegration"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseSelectableResourceV3": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectableResource"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseUserModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginationInfo": {
+        "required": [
+          "total",
+          "limit",
+          "offset"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "limit": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "offset": {
+            "format": "int32",
+            "type": "integer"
+          }
+        }
+      },
+      "SecretConfig": {
+        "type": "object"
+      },
+      "SelectableIntegration": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "SelectablePermissionsResponse": {
+        "required": [
+          "data",
+          "pagination",
+          "allow_multiple"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          },
+          "allow_multiple": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SelectableResource": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateIntegration": {
+        "required": [
+          "name",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "provisioner_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "secret_config": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SecretConfig"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "UserModel": {
+        "required": [
+          "id",
+          "email",
+          "first_name",
+          "last_name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

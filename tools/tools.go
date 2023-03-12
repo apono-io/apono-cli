@@ -9,6 +9,7 @@ package tools
 // https://github.com/golang/go/issues/25922
 import (
 	_ "github.com/client9/misspell/cmd/misspell"
+	_ "github.com/deepmap/oapi-codegen/cmd/oapi-codegen"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/goreleaser/goreleaser"
 )

@@ -18,6 +18,9 @@ type AuthConfig struct {
 type ProfileName string
 
 type SessionConfig struct {
+	ClientID  string       `json:"client_id"`
+	AuthURL   string       `json:"auth_url"`
+	TokenURL  string       `json:"token_url"`
 	AccountID string       `json:"account_id"`
 	UserID    string       `json:"user_id"`
 	Token     oauth2.Token `json:"token"`

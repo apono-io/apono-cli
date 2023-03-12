@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/requests"
+
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/auth"
@@ -21,6 +23,7 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 		opts: opts,
 		configurators: []Configurator{
 			&auth.Configurator{},
+			&requests.Configurator{},
 		},
 	}
 	err := r.init()

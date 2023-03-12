@@ -1,0 +1,5 @@
+package: aponoapi
+output: aponoapi-client.gen.go
+generate:
+  client: true
+  models: true
