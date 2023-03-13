@@ -20,6 +20,7 @@ func Login() *cobra.Command {
 	var (
 		profileName string
 		clientID    string
+		apiURL      string
 		authURL     string
 		tokenURL    string
 	)
@@ -45,6 +46,7 @@ func Login() *cobra.Command {
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
+						"integrations:read",
 						"requests:new",
 						"requests:read",
 					},
@@ -76,7 +78,7 @@ func Login() *cobra.Command {
 				}
 
 				log.Printf("You got a valid token until %s", token.Expiry)
-				return storeProfileToken(profileName, clientID, authURL, tokenURL, token)
+				return storeProfileToken(profileName, clientID, apiURL, authURL, tokenURL, token)
 			})
 			if err := eg.Wait(); err != nil {
 				log.Fatalf("authorization error: %s", err)
@@ -89,15 +91,17 @@ func Login() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&profileName, "profile", "p", "default", "profile name")
 	flags.StringVarP(&clientID, "client-id", "c", "799bbf9e-5e85-4fd1-9071-4368c7abfb57", "oauth client id")
+	flags.StringVarP(&apiURL, "api-url", "u", "http://localhost:8090", "apono api url")
 	flags.StringVarP(&authURL, "auth-url", "a", "http://localhost:9000/oauth/authorize", "oauth authorization url")
 	flags.StringVarP(&tokenURL, "token-url", "t", "http://localhost:9000/oauth/token", "oauth token url")
 	_ = flags.MarkHidden("client-id")
+	_ = flags.MarkHidden("api-url")
 	_ = flags.MarkHidden("auth-url")
 	_ = flags.MarkHidden("token-url")
 	return cmd
 }
 
-func storeProfileToken(profileName, clientID, authURL, tokenUrl string, token *oauth2.Token) error {
+func storeProfileToken(profileName, clientID, apiURL, authURL, tokenURL string, token *oauth2.Token) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -129,8 +133,9 @@ func storeProfileToken(profileName, clientID, authURL, tokenUrl string, token *o
 
 	cfg.Auth.Profiles[pn] = config.SessionConfig{
 		ClientID:  clientID,
+		ApiURL:    apiURL,
 		AuthURL:   authURL,
-		TokenURL:  tokenUrl,
+		TokenURL:  tokenURL,
 		AccountID: claims.AccountID,
 		UserID:    claims.UserID,
 		Token:     *token,

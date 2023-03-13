@@ -3,3 +3,6 @@ output: aponoapi-client.gen.go
 generate:
   client: true
   models: true
+output-options:
+  exclude-schemas:
+    - Instant

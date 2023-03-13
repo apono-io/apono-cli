@@ -25,8 +25,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 
 	session := cfg.Auth.Profiles[config.ProfileName(profileName)]
 	client, err := NewClientWithResponses(
-		//"http://api.apono.localdev:30080",
-		"http://localhost:8090",
+		session.ApiURL,
 		WithHTTPClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&session.Token))),
 	)
 

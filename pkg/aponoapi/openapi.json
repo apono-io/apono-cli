@@ -759,9 +759,7 @@
           },
           "metadata": {
             "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            }
+            "additionalProperties": true
           },
           "secret_config": {
             "type": "object",

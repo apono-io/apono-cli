@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
@@ -85,21 +84,18 @@ type CreateIntegration struct {
 	Type          string                            `json:"type"`
 }
 
-// Instant defines model for Instant.
-type Instant = time.Time
-
 // Integration defines model for Integration.
 type Integration struct {
-	Connection    *ConnectionMetadata               `json:"connection"`
-	Details       *string                           `json:"details"`
-	Id            string                            `json:"id"`
-	LastSyncTime  *Instant                          `json:"last_sync_time"`
-	Metadata      map[string]map[string]interface{} `json:"metadata"`
-	Name          string                            `json:"name"`
-	ProvisionerId *string                           `json:"provisioner_id"`
-	SecretConfig  *SecretConfig                     `json:"secret_config"`
-	Status        IntegrationStatus                 `json:"status"`
-	Type          string                            `json:"type"`
+	Connection    *ConnectionMetadata    `json:"connection"`
+	Details       *string                `json:"details"`
+	Id            string                 `json:"id"`
+	LastSyncTime  *Instant               `json:"last_sync_time"`
+	Metadata      map[string]interface{} `json:"metadata"`
+	Name          string                 `json:"name"`
+	ProvisionerId *string                `json:"provisioner_id"`
+	SecretConfig  *SecretConfig          `json:"secret_config"`
+	Status        IntegrationStatus      `json:"status"`
+	Type          string                 `json:"type"`
 }
 
 // IntegrationConfig defines model for IntegrationConfig.
