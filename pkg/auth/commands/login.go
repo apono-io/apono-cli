@@ -46,9 +46,9 @@ func Login() *cobra.Command {
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
-						"integrations:read",
-						"requests:new",
-						"requests:read",
+						"read:integrations",
+						"write:requests",
+						"read:requests",
 					},
 				},
 				AuthCodeOptions:        pkce.AuthCodeOptions(),
@@ -95,7 +95,7 @@ func Login() *cobra.Command {
 	flags.StringVarP(&authURL, "auth-url", "a", "http://localhost:9000/oauth/authorize", "oauth authorization url")
 	flags.StringVarP(&tokenURL, "token-url", "t", "http://localhost:9000/oauth/token", "oauth token url")
 	_ = flags.MarkHidden("client-id")
-	_ = flags.MarkHidden("api-url")
+	_ = flags.MarkHidden("apono-url")
 	_ = flags.MarkHidden("auth-url")
 	_ = flags.MarkHidden("token-url")
 	return cmd

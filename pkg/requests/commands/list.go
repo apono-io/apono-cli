@@ -88,7 +88,7 @@ func showRequestsSummary(cmd *cobra.Command, client *aponoapi.AponoClient, daysO
 
 		resourceIds := strings.Join(request.ResourceIds, ", ")
 		permissions := strings.Join(request.Permissions, ", ")
-		table.AddRow(fmt.Sprintf("%s (%s)", request.FriendlyRequestId, request.RequestId), integration, resourceIds, permissions, request.Status)
+		table.AddRow(request.FriendlyRequestId, integration, resourceIds, permissions, request.Status)
 	}
 
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)

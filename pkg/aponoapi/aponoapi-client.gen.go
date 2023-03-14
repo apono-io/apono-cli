@@ -77,11 +77,11 @@ type CreateAccessRequest struct {
 
 // CreateIntegration defines model for CreateIntegration.
 type CreateIntegration struct {
-	Metadata      map[string]map[string]interface{} `json:"metadata"`
-	Name          string                            `json:"name"`
-	ProvisionerId *string                           `json:"provisioner_id"`
-	SecretConfig  *SecretConfig                     `json:"secret_config"`
-	Type          string                            `json:"type"`
+	Metadata      map[string]interface{} `json:"metadata"`
+	Name          string                 `json:"name"`
+	ProvisionerId *string                `json:"provisioner_id"`
+	SecretConfig  *SecretConfig          `json:"secret_config"`
+	Type          string                 `json:"type"`
 }
 
 // Integration defines model for Integration.
@@ -190,10 +190,10 @@ type SelectableResource struct {
 
 // UpdateIntegration defines model for UpdateIntegration.
 type UpdateIntegration struct {
-	Metadata      map[string]map[string]interface{} `json:"metadata"`
-	Name          string                            `json:"name"`
-	ProvisionerId *string                           `json:"provisioner_id"`
-	SecretConfig  *SecretConfig                     `json:"secret_config"`
+	Metadata      map[string]interface{} `json:"metadata"`
+	Name          string                 `json:"name"`
+	ProvisionerId *string                `json:"provisioner_id"`
+	SecretConfig  *SecretConfig          `json:"secret_config"`
 }
 
 // UserModel defines model for UserModel.

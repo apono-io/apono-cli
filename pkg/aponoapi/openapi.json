@@ -688,10 +688,7 @@
             "nullable": true
           },
           "metadata": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            }
+            "type": "object"
           },
           "secret_config": {
             "type": "object",
@@ -758,8 +755,7 @@
             "nullable": true
           },
           "metadata": {
-            "type": "object",
-            "additionalProperties": true
+            "type": "object"
           },
           "secret_config": {
             "type": "object",
@@ -1053,10 +1049,7 @@
             "nullable": true
           },
           "metadata": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            }
+            "type": "object"
           },
           "secret_config": {
             "type": "object",
