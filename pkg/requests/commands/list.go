@@ -47,6 +47,10 @@ func showRequestStatus(cmd *cobra.Command, client *aponoapi.AponoClient, request
 	}
 
 	accessRequest := resp.JSON200
+	return printAccessRequestDetails(cmd, client, accessRequest)
+}
+
+func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient, accessRequest *aponoapi.AccessRequest) error {
 	integrationID := accessRequest.IntegrationId
 	integrationResp, err := client.GetIntegrationV2WithResponse(cmd.Context(), integrationID)
 	if err != nil {
