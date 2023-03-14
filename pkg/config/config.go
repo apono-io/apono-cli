@@ -19,7 +19,7 @@ type ProfileName string
 
 type SessionConfig struct {
 	ClientID  string       `json:"client_id"`
-	ApiURL    string       `json:"api_url"`
+	AponoURL  string       `json:"apono_url"`
 	AuthURL   string       `json:"auth_url"`
 	TokenURL  string       `json:"token_url"`
 	AccountID string       `json:"account_id"`

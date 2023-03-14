@@ -3,8 +3,10 @@ package aponoapi
 import (
 	"context"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
+
 	"golang.org/x/oauth2"
+
+	"github.com/apono-io/apono-cli/pkg/config"
 )
 
 type AponoClient struct {
@@ -25,10 +27,9 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 
 	session := cfg.Auth.Profiles[config.ProfileName(profileName)]
 	client, err := NewClientWithResponses(
-		session.ApiURL,
+		session.AponoURL,
 		WithHTTPClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(&session.Token))),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create apono client: %w", err)
 	}

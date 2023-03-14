@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"strings"
+
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func List() *cobra.Command {
@@ -35,9 +36,9 @@ func List() *cobra.Command {
 			table := uitable.New()
 			table.AddRow("REQUEST ID", "INTEGRATION", "RESOURCES", "PERMISSIONS", "STATUS")
 			for _, request := range requests {
-				integrationId := request.IntegrationId
-				integration := integrationId
-				if integrationName, found := integrations[integrationId]; found {
+				integrationID := request.IntegrationId
+				integration := integrationID
+				if integrationName, found := integrations[integrationID]; found {
 					integration = integrationName
 				}
 
