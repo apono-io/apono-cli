@@ -28,10 +28,10 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, err
 	}
 
-	session := cfg.Auth.Profiles[config.ProfileName(profileName)]
-	oauthHTTPClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&session.Token))
+	sessionCfg := cfg.Auth.Profiles[config.ProfileName(profileName)]
+	oauthHTTPClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&sessionCfg.Token))
 	client, err := NewClientWithResponses(
-		session.AponoURL,
+		sessionCfg.AponoURL,
 		WithHTTPClient(&aponoHTTPClient{client: oauthHTTPClient}),
 	)
 	if err != nil {
@@ -41,8 +41,8 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	return &AponoClient{
 		ClientWithResponses: client,
 		Session: &Session{
-			AccountID: session.AccountID,
-			UserID:    session.UserID,
+			AccountID: sessionCfg.AccountID,
+			UserID:    sessionCfg.UserID,
 		},
 	}, nil
 }
