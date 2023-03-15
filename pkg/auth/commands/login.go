@@ -16,10 +16,12 @@ import (
 	"github.com/apono-io/apono-cli/pkg/config"
 )
 
-const clientIdFlagName = "client-id"
-const aponoURLFlagName = "apono-url"
-const authURLFlagName = "auth-url"
-const tokenURLFlagName = "token-url"
+const (
+	clientIDFlagName = "client-id"
+	aponoURLFlagName = "apono-url"
+	authURLFlagName  = "auth-url"
+	tokenURLFlagName = "token-url"
+)
 
 func Login() *cobra.Command {
 	var (
@@ -95,11 +97,11 @@ func Login() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&profileName, "profile", "p", "default", "profile name")
-	flags.StringVarP(&clientID, clientIdFlagName, "c", "799bbf9e-5e85-4fd1-9071-4368c7abfb57", "oauth client id")
+	flags.StringVarP(&clientID, clientIDFlagName, "c", "799bbf9e-5e85-4fd1-9071-4368c7abfb57", "oauth client id")
 	flags.StringVarP(&apiURL, aponoURLFlagName, "u", "http://localhost:8090", "apono api url")
 	flags.StringVarP(&authURL, authURLFlagName, "a", "http://localhost:9000/oauth/authorize", "oauth authorization url")
 	flags.StringVarP(&tokenURL, tokenURLFlagName, "t", "http://localhost:9000/oauth/token", "oauth token url")
-	_ = flags.MarkHidden(clientIdFlagName)
+	_ = flags.MarkHidden(clientIDFlagName)
 	_ = flags.MarkHidden(aponoURLFlagName)
 	_ = flags.MarkHidden(authURLFlagName)
 	_ = flags.MarkHidden(tokenURLFlagName)
