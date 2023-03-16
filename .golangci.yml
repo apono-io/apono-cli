@@ -60,3 +60,5 @@ linters:
 issues:
   # enable issues excluded by default
   exclude-use-default: false
+  exclude:
+    - "ST1003: struct field ApiURL should be APIURL"

@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fatih/color"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
@@ -60,7 +64,7 @@ func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient,
 	table := uitable.New()
 	table.Wrap = true
 	table.AddRow("ID:", accessRequest.FriendlyRequestId)
-	table.AddRow("Status:", accessRequest.Status)
+	table.AddRow("Status:", coloredStatus(accessRequest.Status))
 	table.AddRow("Integration:", integrationResp.JSON200.Name)
 	table.AddRow("Resources:", strings.Join(accessRequest.ResourceIds, ", "))
 	table.AddRow("Permissions:", strings.Join(accessRequest.Permissions, ", "))
@@ -92,7 +96,7 @@ func showRequestsSummary(cmd *cobra.Command, client *aponoapi.AponoClient, daysO
 
 		resourceIds := strings.Join(request.ResourceIds, ", ")
 		permissions := strings.Join(request.Permissions, ", ")
-		table.AddRow(request.FriendlyRequestId, integration, resourceIds, permissions, request.Status)
+		table.AddRow(request.FriendlyRequestId, integration, resourceIds, permissions, coloredStatus(request.Status))
 	}
 
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
@@ -124,4 +128,22 @@ func listIntegrations(ctx context.Context, client *aponoapi.AponoClient) (map[st
 	}
 
 	return integrations, nil
+}
+
+func coloredStatus(status aponoapi.AccessStatusModel) string {
+	statusTitle := cases.Title(language.English).String(string(status))
+	switch status {
+	case aponoapi.PENDING:
+		return color.HiYellowString(statusTitle)
+	case aponoapi.APPROVED:
+		return color.YellowString(statusTitle)
+	case aponoapi.GRANTED:
+		return color.GreenString(statusTitle)
+	case aponoapi.REJECTED, aponoapi.REVOKING, aponoapi.EXPIRED:
+		return color.HiBlackString(statusTitle)
+	case aponoapi.FAILED:
+		return color.RedString(statusTitle)
+	default:
+		return statusTitle
+	}
 }
