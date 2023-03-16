@@ -19,9 +19,8 @@ import (
 
 const (
 	clientIDFlagName = "client-id"
-	aponoURLFlagName = "apono-url"
-	authURLFlagName  = "auth-url"
-	tokenURLFlagName = "token-url"
+	apiURLFlagName   = "api-url"
+	appURLFlagName   = "app-url"
 )
 
 func Login() *cobra.Command {
@@ -100,12 +99,11 @@ func Login() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&profileName, "profile", "p", "default", "profile name")
 	flags.StringVarP(&clientID, clientIDFlagName, "", "3afae9ff-48e6-45f3-b0e8-37658b7271b7", "oauth client id")
-	flags.StringVarP(&apiURL, aponoURLFlagName, "", "https://api.apono.io", "apono api url")
-	flags.StringVarP(&appURL, authURLFlagName, "", "https://app.apono.io", "apono app url")
+	flags.StringVarP(&apiURL, apiURLFlagName, "", "https://api.apono.io", "apono api url")
+	flags.StringVarP(&appURL, appURLFlagName, "", "https://app.apono.io", "apono app url")
 	_ = flags.MarkHidden(clientIDFlagName)
-	_ = flags.MarkHidden(aponoURLFlagName)
-	_ = flags.MarkHidden(authURLFlagName)
-	_ = flags.MarkHidden(tokenURLFlagName)
+	_ = flags.MarkHidden(apiURLFlagName)
+	_ = flags.MarkHidden(appURLFlagName)
 	return cmd
 }
 
