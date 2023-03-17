@@ -1,6 +1,7 @@
 project_name: apono-cli
 before:
   hooks:
+    - make manpage completions
     - go mod tidy
 
 builds:
@@ -43,6 +44,44 @@ archives:
         format: zip
     files:
       - LICENSE
+      - contrib/completion/**/*
+      - contrib/manpage/*
+
+nfpms:
+  - vendor: Apono Tech
+    homepage: https://www.apono.io/
+    maintainer: Apono Support <support@apono.io>
+    description: Request access to cloud assets, approve access requests.
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+    contents:
+      # manpages
+      - src: "./contrib/manpage/apono*.1"
+        dst: "/usr/share/man/man1"
+      # bash
+      - src: "./contrib/completion/bash/apono"
+        dst: "/usr/share/bash-completion/completions/exo"
+      # zsh
+      - src: "./contrib/completion/zsh/_apono"
+        dst: "/usr/share/zsh/vendor-completions/_exo"
+
+brews:
+  - tap:
+      owner: apono-io
+      name: homebrew-tap
+    folder: Formula
+    homepage: "https://www.apono.io"
+    description: "Request access to cloud assets, approve access requests"
+    license: "Apache-2.0"
+    test: |
+      system "#{bin}/apono version"
+    install: |
+      bin.install "apono" => "apono"
+      man1.install Dir["contrib/manpage/apono*.1"]
+      bash_completion.install "contrib/completion/bash/apono"
+      zsh_completion.install "contrib/completion/zsh/_apono"
 
 checksum:
   name_template: 'checksums.txt'

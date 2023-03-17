@@ -209,3 +209,4 @@ $RECYCLE.BIN/
 
 # GoReleaser
 dist/
+contrib

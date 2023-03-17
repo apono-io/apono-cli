@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cobra/doc"
+
 	"github.com/apono-io/apono-cli/pkg/requests"
 
 	"github.com/spf13/cobra"
@@ -63,6 +65,27 @@ func (r *Runner) init() error {
 	r.rootCmd.AddCommand(VersionCommand(r.opts.VersionInfo))
 
 	return nil
+}
+
+func (r *Runner) GenBashCompletionFile(filename string) error {
+	return r.rootCmd.GenBashCompletionFile(filename)
+}
+
+func (r *Runner) GenPowerShellCompletionFile(filename string) error {
+	return r.rootCmd.GenPowerShellCompletionFile(filename)
+}
+
+func (r *Runner) GenZshCompletionFile(filename string) error {
+	return r.rootCmd.GenZshCompletionFile(filename)
+}
+
+func (r *Runner) GenManTree(dir string) error {
+	header := &doc.GenManHeader{
+		Title:   "apono",
+		Section: "1",
+	}
+
+	return doc.GenManTree(r.rootCmd, header, dir)
 }
 
 var otherCommandsGroup = &cobra.Group{

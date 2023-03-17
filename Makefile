@@ -20,6 +20,7 @@ clean: ## remove files created during build pipeline
 	rm -f coverage.*
 	rm -f '"$(shell go env GOCACHE)/../golangci-lint"'
 	go clean -i -cache -testcache -modcache -fuzzcache -x
+	rm -rf contrib/completion manpage $(OAS_FILE)
 
 .PHONY: mod
 mod: ## go mod tidy
@@ -65,6 +66,19 @@ diff: ## git diff
 	git diff --exit-code
 	RES=$$(git status --porcelain) ; if [ -n "$$RES" ]; then echo $$RES && exit 1 ; fi
 
+.PHONY: manpage
+manpage:
+	mkdir -p contrib/manpage
+	go run manpage/main.go
+
+.PHONY: completions
+completions:
+	mkdir -p contrib/completion/bash \
+		contrib/completion/powershell \
+		contrib/completion/zsh
+	go run completion/main.go bash ; mv bash_completion contrib/completion/bash/apono
+	go run completion/main.go powershell ; mv powershell_completion contrib/completion/powershell/apono
+	go run completion/main.go zsh ; mv zsh_completion contrib/completion/zsh/_apono
 
 define print-target
     @printf "Executing target: \033[36m$@\033[0m\n"
