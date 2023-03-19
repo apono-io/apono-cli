@@ -71,7 +71,7 @@ brews:
   - tap:
       owner: apono-io
       name: homebrew-tap
-      token: {{.Env.HOMEBREW_TAP_GITHUB_TOKEN}}
+      token: "{{ if index .Env \"HOMEBREW_TAP_GITHUB_TOKEN\"  }}{{.Env.HOMEBREW_TAP_GITHUB_TOKEN}}{{ end }}"
     folder: Formula
     homepage: "https://www.apono.io"
     description: "Request access to cloud assets, approve access requests"
