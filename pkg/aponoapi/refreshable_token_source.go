@@ -2,8 +2,9 @@ package aponoapi
 
 import (
 	"context"
-	"golang.org/x/oauth2"
 	"sync"
+
+	"golang.org/x/oauth2"
 )
 
 // TokenUpdateFunc is a function that accepts an oauth2 Token upon refresh, and
