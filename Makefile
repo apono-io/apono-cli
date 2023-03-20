@@ -16,11 +16,11 @@ help:
 .PHONY: clean
 clean: ## remove files created during build pipeline
 	$(call print-target)
+	rm -rf contrib
 	rm -rf dist
 	rm -f coverage.*
 	rm -f '"$(shell go env GOCACHE)/../golangci-lint"'
 	go clean -i -cache -testcache -modcache -fuzzcache -x
-	rm -rf contrib/completion manpage
 
 .PHONY: mod
 mod: ## go mod tidy
