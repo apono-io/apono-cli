@@ -42,7 +42,7 @@ gen: ## go generate
 build: ## goreleaser build
 build:
 	$(call print-target)
-	GPG_FINGERPRINT=${GPG_FINGERPRINT} goreleaser build --rm-dist --single-target --snapshot
+	goreleaser build --rm-dist --single-target --snapshot
 
 .PHONY: spell
 spell: ## misspell

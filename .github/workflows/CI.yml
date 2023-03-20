@@ -33,8 +33,6 @@ jobs:
 
       - name: Build
         run: make ci
-        env:
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
       - name: Upload coverage
         uses: actions/upload-artifact@v3
@@ -43,6 +41,8 @@ jobs:
           path: coverage.*
 
       - run: goreleaser release --rm-dist --snapshot
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
       - name: Upload dist
         uses: actions/upload-artifact@v3
