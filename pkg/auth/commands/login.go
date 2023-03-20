@@ -26,6 +26,7 @@ const (
 func Login() *cobra.Command {
 	var (
 		profileName string
+		verbose     bool
 		clientID    string
 		apiURL      string
 		appURL      string
@@ -63,17 +64,22 @@ func Login() *cobra.Command {
 				TokenRequestOptions:    pkce.TokenRequestOptions(),
 				LocalServerReadyChan:   ready,
 				LocalServerBindAddress: []string{"localhost:64131", "localhost:64132", "localhost:64133", "localhost:64134"},
-				Logf:                   log.Printf,
+			}
+
+			if verbose {
+				cfg.Logf = log.Printf
 			}
 
 			eg, ctx := errgroup.WithContext(cmd.Context())
 			eg.Go(func() error {
 				select {
 				case url := <-ready:
-					log.Printf("Open %s", url)
-					if err := browser.OpenURL(url); err != nil {
-						log.Printf("could not open the browser: %s", err)
+					_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
+					_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", url)
+					if err := browser.OpenURL(url); err != nil && verbose {
+						log.Println("Could not open the browser:", err)
 					}
+
 					return nil
 				case <-ctx.Done():
 					return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
@@ -85,8 +91,13 @@ func Login() *cobra.Command {
 					return fmt.Errorf("could not get a token: %w", err)
 				}
 
-				log.Printf("You got a valid token until %s", token.Expiry)
-				return storeProfileToken(profileName, clientID, apiURL, appURL, token)
+				session, err := storeProfileToken(profileName, clientID, apiURL, appURL, token)
+				if err != nil {
+					return fmt.Errorf("could not store access token: %w", err)
+				}
+
+				log.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
+				return nil
 			})
 			if err := eg.Wait(); err != nil {
 				log.Fatalf("authorization error: %s", err)
@@ -98,6 +109,7 @@ func Login() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&profileName, "profile", "p", "default", "profile name")
+	flags.BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	flags.StringVarP(&clientID, clientIDFlagName, "", "3afae9ff-48e6-45f3-b0e8-37658b7271b7", "oauth client id")
 	flags.StringVarP(&apiURL, apiURLFlagName, "", "https://api.apono.io", "apono api url")
 	flags.StringVarP(&appURL, appURLFlagName, "", "https://app.apono.io", "apono app url")
@@ -107,10 +119,10 @@ func Login() *cobra.Command {
 	return cmd
 }
 
-func storeProfileToken(profileName, clientID, apiURL, appURL string, token *oauth2.Token) error {
+func storeProfileToken(profileName, clientID, apiURL, appURL string, token *oauth2.Token) (*config.SessionConfig, error) {
 	cfg, err := config.Get()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pn := config.ProfileName(profileName)
@@ -130,14 +142,14 @@ func storeProfileToken(profileName, clientID, apiURL, appURL string, token *oaut
 	claims := new(aponoClaims)
 	_, _, err = jwt.NewParser().ParseUnverified(token.AccessToken, claims)
 	if err != nil {
-		return fmt.Errorf("failed to parse access_token: %w", err)
+		return nil, fmt.Errorf("failed to parse access_token: %w", err)
 	}
 
 	if cfg.Auth.Profiles == nil {
 		cfg.Auth.Profiles = make(map[config.ProfileName]config.SessionConfig)
 	}
 
-	cfg.Auth.Profiles[pn] = config.SessionConfig{
+	session := config.SessionConfig{
 		ClientID:  clientID,
 		ApiURL:    apiURL,
 		AppURL:    appURL,
@@ -146,6 +158,12 @@ func storeProfileToken(profileName, clientID, apiURL, appURL string, token *oaut
 		Token:     *token,
 		CreatedAt: time.Now(),
 	}
+	cfg.Auth.Profiles[pn] = session
 
-	return config.Save(cfg)
+	err = config.Save(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
 }
