@@ -29,7 +29,12 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	}
 
 	sessionCfg := cfg.Auth.Profiles[config.ProfileName(profileName)]
-	oauthHTTPClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&sessionCfg.Token))
+	token := &sessionCfg.Token
+	ts := NewRefreshableTokenSource(ctx, sessionCfg.GetOAuth2Config(), token, func(t *oauth2.Token) error {
+		return saveOAuthToken(profileName, t)
+	})
+
+	oauthHTTPClient := oauth2.NewClient(ctx, ts)
 	client, err := NewClientWithResponses(
 		sessionCfg.ApiURL,
 		WithHTTPClient(&aponoHTTPClient{client: oauthHTTPClient}),
@@ -45,6 +50,17 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 			UserID:    sessionCfg.UserID,
 		},
 	}, nil
+}
+
+func saveOAuthToken(profileName string, t *oauth2.Token) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+
+	sessionCfg := cfg.Auth.Profiles[config.ProfileName(profileName)]
+	sessionCfg.Token = *t
+	return config.Save(cfg)
 }
 
 type aponoHTTPClient struct {

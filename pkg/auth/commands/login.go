@@ -50,8 +50,8 @@ func Login() *cobra.Command {
 				OAuth2Config: oauth2.Config{
 					ClientID: clientID,
 					Endpoint: oauth2.Endpoint{
-						AuthURL:   fmt.Sprintf("%s/oauth/authorize", appURL),
-						TokenURL:  fmt.Sprintf("%s/oauth/token", appURL),
+						AuthURL:   config.GetOAuthAuthURL(appURL),
+						TokenURL:  config.GetOAuthTokenURL(appURL),
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
