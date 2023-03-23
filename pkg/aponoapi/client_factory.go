@@ -60,6 +60,7 @@ func saveOAuthToken(profileName string, t *oauth2.Token) error {
 
 	sessionCfg := cfg.Auth.Profiles[config.ProfileName(profileName)]
 	sessionCfg.Token = *t
+	cfg.Auth.Profiles[config.ProfileName(profileName)] = sessionCfg
 	return config.Save(cfg)
 }
 
