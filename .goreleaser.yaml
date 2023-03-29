@@ -48,10 +48,10 @@ archives:
       - contrib/manpage/*
 
 nfpms:
-  - vendor: Apono Tech
+  - vendor: Apono
     homepage: https://www.apono.io/
     maintainer: Apono Support <support@apono.io>
-    description: Request access to cloud assets, approve access requests.
+    description: View, request and receive permissions to services, DBs and applications.
     license: Apache 2.0
     formats:
       - deb
@@ -74,7 +74,7 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: "https://www.apono.io"
-    description: "Request access to cloud assets, approve access requests"
+    description: "View, request and receive permissions to services, DBs and applications."
     license: "Apache-2.0"
     test: |
       system "#{bin}/apono version"

@@ -17,8 +17,8 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 	r := &Runner{
 		rootCmd: &cobra.Command{
 			Use:           "apono",
-			Short:         "Oneliner description about apono CLI",
-			Long:          "More in dept description about apono CLI",
+			Short:         "View, request and receive permissions to services, DBs and applications directly from your CLI",
+			Long:          "Apono Permission Management Automation keeps businesses and their customers moving fast and secure, with simple and precise just in time (JiT) permissions across the RnD stack. You can use this CLI tool to view, request and receive permissions to services, DBs and applications directly",
 			SilenceErrors: true,
 			SilenceUsage:  true,
 		},
