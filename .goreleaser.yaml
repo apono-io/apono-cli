@@ -84,6 +84,17 @@ brews:
       bash_completion.install "contrib/completion/bash/apono"
       zsh_completion.install "contrib/completion/zsh/_apono"
 
+scoop:
+  bucket:
+    owner: apono-io
+    name: scoop-bucket
+    token: "{{ .Env.SCOOP_TAP_GITHUB_TOKEN }}"
+  folder: bucket
+  homepage: "https://www.apono.io"
+  description: "View, request and receive permissions to services, DBs and applications."
+  license: "Apache-2.0"
+  shortcuts: [["apono.exe", "apono"]]
+
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
