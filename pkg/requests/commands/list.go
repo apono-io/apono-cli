@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/gookit/color"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -134,15 +134,15 @@ func coloredStatus(status aponoapi.AccessStatusModel) string {
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
 	case aponoapi.PENDING:
-		return color.HiYellowString(statusTitle)
+		return color.Yellow.Sprint(statusTitle)
 	case aponoapi.APPROVED:
-		return color.YellowString(statusTitle)
+		return color.HiYellow.Sprint(statusTitle)
 	case aponoapi.GRANTED:
-		return color.GreenString(statusTitle)
+		return color.Green.Sprint(statusTitle)
 	case aponoapi.REJECTED, aponoapi.REVOKING, aponoapi.EXPIRED:
-		return color.HiBlackString(statusTitle)
+		return color.Gray.Sprint(statusTitle)
 	case aponoapi.FAILED:
-		return color.RedString(statusTitle)
+		return color.Red.Sprint(statusTitle)
 	default:
 		return statusTitle
 	}
