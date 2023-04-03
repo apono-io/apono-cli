@@ -93,7 +93,6 @@ scoop:
   homepage: "https://www.apono.io"
   description: "View, request and receive permissions to services, DBs and applications."
   license: "Apache-2.0"
-  shortcuts: [["apono.exe", "apono"]]
 
 checksum:
   name_template: 'checksums.txt'

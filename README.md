@@ -13,9 +13,15 @@ brew tap apono-io/tap
 brew install apono-cli
 ```
 
+#### Windows using [Scoop](https://scoop.sh)
+```powershell
+scoop bucket add apono https://github.com/apono-io/scoop-bucket
+scoop install apono/apono-cli
+```
+
 ### Using pre-built releases
 
-You can find pre-built releases of the CLI [here](releases).
+You can find pre-built releases of the CLI [here](https://github.com/apono-io/apono-cli/releases).
 
 ### From sources
 
