@@ -71,7 +71,19 @@ func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient,
 	table.AddRow("Justification:", accessRequest.Justification)
 
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(cmd.OutOrStdout(), "\nYou can use the following command to make this request again:\n%s\n",
+		buildNewRequestCommand(accessRequest))
 	return err
+}
+
+func buildNewRequestCommand(accessRequest *aponoapi.AccessRequest) string {
+	return fmt.Sprintf("apono request -i %s -r %s -p %s -j \"%s\"",
+		accessRequest.IntegrationId, strings.Join(accessRequest.ResourceIds, ","),
+		strings.Join(accessRequest.Permissions, ","), accessRequest.Justification)
 }
 
 func showRequestsSummary(cmd *cobra.Command, client *aponoapi.AponoClient, daysOffset int64) error {
