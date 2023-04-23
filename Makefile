@@ -26,12 +26,14 @@ clean: ## remove files created during build pipeline
 mod: ## go mod tidy
 	$(call print-target)
 	go mod tidy
-	cd tools && go mod tidy
 
 .PHONY: inst
 inst: ## go install tools
 	$(call print-target)
-	cd tools && go install $(shell cd tools && go list -f '{{ join .Imports " " }}' -tags=tools)
+	go install github.com/client9/misspell/cmd/misspell@v0.3.4
+	go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+	go install github.com/goreleaser/goreleaser@v1.17.2
 
 .PHONY: gen
 gen: ## go generate
@@ -42,7 +44,7 @@ gen: ## go generate
 build: ## goreleaser build
 build:
 	$(call print-target)
-	goreleaser build --rm-dist --single-target --snapshot
+	goreleaser build --clean --single-target --snapshot
 
 .PHONY: spell
 spell: ## misspell
