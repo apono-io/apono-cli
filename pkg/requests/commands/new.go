@@ -29,7 +29,7 @@ func New() *cobra.Command {
 		GroupID: Group.ID,
 		Short:   "New access request",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := aponoapi.CreateClient(cmd.Context(), "default")
+			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -62,13 +62,28 @@ func New() *cobra.Command {
 
 	_ = cmd.RegisterFlagCompletionFunc(integrationFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-			resp, err := client.GetSelectableIntegrationsWithResponse(cmd.Context(), &aponoapi.GetSelectableIntegrationsParams{})
+			selectableIntegrationsResp, err := client.GetSelectableIntegrationsWithResponse(cmd.Context(), &aponoapi.GetSelectableIntegrationsParams{})
 			if err != nil {
-				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available integrations:", err)
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch selectable integrations:", err)
 				return nil, cobra.ShellCompDirectiveError
 			}
 
-			return filterOptions[aponoapi.SelectableIntegration](resp.JSON200.Data, func(val aponoapi.SelectableIntegration) string { return val.Id }, toComplete), cobra.ShellCompDirectiveDefault
+			resp, err := client.ListIntegrationsV2WithResponse(cmd.Context())
+			if err != nil {
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integrations:", err)
+				return nil, cobra.ShellCompDirectiveError
+			}
+
+			integrationLabels := make(map[string]string)
+			for _, val := range resp.JSON200.Data {
+				integrationLabels[val.Id] = fmt.Sprintf("%s/%s", val.Type, val.Name)
+			}
+
+			extractor := func(val aponoapi.SelectableIntegration) string {
+				return integrationLabels[val.Id]
+			}
+
+			return filterOptions[aponoapi.SelectableIntegration](selectableIntegrationsResp.JSON200.Data, extractor, toComplete), cobra.ShellCompDirectiveDefault
 		})
 	})
 
@@ -108,7 +123,7 @@ func New() *cobra.Command {
 }
 
 func completeWithClient(cmd *cobra.Command, f func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective)) ([]string, cobra.ShellCompDirective) {
-	client, err := aponoapi.CreateClient(cmd.Context(), "default")
+	client, err := aponoapi.GetClient(cmd.Context())
 	if err != nil {
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to create Apono client:", err)
 		return nil, cobra.ShellCompDirectiveError

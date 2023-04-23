@@ -33,9 +33,10 @@ func Login() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:     "login",
-		GroupID: Group.ID,
-		Short:   "Login to Apono",
+		Use:               "login",
+		GroupID:           Group.ID,
+		Short:             "Login to Apono",
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL = strings.TrimLeft(apiURL, "/")
 			appURL = strings.TrimLeft(appURL, "/")

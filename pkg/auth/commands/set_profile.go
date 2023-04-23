@@ -1,15 +1,13 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/config"
 )
-
-var ErrProfileNotExists = errors.New("profile not exists")
 
 func SetProfile() *cobra.Command {
 	cmd := &cobra.Command{
@@ -26,11 +24,11 @@ func SetProfile() *cobra.Command {
 			pn := config.ProfileName(args[0])
 			authConfig := &cfg.Auth
 			if authConfig.Profiles == nil {
-				return ErrProfileNotExists
+				return aponoapi.ErrProfileNotExists
 			}
 
 			if _, exists := authConfig.Profiles[pn]; !exists {
-				return ErrProfileNotExists
+				return aponoapi.ErrProfileNotExists
 			}
 
 			authConfig.ActiveProfile = pn

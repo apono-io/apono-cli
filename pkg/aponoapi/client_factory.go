@@ -3,6 +3,7 @@ package aponoapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/config"
 )
+
+var ErrProfileNotExists = errors.New("profile not exists")
 
 type AponoClient struct {
 	*ClientWithResponses
@@ -28,7 +31,17 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, err
 	}
 
-	sessionCfg := cfg.Auth.Profiles[config.ProfileName(profileName)]
+	authConfig := cfg.Auth
+	pn := authConfig.ActiveProfile
+	if profileName != "" {
+		pn = config.ProfileName(profileName)
+	}
+
+	sessionCfg, exists := authConfig.Profiles[pn]
+	if !exists {
+		return nil, ErrProfileNotExists
+	}
+
 	token := &sessionCfg.Token
 	ts := NewRefreshableTokenSource(ctx, sessionCfg.GetOAuth2Config(), token, func(t *oauth2.Token) error {
 		return saveOAuthToken(profileName, t)

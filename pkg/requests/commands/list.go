@@ -24,7 +24,7 @@ func List() *cobra.Command {
 		GroupID: Group.ID,
 		Short:   "List all access request",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := aponoapi.CreateClient(cmd.Context(), "default")
+			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
 				return err
 			}

@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
 	"github.com/spf13/cobra/doc"
 
@@ -15,14 +16,8 @@ import (
 
 func NewRunner(opts *RunnerOptions) (*Runner, error) {
 	r := &Runner{
-		rootCmd: &cobra.Command{
-			Use:           "apono",
-			Short:         "View, request and receive permissions to services, DBs and applications directly from your CLI",
-			Long:          "Apono Permission Management Automation keeps businesses and their customers moving fast and secure, with simple and precise just in time (JiT) permissions across the RnD stack. You can use this CLI tool to view, request and receive permissions to services, DBs and applications directly",
-			SilenceErrors: true,
-			SilenceUsage:  true,
-		},
-		opts: opts,
+		rootCmd: createRootCommand(),
+		opts:    opts,
 		configurators: []Configurator{
 			&auth.Configurator{},
 			&requests.Configurator{},
@@ -91,4 +86,28 @@ func (r *Runner) GenManTree(dir string) error {
 var otherCommandsGroup = &cobra.Group{
 	ID:    "other",
 	Title: "Other Commands",
+}
+
+func createRootCommand() *cobra.Command {
+	c := &cobra.Command{
+		Use:           "apono",
+		Short:         "View, request and receive permissions to services, DBs and applications directly from your CLI",
+		Long:          "Apono Permission Management Automation keeps businesses and their customers moving fast and secure, with simple and precise just in time (JiT) permissions across the RnD stack. You can use this CLI tool to view, request and receive permissions to services, DBs and applications directly",
+		SilenceErrors: true,
+		SilenceUsage:  true,
+	}
+
+	c.PersistentFlags().String("profile", "", "profile name")
+	c.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		profileName, _ := cmd.PersistentFlags().GetString("profile")
+		client, err := aponoapi.CreateClient(cmd.Context(), profileName)
+		if err != nil {
+			return err
+		}
+
+		cmd.SetContext(aponoapi.CreateContext(cmd.Context(), client))
+		return nil
+	}
+
+	return c
 }
