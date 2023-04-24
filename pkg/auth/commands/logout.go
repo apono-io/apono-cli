@@ -11,11 +11,12 @@ import (
 )
 
 func Logout() *cobra.Command {
-	profileName := new(string)
 	cmd := &cobra.Command{
-		Use:     "logout",
-		GroupID: Group.ID,
-		Short:   "Logout from Apono",
+		Use:               "logout [NAME]",
+		GroupID:           Group.ID,
+		Short:             "Logout from Apono",
+		Args:              cobra.MaximumNArgs(1),
+		PersistentPreRunE: func(_ *cobra.Command, args []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
@@ -23,21 +24,22 @@ func Logout() *cobra.Command {
 			}
 
 			authConfig := &cfg.Auth
-			pn := config.ProfileName(*profileName)
-			if *profileName == "current-profile" {
-				pn = authConfig.ActiveProfile
+			profileName := authConfig.ActiveProfile
+			if len(args) > 0 {
+				profileName = config.ProfileName(args[0])
 			}
 
 			if authConfig.Profiles == nil {
 				return aponoapi.ErrProfileNotExists
 			}
 
-			if _, exists := authConfig.Profiles[pn]; !exists {
+			if _, exists := authConfig.Profiles[profileName]; !exists {
 				return aponoapi.ErrProfileNotExists
 			}
-			delete(authConfig.Profiles, pn)
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), "Logging out profile:", pn)
+			delete(authConfig.Profiles, profileName)
+
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "Logging out profile:", profileName)
 			if err != nil {
 				return err
 			}
@@ -46,6 +48,5 @@ func Logout() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(profileName, "profile", "p", "current-profile", "Profile name")
 	return cmd
 }

@@ -100,7 +100,7 @@ func createRootCommand() *cobra.Command {
 
 	c.PersistentFlags().String("profile", "", "profile name")
 	c.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		profileName, _ := cmd.PersistentFlags().GetString("profile")
+		profileName, _ := cmd.Flags().GetString("profile")
 		client, err := aponoapi.CreateClient(cmd.Context(), profileName)
 		if err != nil {
 			return err

@@ -97,11 +97,11 @@ func Login() *cobra.Command {
 					return fmt.Errorf("could not store access token: %w", err)
 				}
 
-				log.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
+				fmt.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
 				return nil
 			})
 			if err := eg.Wait(); err != nil {
-				log.Fatalf("authorization error: %s", err)
+				return fmt.Errorf("authorization error: %s", err)
 			}
 
 			return nil

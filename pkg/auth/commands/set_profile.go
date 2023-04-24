@@ -12,10 +12,11 @@ import (
 
 func SetProfile() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "set-profile NAME",
-		GroupID: Group.ID,
-		Short:   "Set active profile",
-		Args:    cobra.ExactArgs(1),
+		Use:               "set-profile NAME",
+		GroupID:           Group.ID,
+		Short:             "Set active profile",
+		Args:              cobra.ExactArgs(1),
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
