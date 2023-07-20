@@ -145,15 +145,15 @@ func listIntegrations(ctx context.Context, client *aponoapi.AponoClient) (map[st
 func coloredStatus(status aponoapi.AccessStatusModel) string {
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
-	case aponoapi.PENDING:
+	case aponoapi.AccessStatusModelPENDING:
 		return color.Yellow.Sprint(statusTitle)
-	case aponoapi.APPROVED:
+	case aponoapi.AccessStatusModelAPPROVED:
 		return color.HiYellow.Sprint(statusTitle)
-	case aponoapi.GRANTED:
+	case aponoapi.AccessStatusModelGRANTED:
 		return color.Green.Sprint(statusTitle)
-	case aponoapi.REJECTED, aponoapi.REVOKING, aponoapi.EXPIRED:
+	case aponoapi.AccessStatusModelREJECTED, aponoapi.AccessStatusModelREVOKING, aponoapi.AccessStatusModelEXPIRED:
 		return color.Gray.Sprint(statusTitle)
-	case aponoapi.FAILED:
+	case aponoapi.AccessStatusModelFAILED:
 		return color.Red.Sprint(statusTitle)
 	default:
 		return statusTitle
