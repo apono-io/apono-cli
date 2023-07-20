@@ -12,5 +12,6 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	rootCmd.AddGroup(commands.Group)
 	rootCmd.AddCommand(commands.List())
 	rootCmd.AddCommand(commands.New())
+	rootCmd.AddCommand(commands.Details())
 	return nil
 }
