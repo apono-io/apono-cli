@@ -20,15 +20,73 @@ const (
 	AuthorizationScopes = "Authorization.Scopes"
 )
 
+// Defines values for AccessStatus.
+const (
+	AccessStatusAPPROVED AccessStatus = "APPROVED"
+	AccessStatusEXPIRED  AccessStatus = "EXPIRED"
+	AccessStatusFAILED   AccessStatus = "FAILED"
+	AccessStatusGRANTED  AccessStatus = "GRANTED"
+	AccessStatusPENDING  AccessStatus = "PENDING"
+	AccessStatusREJECTED AccessStatus = "REJECTED"
+	AccessStatusREVOKING AccessStatus = "REVOKING"
+)
+
 // Defines values for AccessStatusModel.
 const (
-	APPROVED AccessStatusModel = "APPROVED"
-	EXPIRED  AccessStatusModel = "EXPIRED"
-	FAILED   AccessStatusModel = "FAILED"
-	GRANTED  AccessStatusModel = "GRANTED"
-	PENDING  AccessStatusModel = "PENDING"
-	REJECTED AccessStatusModel = "REJECTED"
-	REVOKING AccessStatusModel = "REVOKING"
+	AccessStatusModelAPPROVED AccessStatusModel = "APPROVED"
+	AccessStatusModelEXPIRED  AccessStatusModel = "EXPIRED"
+	AccessStatusModelFAILED   AccessStatusModel = "FAILED"
+	AccessStatusModelGRANTED  AccessStatusModel = "GRANTED"
+	AccessStatusModelPENDING  AccessStatusModel = "PENDING"
+	AccessStatusModelREJECTED AccessStatusModel = "REJECTED"
+	AccessStatusModelREVOKING AccessStatusModel = "REVOKING"
+)
+
+// Defines values for ApproverTypeModel.
+const (
+	ApproverTypeModelCONTEXTATTRIBUTE ApproverTypeModel = "CONTEXT_ATTRIBUTE"
+	ApproverTypeModelGROUP            ApproverTypeModel = "GROUP"
+	ApproverTypeModelUSER             ApproverTypeModel = "USER"
+)
+
+// Defines values for DayOfWeek.
+const (
+	FRIDAY    DayOfWeek = "FRIDAY"
+	MONDAY    DayOfWeek = "MONDAY"
+	SATURDAY  DayOfWeek = "SATURDAY"
+	SUNDAY    DayOfWeek = "SUNDAY"
+	THURSDAY  DayOfWeek = "THURSDAY"
+	TUESDAY   DayOfWeek = "TUESDAY"
+	WEDNESDAY DayOfWeek = "WEDNESDAY"
+)
+
+// Defines values for FilterResultContext.
+const (
+	FilterResultContextAccessFlowName FilterResultContext = "AccessFlowName"
+	FilterResultContextAccessTarget   FilterResultContext = "AccessTarget"
+	FilterResultContextApprovers      FilterResultContext = "Approvers"
+	FilterResultContextGrantees       FilterResultContext = "Grantees"
+	FilterResultContextTriggerType    FilterResultContext = "TriggerType"
+)
+
+// Defines values for FilterResultContextType.
+const (
+	FilterResultContextTypeAccessFlowName      FilterResultContextType = "AccessFlowName"
+	FilterResultContextTypeContextAttribute    FilterResultContextType = "ContextAttribute"
+	FilterResultContextTypeGroup               FilterResultContextType = "Group"
+	FilterResultContextTypeMetadata            FilterResultContextType = "Metadata"
+	FilterResultContextTypePermissions         FilterResultContextType = "Permissions"
+	FilterResultContextTypeResource            FilterResultContextType = "Resource"
+	FilterResultContextTypeResourceIntegration FilterResultContextType = "ResourceIntegration"
+	FilterResultContextTypeUser                FilterResultContextType = "User"
+)
+
+// Defines values for GranteeTypeModel.
+const (
+	GranteeTypeModelCONTEXTATTRIBUTE GranteeTypeModel = "CONTEXT_ATTRIBUTE"
+	GranteeTypeModelEXTERNALEMAIL    GranteeTypeModel = "EXTERNAL_EMAIL"
+	GranteeTypeModelGROUP            GranteeTypeModel = "GROUP"
+	GranteeTypeModelUSER             GranteeTypeModel = "USER"
 )
 
 // Defines values for IntegrationStatus.
@@ -40,6 +98,49 @@ const (
 	Refreshing   IntegrationStatus = "Refreshing"
 	Warning      IntegrationStatus = "Warning"
 )
+
+// Defines values for ReportField.
+const (
+	ReportFieldAccessFlow     ReportField = "access_flow"
+	ReportFieldIntegration    ReportField = "integration"
+	ReportFieldJustification  ReportField = "justification"
+	ReportFieldPermissions    ReportField = "permissions"
+	ReportFieldRequestDate    ReportField = "request_date"
+	ReportFieldRequestId      ReportField = "request_id"
+	ReportFieldRequestorEmail ReportField = "requestor_email"
+	ReportFieldRequestorName  ReportField = "requestor_name"
+	ReportFieldResourceType   ReportField = "resource_type"
+	ReportFieldResources      ReportField = "resources"
+	ReportFieldStatus         ReportField = "status"
+)
+
+// Defines values for TriggerType.
+const (
+	SHARELINK   TriggerType = "SHARE_LINK"
+	USERREQUEST TriggerType = "USER_REQUEST"
+)
+
+// AccessFlowFilterResult defines model for AccessFlowFilterResult.
+type AccessFlowFilterResult struct {
+	AccessFlowId string         `json:"access_flow_id"`
+	Results      []FilterResult `json:"results"`
+}
+
+// AccessFlowModelV3 defines model for AccessFlowModelV3.
+type AccessFlowModelV3 struct {
+	AccessTargets         []AccessTargetModelV3 `json:"access_targets"`
+	Active                bool                  `json:"active"`
+	Approvers             []ApproverModel       `json:"approvers"`
+	CreatedDate           Instant               `json:"created_date"`
+	Grantees              []GranteeModel        `json:"grantees"`
+	Id                    string                `json:"id"`
+	JustificationRequired bool                  `json:"justification_required"`
+	Name                  string                `json:"name"`
+	RequireAllApprovers   *bool                 `json:"require_all_approvers"`
+	RevokeAfterInSec      int32                 `json:"revoke_after_in_sec"`
+	Timeframe             *Timeframe            `json:"timeframe"`
+	TriggerType           TriggerType           `json:"trigger_type"`
+}
 
 // AccessRequest defines model for AccessRequest.
 type AccessRequest struct {
@@ -53,8 +154,48 @@ type AccessRequest struct {
 	UserId            string            `json:"user_id"`
 }
 
+// AccessStatus defines model for AccessStatus.
+type AccessStatus string
+
 // AccessStatusModel defines model for AccessStatusModel.
 type AccessStatusModel string
+
+// AccessTargetModelV3 defines model for AccessTargetModelV3.
+type AccessTargetModelV3 struct {
+	IntegrationId       string       `json:"integration_id"`
+	Permissions         []string     `json:"permissions"`
+	ResourceTagMatchers []TagModelV3 `json:"resource_tag_matchers"`
+	ResourceType        string       `json:"resource_type"`
+}
+
+// ActivityReportJsonExportModel defines model for ActivityReportJsonExportModel.
+type ActivityReportJsonExportModel struct {
+	AccessFlow     *string   `json:"access_flow"`
+	Integration    *string   `json:"integration"`
+	Justification  *string   `json:"justification"`
+	Permissions    *[]string `json:"permissions"`
+	RequestDate    *string   `json:"request_date"`
+	RequestId      *string   `json:"request_id"`
+	RequestorEmail *string   `json:"requestor_email"`
+	RequestorName  *string   `json:"requestor_name"`
+	ResourceType   *string   `json:"resource_type"`
+	Resources      *[]string `json:"resources"`
+	Status         *string   `json:"status"`
+}
+
+// ApproverModel defines model for ApproverModel.
+type ApproverModel struct {
+	Id   string            `json:"id"`
+	Type ApproverTypeModel `json:"type"`
+}
+
+// ApproverTypeModel defines model for ApproverTypeModel.
+type ApproverTypeModel string
+
+// ConnectDetailsResponse defines model for ConnectDetailsResponse.
+type ConnectDetailsResponse struct {
+	Details string `json:"details"`
+}
 
 // ConnectionMetadata defines model for ConnectionMetadata.
 type ConnectionMetadata = map[string]interface{}
@@ -64,6 +205,20 @@ type Connector struct {
 	ConnectorId   string   `json:"connector_id"`
 	LastConnected *Instant `json:"last_connected"`
 	Status        string   `json:"status"`
+}
+
+// CreateAccessFlowRequestV3 defines model for CreateAccessFlowRequestV3.
+type CreateAccessFlowRequestV3 struct {
+	AccessTargets         []AccessTargetModelV3 `json:"access_targets"`
+	Active                bool                  `json:"active"`
+	Approvers             []ApproverModel       `json:"approvers"`
+	Grantees              []GranteeModel        `json:"grantees"`
+	JustificationRequired bool                  `json:"justification_required"`
+	Name                  string                `json:"name"`
+	RequireAllApprovers   *bool                 `json:"require_all_approvers"`
+	RevokeAfterInSec      int32                 `json:"revoke_after_in_sec"`
+	Timeframe             *Timeframe            `json:"timeframe"`
+	TriggerType           TriggerType           `json:"trigger_type"`
 }
 
 // CreateAccessRequest defines model for CreateAccessRequest.
@@ -82,6 +237,39 @@ type CreateIntegration struct {
 	ProvisionerId *string                `json:"provisioner_id"`
 	SecretConfig  *SecretConfig          `json:"secret_config"`
 	Type          string                 `json:"type"`
+}
+
+// DayOfWeek defines model for DayOfWeek.
+type DayOfWeek string
+
+// FilterResult defines model for FilterResult.
+type FilterResult struct {
+	Context       FilterResultContext     `json:"context"`
+	FilterPhrase  string                  `json:"filter_phrase"`
+	MatchedValues []string                `json:"matched_values"`
+	Type          FilterResultContextType `json:"type"`
+}
+
+// FilterResultContext defines model for FilterResultContext.
+type FilterResultContext string
+
+// FilterResultContextType defines model for FilterResultContextType.
+type FilterResultContextType string
+
+// GranteeModel defines model for GranteeModel.
+type GranteeModel struct {
+	Id   string           `json:"id"`
+	Type GranteeTypeModel `json:"type"`
+}
+
+// GranteeTypeModel defines model for GranteeTypeModel.
+type GranteeTypeModel string
+
+// IdentityModel2 defines model for IdentityModel2.
+type IdentityModel2 struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // Integration defines model for Integration.
@@ -124,10 +312,28 @@ type MessageResponse struct {
 	Message string `json:"message"`
 }
 
+// PaginatedAccessFlowV3SearchResponse defines model for PaginatedAccessFlowV3SearchResponse.
+type PaginatedAccessFlowV3SearchResponse struct {
+	Data         []AccessFlowModelV3       `json:"data"`
+	FilterResult *[]AccessFlowFilterResult `json:"filter_result"`
+}
+
 // PaginatedResponseAccessRequestV3 defines model for PaginatedResponseAccessRequestV3.
 type PaginatedResponseAccessRequestV3 struct {
 	Data       []AccessRequest `json:"data"`
 	Pagination PaginationInfo  `json:"pagination"`
+}
+
+// PaginatedResponseActivityReportJsonExportModel defines model for PaginatedResponseActivityReportJsonExportModel.
+type PaginatedResponseActivityReportJsonExportModel struct {
+	Data       []ActivityReportJsonExportModel `json:"data"`
+	Pagination PaginationInfo                  `json:"pagination"`
+}
+
+// PaginatedResponseIdentityModelV2 defines model for PaginatedResponseIdentityModelV2.
+type PaginatedResponseIdentityModelV2 struct {
+	Data       []IdentityModel2 `json:"data"`
+	Pagination PaginationInfo   `json:"pagination"`
 }
 
 // PaginatedResponseIntegrationConfigPublicModel defines model for PaginatedResponseIntegrationConfigPublicModel.
@@ -139,6 +345,18 @@ type PaginatedResponseIntegrationConfigPublicModel struct {
 // PaginatedResponseIntegrationModel defines model for PaginatedResponseIntegrationModel.
 type PaginatedResponseIntegrationModel struct {
 	Data       []Integration  `json:"data"`
+	Pagination PaginationInfo `json:"pagination"`
+}
+
+// PaginatedResponsePermissionV3Response defines model for PaginatedResponsePermissionV3Response.
+type PaginatedResponsePermissionV3Response struct {
+	Data       []PermissionV3 `json:"data"`
+	Pagination PaginationInfo `json:"pagination"`
+}
+
+// PaginatedResponseResourceV3Response defines model for PaginatedResponseResourceV3Response.
+type PaginatedResponseResourceV3Response struct {
+	Data       []ResourceV3   `json:"data"`
 	Pagination PaginationInfo `json:"pagination"`
 }
 
@@ -167,6 +385,23 @@ type PaginationInfo struct {
 	Total  int32 `json:"total"`
 }
 
+// PermissionV3 defines model for PermissionV3.
+type PermissionV3 struct {
+	Id           string `json:"id"`
+	Name         string `json:"name"`
+	ResourceType string `json:"resource_type"`
+}
+
+// ReportField defines model for ReportField.
+type ReportField string
+
+// ResourceV3 defines model for ResourceV3.
+type ResourceV3 struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 // SecretConfig defines model for SecretConfig.
 type SecretConfig = map[string]interface{}
 
@@ -188,6 +423,37 @@ type SelectableResource struct {
 	Name string `json:"name"`
 }
 
+// TagModelV3 defines model for TagModelV3.
+type TagModelV3 struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// Timeframe defines model for Timeframe.
+type Timeframe struct {
+	DaysInWeek   []DayOfWeek `json:"days_in_week"`
+	EndTimeSec   int64       `json:"end_time_sec"`
+	StartTimeSec int64       `json:"start_time_sec"`
+	TimeZone     string      `json:"time_zone"`
+}
+
+// TriggerType defines model for TriggerType.
+type TriggerType string
+
+// UpdateAccessFlowModelV3 defines model for UpdateAccessFlowModelV3.
+type UpdateAccessFlowModelV3 struct {
+	AccessTargets         []AccessTargetModelV3 `json:"access_targets"`
+	Active                bool                  `json:"active"`
+	Approvers             []ApproverModel       `json:"approvers"`
+	Grantees              []GranteeModel        `json:"grantees"`
+	JustificationRequired bool                  `json:"justification_required"`
+	Name                  string                `json:"name"`
+	RequireAllApprovers   *bool                 `json:"require_all_approvers"`
+	RevokeAfterInSec      int32                 `json:"revoke_after_in_sec"`
+	Timeframe             *Timeframe            `json:"timeframe"`
+	TriggerType           TriggerType           `json:"trigger_type"`
+}
+
 // UpdateIntegration defines model for UpdateIntegration.
 type UpdateIntegration struct {
 	Metadata      map[string]interface{} `json:"metadata"`
@@ -198,16 +464,36 @@ type UpdateIntegration struct {
 
 // UserModel defines model for UserModel.
 type UserModel struct {
+	Active    bool   `json:"active"`
 	Email     string `json:"email"`
 	FirstName string `json:"first_name"`
 	Id        string `json:"id"`
 	LastName  string `json:"last_name"`
 }
 
+// ListAccessFlowsParams defines parameters for ListAccessFlows.
+type ListAccessFlowsParams struct {
+	Filters    *string `form:"filters,omitempty" json:"filters,omitempty"`
+	OnlyActive *bool   `form:"only_active,omitempty" json:"only_active,omitempty"`
+}
+
 // ListAccessRequestsParams defines parameters for ListAccessRequests.
 type ListAccessRequestsParams struct {
 	DaysOffset *int64  `form:"days_offset,omitempty" json:"days_offset,omitempty"`
 	UserId     *string `form:"user_id,omitempty" json:"user_id,omitempty"`
+}
+
+// ListActivityParams defines parameters for ListActivity.
+type ListActivityParams struct {
+	EndDate             *int64          `form:"end_date,omitempty" json:"end_date,omitempty"`
+	Fields              *[]ReportField  `form:"fields,omitempty" json:"fields,omitempty"`
+	FilterIntegrationId *[]string       `form:"filter[integration_id],omitempty" json:"filter[integration_id],omitempty"`
+	FilterPermission    *[]string       `form:"filter[permission],omitempty" json:"filter[permission],omitempty"`
+	FilterRequestorId   *[]string       `form:"filter[requestor_id],omitempty" json:"filter[requestor_id],omitempty"`
+	FilterResource      *[]string       `form:"filter[resource],omitempty" json:"filter[resource],omitempty"`
+	FilterResourceType  *[]string       `form:"filter[resource_type],omitempty" json:"filter[resource_type],omitempty"`
+	FilterStatus        *[]AccessStatus `form:"filter[status],omitempty" json:"filter[status],omitempty"`
+	StartDate           *int64          `form:"start_date,omitempty" json:"start_date,omitempty"`
 }
 
 // GetSelectableIntegrationsParams defines parameters for GetSelectableIntegrations.
@@ -230,6 +516,12 @@ type CreateIntegrationV2JSONRequestBody = CreateIntegration
 
 // UpdateIntegrationV2JSONRequestBody defines body for UpdateIntegrationV2 for application/json ContentType.
 type UpdateIntegrationV2JSONRequestBody = UpdateIntegration
+
+// CreateAccessFlowJSONRequestBody defines body for CreateAccessFlow for application/json ContentType.
+type CreateAccessFlowJSONRequestBody = CreateAccessFlowRequestV3
+
+// UpdateAccessFlowJSONRequestBody defines body for UpdateAccessFlow for application/json ContentType.
+type UpdateAccessFlowJSONRequestBody = UpdateAccessFlowModelV3
 
 // CreateAccessRequestJSONRequestBody defines body for CreateAccessRequest for application/json ContentType.
 type CreateAccessRequestJSONRequestBody = CreateAccessRequest
@@ -310,6 +602,9 @@ type ClientInterface interface {
 	// ListConnectors request
 	ListConnectors(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListIdentities request
+	ListIdentities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListIntegrationsV2 request
 	ListIntegrationsV2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -344,6 +639,25 @@ type ClientInterface interface {
 	// GetUser request
 	GetUser(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAccessFlows request
+	ListAccessFlows(ctx context.Context, params *ListAccessFlowsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateAccessFlow request with any body
+	CreateAccessFlowWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateAccessFlow(ctx context.Context, body CreateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteAccessFlow request
+	DeleteAccessFlow(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccessFlow request
+	GetAccessFlow(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccessFlow request with any body
+	UpdateAccessFlowWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateAccessFlow(ctx context.Context, id string, body UpdateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAccessRequests request
 	ListAccessRequests(ctx context.Context, params *ListAccessRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -354,6 +668,21 @@ type ClientInterface interface {
 
 	// GetAccessRequest request
 	GetAccessRequest(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccessRequestDetails request
+	GetAccessRequestDetails(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResetAccessRequestCredentials request
+	ResetAccessRequestCredentials(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListActivity request
+	ListActivity(ctx context.Context, params *ListActivityParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIntegrationPermissions request
+	GetIntegrationPermissions(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIntegrationResources request
+	GetIntegrationResources(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSelectableIntegrations request
 	GetSelectableIntegrations(ctx context.Context, params *GetSelectableIntegrationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -367,6 +696,18 @@ type ClientInterface interface {
 
 func (c *Client) ListConnectors(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListConnectorsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListIdentities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIdentitiesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -521,6 +862,90 @@ func (c *Client) GetUser(ctx context.Context, id string, reqEditors ...RequestEd
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListAccessFlows(ctx context.Context, params *ListAccessFlowsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccessFlowsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAccessFlowWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAccessFlowRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateAccessFlow(ctx context.Context, body CreateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAccessFlowRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAccessFlow(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAccessFlowRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAccessFlow(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccessFlowRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAccessFlowWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccessFlowRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateAccessFlow(ctx context.Context, id string, body UpdateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccessFlowRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListAccessRequests(ctx context.Context, params *ListAccessRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAccessRequestsRequest(c.Server, params)
 	if err != nil {
@@ -559,6 +984,66 @@ func (c *Client) CreateAccessRequest(ctx context.Context, body CreateAccessReque
 
 func (c *Client) GetAccessRequest(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAccessRequestRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAccessRequestDetails(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccessRequestDetailsRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResetAccessRequestCredentials(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResetAccessRequestCredentialsRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListActivity(ctx context.Context, params *ListActivityParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListActivityRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetIntegrationPermissions(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIntegrationPermissionsRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetIntegrationResources(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIntegrationResourcesRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -615,6 +1100,33 @@ func NewListConnectorsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/api/v2/connectors")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListIdentitiesRequest generates requests for ListIdentities
+func NewListIdentitiesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v2/identities")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -970,6 +1482,224 @@ func NewGetUserRequest(server string, id string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListAccessFlowsRequest generates requests for ListAccessFlows
+func NewListAccessFlowsRequest(server string, params *ListAccessFlowsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-flows")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := queryURL.Query()
+
+	if params.Filters != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filters", runtime.ParamLocationQuery, *params.Filters); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.OnlyActive != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "only_active", runtime.ParamLocationQuery, *params.OnlyActive); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	queryURL.RawQuery = queryValues.Encode()
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateAccessFlowRequest calls the generic CreateAccessFlow builder with application/json body
+func NewCreateAccessFlowRequest(server string, body CreateAccessFlowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateAccessFlowRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateAccessFlowRequestWithBody generates requests for CreateAccessFlow with any type of body
+func NewCreateAccessFlowRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-flows")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteAccessFlowRequest generates requests for DeleteAccessFlow
+func NewDeleteAccessFlowRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-flows/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAccessFlowRequest generates requests for GetAccessFlow
+func NewGetAccessFlowRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-flows/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateAccessFlowRequest calls the generic UpdateAccessFlow builder with application/json body
+func NewUpdateAccessFlowRequest(server string, id string, body UpdateAccessFlowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAccessFlowRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewUpdateAccessFlowRequestWithBody generates requests for UpdateAccessFlow with any type of body
+func NewUpdateAccessFlowRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-flows/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListAccessRequestsRequest generates requests for ListAccessRequests
 func NewListAccessRequestsRequest(server string, params *ListAccessRequestsParams) (*http.Request, error) {
 	var err error
@@ -1090,6 +1820,317 @@ func NewGetAccessRequestRequest(server string, id string) (*http.Request, error)
 	}
 
 	operationPath := fmt.Sprintf("/api/v3/access-requests/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAccessRequestDetailsRequest generates requests for GetAccessRequestDetails
+func NewGetAccessRequestDetailsRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-requests/%s/access-details", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResetAccessRequestCredentialsRequest generates requests for ResetAccessRequestCredentials
+func NewResetAccessRequestCredentialsRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/access-requests/%s/reset", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListActivityRequest generates requests for ListActivity
+func NewListActivityRequest(server string, params *ListActivityParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/activity")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := queryURL.Query()
+
+	if params.EndDate != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "end_date", runtime.ParamLocationQuery, *params.EndDate); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.Fields != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterIntegrationId != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[integration_id]", runtime.ParamLocationQuery, *params.FilterIntegrationId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterPermission != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[permission]", runtime.ParamLocationQuery, *params.FilterPermission); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterRequestorId != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[requestor_id]", runtime.ParamLocationQuery, *params.FilterRequestorId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterResource != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[resource]", runtime.ParamLocationQuery, *params.FilterResource); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterResourceType != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[resource_type]", runtime.ParamLocationQuery, *params.FilterResourceType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.FilterStatus != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "filter[status]", runtime.ParamLocationQuery, *params.FilterStatus); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.StartDate != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start_date", runtime.ParamLocationQuery, *params.StartDate); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	queryURL.RawQuery = queryValues.Encode()
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetIntegrationPermissionsRequest generates requests for GetIntegrationPermissions
+func NewGetIntegrationPermissionsRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/integrations/%s/permissions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetIntegrationResourcesRequest generates requests for GetIntegrationResources
+func NewGetIntegrationResourcesRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/integrations/%s/resources", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1308,6 +2349,9 @@ type ClientWithResponsesInterface interface {
 	// ListConnectors request
 	ListConnectorsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListConnectorsResponse, error)
 
+	// ListIdentities request
+	ListIdentitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdentitiesResponse, error)
+
 	// ListIntegrationsV2 request
 	ListIntegrationsV2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIntegrationsV2Response, error)
 
@@ -1342,6 +2386,25 @@ type ClientWithResponsesInterface interface {
 	// GetUser request
 	GetUserWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetUserResponse, error)
 
+	// ListAccessFlows request
+	ListAccessFlowsWithResponse(ctx context.Context, params *ListAccessFlowsParams, reqEditors ...RequestEditorFn) (*ListAccessFlowsResponse, error)
+
+	// CreateAccessFlow request with any body
+	CreateAccessFlowWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccessFlowResponse, error)
+
+	CreateAccessFlowWithResponse(ctx context.Context, body CreateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccessFlowResponse, error)
+
+	// DeleteAccessFlow request
+	DeleteAccessFlowWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteAccessFlowResponse, error)
+
+	// GetAccessFlow request
+	GetAccessFlowWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAccessFlowResponse, error)
+
+	// UpdateAccessFlow request with any body
+	UpdateAccessFlowWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccessFlowResponse, error)
+
+	UpdateAccessFlowWithResponse(ctx context.Context, id string, body UpdateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccessFlowResponse, error)
+
 	// ListAccessRequests request
 	ListAccessRequestsWithResponse(ctx context.Context, params *ListAccessRequestsParams, reqEditors ...RequestEditorFn) (*ListAccessRequestsResponse, error)
 
@@ -1352,6 +2415,21 @@ type ClientWithResponsesInterface interface {
 
 	// GetAccessRequest request
 	GetAccessRequestWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAccessRequestResponse, error)
+
+	// GetAccessRequestDetails request
+	GetAccessRequestDetailsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAccessRequestDetailsResponse, error)
+
+	// ResetAccessRequestCredentials request
+	ResetAccessRequestCredentialsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ResetAccessRequestCredentialsResponse, error)
+
+	// ListActivity request
+	ListActivityWithResponse(ctx context.Context, params *ListActivityParams, reqEditors ...RequestEditorFn) (*ListActivityResponse, error)
+
+	// GetIntegrationPermissions request
+	GetIntegrationPermissionsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetIntegrationPermissionsResponse, error)
+
+	// GetIntegrationResources request
+	GetIntegrationResourcesWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetIntegrationResourcesResponse, error)
 
 	// GetSelectableIntegrations request
 	GetSelectableIntegrationsWithResponse(ctx context.Context, params *GetSelectableIntegrationsParams, reqEditors ...RequestEditorFn) (*GetSelectableIntegrationsResponse, error)
@@ -1379,6 +2457,28 @@ func (r ListConnectorsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListConnectorsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListIdentitiesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedResponseIdentityModelV2
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIdentitiesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIdentitiesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1605,6 +2705,116 @@ func (r GetUserResponse) StatusCode() int {
 	return 0
 }
 
+type ListAccessFlowsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedAccessFlowV3SearchResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccessFlowsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccessFlowsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateAccessFlowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AccessFlowModelV3
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateAccessFlowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateAccessFlowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteAccessFlowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MessageResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAccessFlowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAccessFlowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAccessFlowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AccessFlowModelV3
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccessFlowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccessFlowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateAccessFlowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AccessFlowModelV3
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAccessFlowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAccessFlowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListAccessRequestsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1665,6 +2875,116 @@ func (r GetAccessRequestResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetAccessRequestResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAccessRequestDetailsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConnectDetailsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccessRequestDetailsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccessRequestDetailsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ResetAccessRequestCredentialsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MessageResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ResetAccessRequestCredentialsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResetAccessRequestCredentialsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListActivityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedResponseActivityReportJsonExportModel
+}
+
+// Status returns HTTPResponse.Status
+func (r ListActivityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListActivityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetIntegrationPermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedResponsePermissionV3Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIntegrationPermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIntegrationPermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetIntegrationResourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedResponseResourceV3Response
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIntegrationResourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIntegrationResourcesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1744,6 +3064,15 @@ func (c *ClientWithResponses) ListConnectorsWithResponse(ctx context.Context, re
 		return nil, err
 	}
 	return ParseListConnectorsResponse(rsp)
+}
+
+// ListIdentitiesWithResponse request returning *ListIdentitiesResponse
+func (c *ClientWithResponses) ListIdentitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdentitiesResponse, error) {
+	rsp, err := c.ListIdentities(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIdentitiesResponse(rsp)
 }
 
 // ListIntegrationsV2WithResponse request returning *ListIntegrationsV2Response
@@ -1852,6 +3181,67 @@ func (c *ClientWithResponses) GetUserWithResponse(ctx context.Context, id string
 	return ParseGetUserResponse(rsp)
 }
 
+// ListAccessFlowsWithResponse request returning *ListAccessFlowsResponse
+func (c *ClientWithResponses) ListAccessFlowsWithResponse(ctx context.Context, params *ListAccessFlowsParams, reqEditors ...RequestEditorFn) (*ListAccessFlowsResponse, error) {
+	rsp, err := c.ListAccessFlows(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccessFlowsResponse(rsp)
+}
+
+// CreateAccessFlowWithBodyWithResponse request with arbitrary body returning *CreateAccessFlowResponse
+func (c *ClientWithResponses) CreateAccessFlowWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccessFlowResponse, error) {
+	rsp, err := c.CreateAccessFlowWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAccessFlowResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateAccessFlowWithResponse(ctx context.Context, body CreateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccessFlowResponse, error) {
+	rsp, err := c.CreateAccessFlow(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAccessFlowResponse(rsp)
+}
+
+// DeleteAccessFlowWithResponse request returning *DeleteAccessFlowResponse
+func (c *ClientWithResponses) DeleteAccessFlowWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteAccessFlowResponse, error) {
+	rsp, err := c.DeleteAccessFlow(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAccessFlowResponse(rsp)
+}
+
+// GetAccessFlowWithResponse request returning *GetAccessFlowResponse
+func (c *ClientWithResponses) GetAccessFlowWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAccessFlowResponse, error) {
+	rsp, err := c.GetAccessFlow(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccessFlowResponse(rsp)
+}
+
+// UpdateAccessFlowWithBodyWithResponse request with arbitrary body returning *UpdateAccessFlowResponse
+func (c *ClientWithResponses) UpdateAccessFlowWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccessFlowResponse, error) {
+	rsp, err := c.UpdateAccessFlowWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccessFlowResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateAccessFlowWithResponse(ctx context.Context, id string, body UpdateAccessFlowJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccessFlowResponse, error) {
+	rsp, err := c.UpdateAccessFlow(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccessFlowResponse(rsp)
+}
+
 // ListAccessRequestsWithResponse request returning *ListAccessRequestsResponse
 func (c *ClientWithResponses) ListAccessRequestsWithResponse(ctx context.Context, params *ListAccessRequestsParams, reqEditors ...RequestEditorFn) (*ListAccessRequestsResponse, error) {
 	rsp, err := c.ListAccessRequests(ctx, params, reqEditors...)
@@ -1885,6 +3275,51 @@ func (c *ClientWithResponses) GetAccessRequestWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseGetAccessRequestResponse(rsp)
+}
+
+// GetAccessRequestDetailsWithResponse request returning *GetAccessRequestDetailsResponse
+func (c *ClientWithResponses) GetAccessRequestDetailsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAccessRequestDetailsResponse, error) {
+	rsp, err := c.GetAccessRequestDetails(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccessRequestDetailsResponse(rsp)
+}
+
+// ResetAccessRequestCredentialsWithResponse request returning *ResetAccessRequestCredentialsResponse
+func (c *ClientWithResponses) ResetAccessRequestCredentialsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*ResetAccessRequestCredentialsResponse, error) {
+	rsp, err := c.ResetAccessRequestCredentials(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResetAccessRequestCredentialsResponse(rsp)
+}
+
+// ListActivityWithResponse request returning *ListActivityResponse
+func (c *ClientWithResponses) ListActivityWithResponse(ctx context.Context, params *ListActivityParams, reqEditors ...RequestEditorFn) (*ListActivityResponse, error) {
+	rsp, err := c.ListActivity(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListActivityResponse(rsp)
+}
+
+// GetIntegrationPermissionsWithResponse request returning *GetIntegrationPermissionsResponse
+func (c *ClientWithResponses) GetIntegrationPermissionsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetIntegrationPermissionsResponse, error) {
+	rsp, err := c.GetIntegrationPermissions(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIntegrationPermissionsResponse(rsp)
+}
+
+// GetIntegrationResourcesWithResponse request returning *GetIntegrationResourcesResponse
+func (c *ClientWithResponses) GetIntegrationResourcesWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetIntegrationResourcesResponse, error) {
+	rsp, err := c.GetIntegrationResources(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIntegrationResourcesResponse(rsp)
 }
 
 // GetSelectableIntegrationsWithResponse request returning *GetSelectableIntegrationsResponse
@@ -1930,6 +3365,32 @@ func ParseListConnectorsResponse(rsp *http.Response) (*ListConnectorsResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest []Connector
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIdentitiesResponse parses an HTTP response from a ListIdentitiesWithResponse call
+func ParseListIdentitiesResponse(rsp *http.Response) (*ListIdentitiesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIdentitiesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedResponseIdentityModelV2
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -2200,6 +3661,136 @@ func ParseGetUserResponse(rsp *http.Response) (*GetUserResponse, error) {
 	return response, nil
 }
 
+// ParseListAccessFlowsResponse parses an HTTP response from a ListAccessFlowsWithResponse call
+func ParseListAccessFlowsResponse(rsp *http.Response) (*ListAccessFlowsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccessFlowsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedAccessFlowV3SearchResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateAccessFlowResponse parses an HTTP response from a CreateAccessFlowWithResponse call
+func ParseCreateAccessFlowResponse(rsp *http.Response) (*CreateAccessFlowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateAccessFlowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccessFlowModelV3
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteAccessFlowResponse parses an HTTP response from a DeleteAccessFlowWithResponse call
+func ParseDeleteAccessFlowResponse(rsp *http.Response) (*DeleteAccessFlowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAccessFlowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAccessFlowResponse parses an HTTP response from a GetAccessFlowWithResponse call
+func ParseGetAccessFlowResponse(rsp *http.Response) (*GetAccessFlowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccessFlowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccessFlowModelV3
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAccessFlowResponse parses an HTTP response from a UpdateAccessFlowWithResponse call
+func ParseUpdateAccessFlowResponse(rsp *http.Response) (*UpdateAccessFlowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAccessFlowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccessFlowModelV3
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListAccessRequestsResponse parses an HTTP response from a ListAccessRequestsWithResponse call
 func ParseListAccessRequestsResponse(rsp *http.Response) (*ListAccessRequestsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -2268,6 +3859,136 @@ func ParseGetAccessRequestResponse(rsp *http.Response) (*GetAccessRequestRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AccessRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAccessRequestDetailsResponse parses an HTTP response from a GetAccessRequestDetailsWithResponse call
+func ParseGetAccessRequestDetailsResponse(rsp *http.Response) (*GetAccessRequestDetailsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccessRequestDetailsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConnectDetailsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResetAccessRequestCredentialsResponse parses an HTTP response from a ResetAccessRequestCredentialsWithResponse call
+func ParseResetAccessRequestCredentialsResponse(rsp *http.Response) (*ResetAccessRequestCredentialsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResetAccessRequestCredentialsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListActivityResponse parses an HTTP response from a ListActivityWithResponse call
+func ParseListActivityResponse(rsp *http.Response) (*ListActivityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListActivityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedResponseActivityReportJsonExportModel
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIntegrationPermissionsResponse parses an HTTP response from a GetIntegrationPermissionsWithResponse call
+func ParseGetIntegrationPermissionsResponse(rsp *http.Response) (*GetIntegrationPermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIntegrationPermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedResponsePermissionV3Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIntegrationResourcesResponse parses an HTTP response from a GetIntegrationResourcesWithResponse call
+func ParseGetIntegrationResourcesResponse(rsp *http.Response) (*GetIntegrationResourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIntegrationResourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedResponseResourceV3Response
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

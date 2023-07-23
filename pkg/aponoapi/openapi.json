@@ -17,10 +17,19 @@
   ],
   "tags": [
     {
+      "name": "Access Flows"
+    },
+    {
       "name": "Access Requests"
     },
     {
+      "name": "Activity"
+    },
+    {
       "name": "Connectors"
+    },
+    {
+      "name": "Identities"
     },
     {
       "name": "Integrations"
@@ -47,6 +56,27 @@
                   "items": {
                     "$ref": "#/components/schemas/Connector"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/identities": {
+      "get": {
+        "tags": [
+          "Identities"
+        ],
+        "summary": "list identities, grantees and approvers",
+        "operationId": "listIdentities",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseIdentityModelV2"
                 }
               }
             }
@@ -338,6 +368,173 @@
         }
       }
     },
+    "/api/v3/access-flows": {
+      "get": {
+        "tags": [
+          "Access Flows"
+        ],
+        "summary": "list access flows",
+        "operationId": "listAccessFlows",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "only_active",
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAccessFlowV3SearchResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Access Flows"
+        ],
+        "summary": "create access flow",
+        "operationId": "createAccessFlow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessFlowRequestV3"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessFlowModelV3"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/access-flows/{id}": {
+      "get": {
+        "tags": [
+          "Access Flows"
+        ],
+        "summary": "get access flow",
+        "operationId": "getAccessFlow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessFlowModelV3"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Access Flows"
+        ],
+        "summary": "update access flow",
+        "operationId": "updateAccessFlow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccessFlowModelV3"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessFlowModelV3"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Access Flows"
+        ],
+        "summary": "delete access flow",
+        "operationId": "deleteAccessFlow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v3/access-requests": {
       "get": {
         "tags": [
@@ -431,6 +628,248 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AccessRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/access-requests/{id}/access-details": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get access request access details",
+        "operationId": "getAccessRequestDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectDetailsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/access-requests/{id}/reset": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "reset access request credentials",
+        "operationId": "resetAccessRequestCredentials",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/activity": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "List Activity",
+        "operationId": "listActivity",
+        "parameters": [
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {
+              "format": "int64",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReportField"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[integration_id]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[permission]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[requestor_id]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[resource]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[resource_type]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AccessStatus"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {
+              "format": "int64",
+              "type": "integer",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseActivityReportJsonExportModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/integrations/{id}/permissions": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "get integration permissions for the entire tenant",
+        "operationId": "getIntegrationPermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponsePermissionV3Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/integrations/{id}/resources": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "get integration resources for the entire tenant",
+        "operationId": "getIntegrationResources",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseResourceV3Response"
                 }
               }
             }
@@ -552,6 +991,94 @@
   },
   "components": {
     "schemas": {
+      "AccessFlowFilterResult": {
+        "required": [
+          "access_flow_id",
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "access_flow_id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterResult"
+            }
+          }
+        }
+      },
+      "AccessFlowModelV3": {
+        "required": [
+          "id",
+          "name",
+          "active",
+          "trigger_type",
+          "grantees",
+          "access_targets",
+          "approvers",
+          "revoke_after_in_sec",
+          "justification_required",
+          "created_date"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "trigger_type": {
+            "$ref": "#/components/schemas/TriggerType"
+          },
+          "grantees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GranteeModel"
+            }
+          },
+          "access_targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessTargetModelV3"
+            }
+          },
+          "approvers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApproverModel"
+            }
+          },
+          "require_all_approvers": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "revoke_after_in_sec": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "justification_required": {
+            "type": "boolean"
+          },
+          "created_date": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "timeframe": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timeframe"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
       "AccessRequest": {
         "required": [
           "request_id",
@@ -597,6 +1124,18 @@
           }
         }
       },
+      "AccessStatus": {
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "GRANTED",
+          "REVOKING",
+          "EXPIRED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
       "AccessStatusModel": {
         "enum": [
           "PENDING",
@@ -608,6 +1147,124 @@
           "FAILED"
         ],
         "type": "string"
+      },
+      "AccessTargetModelV3": {
+        "required": [
+          "integration_id",
+          "resource_type",
+          "resource_tag_matchers",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "integration_id": {
+            "type": "string"
+          },
+          "resource_type": {
+            "type": "string"
+          },
+          "resource_tag_matchers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagModelV3"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ActivityReportJsonExportModel": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "request_date": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestor_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestor_email": {
+            "type": "string",
+            "nullable": true
+          },
+          "integration": {
+            "type": "string",
+            "nullable": true
+          },
+          "resource_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "access_flow": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ApproverModel": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ApproverTypeModel"
+          }
+        }
+      },
+      "ApproverTypeModel": {
+        "enum": [
+          "USER",
+          "GROUP",
+          "CONTEXT_ATTRIBUTE"
+        ],
+        "type": "string"
+      },
+      "ConnectDetailsResponse": {
+        "required": [
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "details": {
+            "type": "string"
+          }
+        }
       },
       "ConnectionMetadata": {
         "type": "object"
@@ -623,7 +1280,7 @@
             "type": "string"
           },
           "last_connected": {
-            "type": "string",
+            "type": "number",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Instant"
@@ -633,6 +1290,68 @@
           },
           "status": {
             "type": "string"
+          }
+        }
+      },
+      "CreateAccessFlowRequestV3": {
+        "required": [
+          "name",
+          "active",
+          "trigger_type",
+          "grantees",
+          "access_targets",
+          "approvers",
+          "revoke_after_in_sec",
+          "justification_required"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "trigger_type": {
+            "$ref": "#/components/schemas/TriggerType"
+          },
+          "grantees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GranteeModel"
+            }
+          },
+          "access_targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessTargetModelV3"
+            }
+          },
+          "approvers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApproverModel"
+            }
+          },
+          "require_all_approvers": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "revoke_after_in_sec": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "justification_required": {
+            "type": "boolean"
+          },
+          "timeframe": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timeframe"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -701,10 +1420,114 @@
           }
         }
       },
+      "DayOfWeek": {
+        "enum": [
+          "MONDAY",
+          "TUESDAY",
+          "WEDNESDAY",
+          "THURSDAY",
+          "FRIDAY",
+          "SATURDAY",
+          "SUNDAY"
+        ],
+        "type": "string"
+      },
+      "FilterResult": {
+        "required": [
+          "context",
+          "filter_phrase",
+          "matched_values",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/FilterResultContext"
+          },
+          "filter_phrase": {
+            "type": "string"
+          },
+          "matched_values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "type": {
+            "$ref": "#/components/schemas/FilterResultContextType"
+          }
+        }
+      },
+      "FilterResultContext": {
+        "enum": [
+          "Approvers",
+          "AccessTarget",
+          "Grantees",
+          "AccessFlowName",
+          "TriggerType"
+        ],
+        "type": "string"
+      },
+      "FilterResultContextType": {
+        "enum": [
+          "Resource",
+          "ResourceIntegration",
+          "User",
+          "Group",
+          "ContextAttribute",
+          "Permissions",
+          "Metadata",
+          "AccessFlowName"
+        ],
+        "type": "string"
+      },
+      "GranteeModel": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/GranteeTypeModel"
+          }
+        }
+      },
+      "GranteeTypeModel": {
+        "enum": [
+          "USER",
+          "GROUP",
+          "EXTERNAL_EMAIL",
+          "CONTEXT_ATTRIBUTE"
+        ],
+        "type": "string"
+      },
+      "IdentityModel2": {
+        "required": [
+          "type",
+          "name",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
       "Instant": {
-        "format": "date-time",
-        "type": "string",
-        "example": "2022-03-10T16:15:50Z"
+        "format": "double",
+        "type": "number",
+        "example": "{seconds}.{nanos}"
       },
       "Integration": {
         "required": [
@@ -746,7 +1569,7 @@
             "nullable": true
           },
           "last_sync_time": {
-            "type": "string",
+            "type": "number",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Instant"
@@ -853,6 +1676,27 @@
           }
         }
       },
+      "PaginatedAccessFlowV3SearchResponse": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessFlowModelV3"
+            }
+          },
+          "filter_result": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessFlowFilterResult"
+            },
+            "nullable": true
+          }
+        }
+      },
       "PaginatedResponseAccessRequestV3": {
         "required": [
           "data",
@@ -864,6 +1708,42 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AccessRequest"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseActivityReportJsonExportModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityReportJsonExportModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseIdentityModelV2": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityModel2"
             }
           },
           "pagination": {
@@ -900,6 +1780,42 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Integration"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponsePermissionV3Response": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionV3"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseResourceV3Response": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceV3"
             }
           },
           "pagination": {
@@ -983,6 +1899,60 @@
           }
         }
       },
+      "PermissionV3": {
+        "required": [
+          "name",
+          "id",
+          "resource_type"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "resource_type": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportField": {
+        "enum": [
+          "request_id",
+          "request_date",
+          "requestor_name",
+          "requestor_email",
+          "integration",
+          "resources",
+          "resource_type",
+          "permissions",
+          "justification",
+          "status",
+          "access_flow"
+        ],
+        "type": "string"
+      },
+      "ResourceV3": {
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "SecretConfig": {
         "type": "object"
       },
@@ -1034,6 +2004,118 @@
           }
         }
       },
+      "TagModelV3": {
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "Timeframe": {
+        "required": [
+          "start_time_sec",
+          "end_time_sec",
+          "days_in_week",
+          "time_zone"
+        ],
+        "type": "object",
+        "properties": {
+          "start_time_sec": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "end_time_sec": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "days_in_week": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeek"
+            }
+          },
+          "time_zone": {
+            "type": "string"
+          }
+        }
+      },
+      "TriggerType": {
+        "enum": [
+          "USER_REQUEST",
+          "SHARE_LINK"
+        ],
+        "type": "string"
+      },
+      "UpdateAccessFlowModelV3": {
+        "required": [
+          "name",
+          "active",
+          "trigger_type",
+          "grantees",
+          "access_targets",
+          "approvers",
+          "revoke_after_in_sec",
+          "justification_required"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "trigger_type": {
+            "$ref": "#/components/schemas/TriggerType"
+          },
+          "grantees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GranteeModel"
+            }
+          },
+          "access_targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessTargetModelV3"
+            }
+          },
+          "approvers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApproverModel"
+            }
+          },
+          "require_all_approvers": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "revoke_after_in_sec": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "justification_required": {
+            "type": "boolean"
+          },
+          "timeframe": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timeframe"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
       "UpdateIntegration": {
         "required": [
           "name",
@@ -1067,7 +2149,8 @@
           "id",
           "email",
           "first_name",
-          "last_name"
+          "last_name",
+          "active"
         ],
         "type": "object",
         "properties": {
@@ -1082,6 +2165,9 @@
           },
           "last_name": {
             "type": "string"
+          },
+          "active": {
+            "type": "boolean"
           }
         }
       }
