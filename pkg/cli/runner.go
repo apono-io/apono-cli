@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/integration"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
@@ -22,6 +23,7 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 		configurators: []Configurator{
 			&auth.Configurator{},
 			&requests.Configurator{},
+			&integration.Configurator{},
 		},
 	}
 	err := r.init()
