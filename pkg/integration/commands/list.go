@@ -65,14 +65,3 @@ func listIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]apon
 
 	return resp.JSON200.Data, nil
 }
-
-func listSelectableIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]aponoapi.SelectableIntegration, error) {
-	resp, err := client.GetSelectableIntegrationsWithResponse(ctx, &aponoapi.GetSelectableIntegrationsParams{
-		UserId: &client.Session.UserID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.JSON200.Data, nil
-}
