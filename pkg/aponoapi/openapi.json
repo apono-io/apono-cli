@@ -908,13 +908,13 @@
         }
       }
     },
-    "/api/v3/selectable-integrations/{integration_id}/permissions": {
+    "/api/v3/selectable-integrations/{integration_id}/resource-types": {
       "get": {
         "tags": [
           "Access Requests"
         ],
-        "summary": "get selectable permissions",
-        "operationId": "getSelectablePermissions",
+        "summary": "get selectable resource types",
+        "operationId": "getSelectableResourceTypes",
         "parameters": [
           {
             "name": "integration_id",
@@ -940,6 +940,54 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseSelectableResourceTypeV3"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/selectable-integrations/{integration_id}/{resource_type}/permissions": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "get selectable permissions",
+        "operationId": "getSelectablePermissions",
+        "parameters": [
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "resource_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
                   "$ref": "#/components/schemas/SelectablePermissionsResponse"
                 }
               }
@@ -948,7 +996,7 @@
         }
       }
     },
-    "/api/v3/selectable-integrations/{integration_id}/resources": {
+    "/api/v3/selectable-integrations/{integration_id}/{resource_type}/resources": {
       "get": {
         "tags": [
           "Access Requests"
@@ -963,6 +1011,14 @@
             "schema": {
               "type": "string",
               "nullable": true
+            }
+          },
+          {
+            "name": "resource_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -1841,6 +1897,24 @@
           }
         }
       },
+      "PaginatedResponseSelectableResourceTypeV3": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectableResourceType"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
       "PaginatedResponseSelectableResourceV3": {
         "required": [
           "data",
@@ -1990,6 +2064,25 @@
         }
       },
       "SelectableResource": {
+        "required": [
+          "id",
+          "type",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "SelectableResourceType": {
         "required": [
           "id",
           "name"

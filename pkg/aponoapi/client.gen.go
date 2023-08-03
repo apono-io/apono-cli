@@ -366,6 +366,12 @@ type PaginatedResponseSelectableIntegrationV3 struct {
 	Pagination PaginationInfo          `json:"pagination"`
 }
 
+// PaginatedResponseSelectableResourceTypeV3 defines model for PaginatedResponseSelectableResourceTypeV3.
+type PaginatedResponseSelectableResourceTypeV3 struct {
+	Data       []SelectableResourceType `json:"data"`
+	Pagination PaginationInfo           `json:"pagination"`
+}
+
 // PaginatedResponseSelectableResourceV3 defines model for PaginatedResponseSelectableResourceV3.
 type PaginatedResponseSelectableResourceV3 struct {
 	Data       []SelectableResource `json:"data"`
@@ -419,6 +425,13 @@ type SelectablePermissionsResponse struct {
 
 // SelectableResource defines model for SelectableResource.
 type SelectableResource struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// SelectableResourceType defines model for SelectableResourceType.
+type SelectableResourceType struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
@@ -498,6 +511,11 @@ type ListActivityParams struct {
 
 // GetSelectableIntegrationsParams defines parameters for GetSelectableIntegrations.
 type GetSelectableIntegrationsParams struct {
+	UserId *string `form:"user_id,omitempty" json:"user_id,omitempty"`
+}
+
+// GetSelectableResourceTypesParams defines parameters for GetSelectableResourceTypes.
+type GetSelectableResourceTypesParams struct {
 	UserId *string `form:"user_id,omitempty" json:"user_id,omitempty"`
 }
 
@@ -687,11 +705,14 @@ type ClientInterface interface {
 	// GetSelectableIntegrations request
 	GetSelectableIntegrations(ctx context.Context, params *GetSelectableIntegrationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSelectableResourceTypes request
+	GetSelectableResourceTypes(ctx context.Context, integrationId string, params *GetSelectableResourceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetSelectablePermissions request
-	GetSelectablePermissions(ctx context.Context, integrationId string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSelectablePermissions(ctx context.Context, integrationId string, resourceType string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSelectableResources request
-	GetSelectableResources(ctx context.Context, integrationId string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSelectableResources(ctx context.Context, integrationId string, resourceType string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListConnectors(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1066,8 +1087,8 @@ func (c *Client) GetSelectableIntegrations(ctx context.Context, params *GetSelec
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSelectablePermissions(ctx context.Context, integrationId string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSelectablePermissionsRequest(c.Server, integrationId, params)
+func (c *Client) GetSelectableResourceTypes(ctx context.Context, integrationId string, params *GetSelectableResourceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSelectableResourceTypesRequest(c.Server, integrationId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1078,8 +1099,20 @@ func (c *Client) GetSelectablePermissions(ctx context.Context, integrationId str
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSelectableResources(ctx context.Context, integrationId string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSelectableResourcesRequest(c.Server, integrationId, params)
+func (c *Client) GetSelectablePermissions(ctx context.Context, integrationId string, resourceType string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSelectablePermissionsRequest(c.Server, integrationId, resourceType, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSelectableResources(ctx context.Context, integrationId string, resourceType string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSelectableResourcesRequest(c.Server, integrationId, resourceType, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2195,8 +2228,8 @@ func NewGetSelectableIntegrationsRequest(server string, params *GetSelectableInt
 	return req, nil
 }
 
-// NewGetSelectablePermissionsRequest generates requests for GetSelectablePermissions
-func NewGetSelectablePermissionsRequest(server string, integrationId string, params *GetSelectablePermissionsParams) (*http.Request, error) {
+// NewGetSelectableResourceTypesRequest generates requests for GetSelectableResourceTypes
+func NewGetSelectableResourceTypesRequest(server string, integrationId string, params *GetSelectableResourceTypesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2211,7 +2244,68 @@ func NewGetSelectablePermissionsRequest(server string, integrationId string, par
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v3/selectable-integrations/%s/permissions", pathParam0)
+	operationPath := fmt.Sprintf("/api/v3/selectable-integrations/%s/resource-types", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := queryURL.Query()
+
+	if params.UserId != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_id", runtime.ParamLocationQuery, *params.UserId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	queryURL.RawQuery = queryValues.Encode()
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSelectablePermissionsRequest generates requests for GetSelectablePermissions
+func NewGetSelectablePermissionsRequest(server string, integrationId string, resourceType string, params *GetSelectablePermissionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "integration_id", runtime.ParamLocationPath, integrationId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "resource_type", runtime.ParamLocationPath, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v3/selectable-integrations/%s/%s/permissions", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2250,7 +2344,7 @@ func NewGetSelectablePermissionsRequest(server string, integrationId string, par
 }
 
 // NewGetSelectableResourcesRequest generates requests for GetSelectableResources
-func NewGetSelectableResourcesRequest(server string, integrationId string, params *GetSelectableResourcesParams) (*http.Request, error) {
+func NewGetSelectableResourcesRequest(server string, integrationId string, resourceType string, params *GetSelectableResourcesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2260,12 +2354,19 @@ func NewGetSelectableResourcesRequest(server string, integrationId string, param
 		return nil, err
 	}
 
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "resource_type", runtime.ParamLocationPath, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v3/selectable-integrations/%s/resources", pathParam0)
+	operationPath := fmt.Sprintf("/api/v3/selectable-integrations/%s/%s/resources", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2434,11 +2535,14 @@ type ClientWithResponsesInterface interface {
 	// GetSelectableIntegrations request
 	GetSelectableIntegrationsWithResponse(ctx context.Context, params *GetSelectableIntegrationsParams, reqEditors ...RequestEditorFn) (*GetSelectableIntegrationsResponse, error)
 
+	// GetSelectableResourceTypes request
+	GetSelectableResourceTypesWithResponse(ctx context.Context, integrationId string, params *GetSelectableResourceTypesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourceTypesResponse, error)
+
 	// GetSelectablePermissions request
-	GetSelectablePermissionsWithResponse(ctx context.Context, integrationId string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*GetSelectablePermissionsResponse, error)
+	GetSelectablePermissionsWithResponse(ctx context.Context, integrationId string, resourceType string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*GetSelectablePermissionsResponse, error)
 
 	// GetSelectableResources request
-	GetSelectableResourcesWithResponse(ctx context.Context, integrationId string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourcesResponse, error)
+	GetSelectableResourcesWithResponse(ctx context.Context, integrationId string, resourceType string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourcesResponse, error)
 }
 
 type ListConnectorsResponse struct {
@@ -3013,6 +3117,28 @@ func (r GetSelectableIntegrationsResponse) StatusCode() int {
 	return 0
 }
 
+type GetSelectableResourceTypesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedResponseSelectableResourceTypeV3
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSelectableResourceTypesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSelectableResourceTypesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetSelectablePermissionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3331,9 +3457,18 @@ func (c *ClientWithResponses) GetSelectableIntegrationsWithResponse(ctx context.
 	return ParseGetSelectableIntegrationsResponse(rsp)
 }
 
+// GetSelectableResourceTypesWithResponse request returning *GetSelectableResourceTypesResponse
+func (c *ClientWithResponses) GetSelectableResourceTypesWithResponse(ctx context.Context, integrationId string, params *GetSelectableResourceTypesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourceTypesResponse, error) {
+	rsp, err := c.GetSelectableResourceTypes(ctx, integrationId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSelectableResourceTypesResponse(rsp)
+}
+
 // GetSelectablePermissionsWithResponse request returning *GetSelectablePermissionsResponse
-func (c *ClientWithResponses) GetSelectablePermissionsWithResponse(ctx context.Context, integrationId string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*GetSelectablePermissionsResponse, error) {
-	rsp, err := c.GetSelectablePermissions(ctx, integrationId, params, reqEditors...)
+func (c *ClientWithResponses) GetSelectablePermissionsWithResponse(ctx context.Context, integrationId string, resourceType string, params *GetSelectablePermissionsParams, reqEditors ...RequestEditorFn) (*GetSelectablePermissionsResponse, error) {
+	rsp, err := c.GetSelectablePermissions(ctx, integrationId, resourceType, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -3341,8 +3476,8 @@ func (c *ClientWithResponses) GetSelectablePermissionsWithResponse(ctx context.C
 }
 
 // GetSelectableResourcesWithResponse request returning *GetSelectableResourcesResponse
-func (c *ClientWithResponses) GetSelectableResourcesWithResponse(ctx context.Context, integrationId string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourcesResponse, error) {
-	rsp, err := c.GetSelectableResources(ctx, integrationId, params, reqEditors...)
+func (c *ClientWithResponses) GetSelectableResourcesWithResponse(ctx context.Context, integrationId string, resourceType string, params *GetSelectableResourcesParams, reqEditors ...RequestEditorFn) (*GetSelectableResourcesResponse, error) {
+	rsp, err := c.GetSelectableResources(ctx, integrationId, resourceType, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -4015,6 +4150,32 @@ func ParseGetSelectableIntegrationsResponse(rsp *http.Response) (*GetSelectableI
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaginatedResponseSelectableIntegrationV3
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSelectableResourceTypesResponse parses an HTTP response from a GetSelectableResourceTypesWithResponse call
+func ParseGetSelectableResourceTypesResponse(rsp *http.Response) (*GetSelectableResourceTypesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSelectableResourceTypesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedResponseSelectableResourceTypeV3
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

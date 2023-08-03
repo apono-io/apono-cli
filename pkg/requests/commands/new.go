@@ -11,6 +11,7 @@ import (
 
 const (
 	integrationFlagName   = "integration"
+	resourceTypeFlagName  = "resource-type"
 	resourceFlagName      = "resource"
 	permissionFlagName    = "permission"
 	justificationFlagName = "justification"
@@ -18,6 +19,7 @@ const (
 
 func New() *cobra.Command {
 	req := aponoapi.CreateAccessRequest{}
+	var resourceType string
 	cmd := &cobra.Command{
 		Use:     "request",
 		GroupID: Group.ID,
@@ -41,10 +43,12 @@ func New() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&req.IntegrationId, integrationFlagName, "i", "", "integration id or name")
+	flags.StringVarP(&resourceType, resourceTypeFlagName, "t", "", "resource type")
 	flags.StringSliceVarP(&req.ResourceIds, resourceFlagName, "r", []string{}, "resource id")
 	flags.StringSliceVarP(&req.Permissions, permissionFlagName, "p", []string{}, "permission name")
 	flags.StringVarP(&req.Justification, justificationFlagName, "j", "", justificationFlagName)
 	_ = cmd.MarkFlagRequired(integrationFlagName)
+	_ = cmd.MarkFlagRequired(resourceTypeFlagName)
 	_ = cmd.MarkFlagRequired(resourceFlagName)
 	_ = cmd.MarkFlagRequired(permissionFlagName)
 	_ = cmd.MarkFlagRequired(justificationFlagName)
@@ -76,13 +80,33 @@ func New() *cobra.Command {
 		})
 	})
 
-	_ = cmd.RegisterFlagCompletionFunc(resourceFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	_ = cmd.RegisterFlagCompletionFunc(resourceTypeFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if req.IntegrationId == "" {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
 		return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-			resp, err := client.GetSelectableResourcesWithResponse(cmd.Context(), req.IntegrationId, &aponoapi.GetSelectableResourcesParams{})
+			resp, err := client.GetSelectableResourceTypesWithResponse(cmd.Context(), req.IntegrationId, &aponoapi.GetSelectableResourceTypesParams{})
+			if err != nil {
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available resource types:", err)
+				return nil, cobra.ShellCompDirectiveError
+			}
+
+			return filterOptions[aponoapi.SelectableResourceType](resp.JSON200.Data, func(val aponoapi.SelectableResourceType) string { return val.Id }, toComplete), cobra.ShellCompDirectiveDefault
+		})
+	})
+
+	_ = cmd.RegisterFlagCompletionFunc(resourceFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if req.IntegrationId == "" {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		if resourceType == "" {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
+			resp, err := client.GetSelectableResourcesWithResponse(cmd.Context(), req.IntegrationId, resourceType, &aponoapi.GetSelectableResourcesParams{})
 			if err != nil {
 				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available resources:", err)
 				return nil, cobra.ShellCompDirectiveError
@@ -97,8 +121,12 @@ func New() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
+		if resourceType == "" {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
 		return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-			resp, err := client.GetSelectablePermissionsWithResponse(cmd.Context(), req.IntegrationId, &aponoapi.GetSelectablePermissionsParams{})
+			resp, err := client.GetSelectablePermissionsWithResponse(cmd.Context(), req.IntegrationId, resourceType, &aponoapi.GetSelectablePermissionsParams{})
 			if err != nil {
 				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available permissions:", err)
 				return nil, cobra.ShellCompDirectiveError
