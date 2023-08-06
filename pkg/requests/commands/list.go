@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apono-io/apono-sdk-go"
+
 	"github.com/gookit/color"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -45,18 +47,17 @@ func List() *cobra.Command {
 }
 
 func showRequestStatus(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
-	resp, err := client.GetAccessRequestWithResponse(cmd.Context(), requestID)
+	resp, _, err := client.AccessRequestsApi.GetAccessRequest(cmd.Context(), requestID).Execute()
 	if err != nil {
 		return err
 	}
 
-	accessRequest := resp.JSON200
-	return printAccessRequestDetails(cmd, client, accessRequest)
+	return printAccessRequestDetails(cmd, client, resp)
 }
 
-func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient, accessRequest *aponoapi.AccessRequest) error {
+func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient, accessRequest *apono.AccessRequest) error {
 	integrationID := accessRequest.IntegrationId
-	integrationResp, err := client.GetIntegrationV2WithResponse(cmd.Context(), integrationID)
+	integrationResp, _, err := client.IntegrationsApi.GetIntegrationV2(cmd.Context(), integrationID).Execute()
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient,
 	table.Wrap = true
 	table.AddRow("ID:", accessRequest.FriendlyRequestId)
 	table.AddRow("Status:", coloredStatus(accessRequest.Status))
-	table.AddRow("Integration:", integrationResp.JSON200.Name)
+	table.AddRow("Integration:", integrationResp.Name)
 	table.AddRow("Resources:", strings.Join(accessRequest.ResourceIds, ", "))
 	table.AddRow("Permissions:", strings.Join(accessRequest.Permissions, ", "))
 	table.AddRow("Justification:", accessRequest.Justification)
@@ -80,7 +81,7 @@ func printAccessRequestDetails(cmd *cobra.Command, client *aponoapi.AponoClient,
 	return err
 }
 
-func buildNewRequestCommand(accessRequest *aponoapi.AccessRequest) string {
+func buildNewRequestCommand(accessRequest *apono.AccessRequest) string {
 	return fmt.Sprintf("apono request -i %s -r %s -p %s -j \"%s\"",
 		accessRequest.IntegrationId, strings.Join(accessRequest.ResourceIds, ","),
 		strings.Join(accessRequest.Permissions, ","), accessRequest.Justification)
@@ -115,25 +116,25 @@ func showRequestsSummary(cmd *cobra.Command, client *aponoapi.AponoClient, daysO
 	return err
 }
 
-func listRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset int64) ([]aponoapi.AccessRequest, error) {
-	resp, err := client.ListAccessRequestsWithResponse(ctx, &aponoapi.ListAccessRequestsParams{
-		DaysOffset: &daysOffset,
-		UserId:     &client.Session.UserID,
-	})
+func listRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset int64) ([]apono.AccessRequest, error) {
+	resp, _, err := client.AccessRequestsApi.ListAccessRequests(ctx).
+		DaysOffset(daysOffset).
+		UserId(client.Session.UserID).
+		Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.JSON200.Data, nil
+	return resp.Data, nil
 }
 
 func listIntegrations(ctx context.Context, client *aponoapi.AponoClient) (map[string]string, error) {
-	resp, err := client.ListIntegrationsV2WithResponse(ctx)
+	resp, _, err := client.IntegrationsApi.ListIntegrationsV2(ctx).Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	data := resp.JSON200.Data
+	data := resp.Data
 	integrations := make(map[string]string)
 	for _, integration := range data {
 		integrations[integration.Id] = integration.Name
@@ -142,18 +143,18 @@ func listIntegrations(ctx context.Context, client *aponoapi.AponoClient) (map[st
 	return integrations, nil
 }
 
-func coloredStatus(status aponoapi.AccessStatusModel) string {
+func coloredStatus(status apono.AccessStatusModel) string {
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
-	case aponoapi.AccessStatusModelPENDING:
+	case apono.ACCESSSTATUSMODEL_PENDING:
 		return color.Yellow.Sprint(statusTitle)
-	case aponoapi.AccessStatusModelAPPROVED:
+	case apono.ACCESSSTATUSMODEL_APPROVED:
 		return color.HiYellow.Sprint(statusTitle)
-	case aponoapi.AccessStatusModelGRANTED:
+	case apono.ACCESSSTATUSMODEL_GRANTED:
 		return color.Green.Sprint(statusTitle)
-	case aponoapi.AccessStatusModelREJECTED, aponoapi.AccessStatusModelREVOKING, aponoapi.AccessStatusModelEXPIRED:
+	case apono.ACCESSSTATUSMODEL_REJECTED, apono.ACCESSSTATUSMODEL_REVOKING, apono.ACCESSSTATUSMODEL_EXPIRED:
 		return color.Gray.Sprint(statusTitle)
-	case aponoapi.AccessStatusModelFAILED:
+	case apono.ACCESSSTATUSMODEL_FAILED:
 		return color.Red.Sprint(statusTitle)
 	default:
 		return statusTitle

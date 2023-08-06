@@ -2,12 +2,11 @@ package aponoapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"net/url"
 
+	"github.com/apono-io/apono-sdk-go"
 	"golang.org/x/oauth2"
 
 	"github.com/apono-io/apono-cli/pkg/config"
@@ -16,7 +15,7 @@ import (
 var ErrProfileNotExists = errors.New("profile not exists")
 
 type AponoClient struct {
-	*ClientWithResponses
+	*apono.APIClient
 	Session *Session
 }
 
@@ -48,16 +47,21 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	})
 
 	oauthHTTPClient := oauth2.NewClient(ctx, ts)
-	client, err := NewClientWithResponses(
-		sessionCfg.ApiURL,
-		WithHTTPClient(&aponoHTTPClient{client: oauthHTTPClient}),
-	)
+
+	endpointURL, err := url.Parse(sessionCfg.ApiURL)
+	clientCfg := apono.NewConfiguration()
+	clientCfg.Scheme = endpointURL.Scheme
+	clientCfg.Host = endpointURL.Host
+	clientCfg.UserAgent = fmt.Sprintf("apono-cli/%s", "p.version")
+	clientCfg.HTTPClient = oauthHTTPClient
+
+	client := apono.NewAPIClient(clientCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create apono client: %w", err)
 	}
 
 	return &AponoClient{
-		ClientWithResponses: client,
+		APIClient: client,
 		Session: &Session{
 			AccountID: sessionCfg.AccountID,
 			UserID:    sessionCfg.UserID,
@@ -75,33 +79,4 @@ func saveOAuthToken(profileName string, t *oauth2.Token) error {
 	sessionCfg.Token = *t
 	cfg.Auth.Profiles[config.ProfileName(profileName)] = sessionCfg
 	return config.Save(cfg)
-}
-
-type aponoHTTPClient struct {
-	client *http.Client
-}
-
-func (a *aponoHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != 200 {
-		bodyBytes, err := io.ReadAll(resp.Body)
-		defer func() { _ = resp.Body.Close() }()
-		if err != nil {
-			return nil, err
-		}
-
-		message := string(bodyBytes)
-		messageResponse := new(MessageResponse)
-		if jsonErr := json.Unmarshal(bodyBytes, messageResponse); jsonErr == nil {
-			message = messageResponse.Message
-		}
-
-		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, message)
-	}
-
-	return resp, nil
 }
