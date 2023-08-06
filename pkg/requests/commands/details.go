@@ -29,11 +29,11 @@ func Details() *cobra.Command {
 }
 
 func showAccessDetails(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
-	resp, err := client.GetAccessRequestDetailsWithResponse(cmd.Context(), requestID)
+	resp, _, err := client.AccessRequestsApi.GetAccessRequestDetails(cmd.Context(), requestID).Execute()
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), resp.JSON200.Details)
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), resp.Details)
 	return err
 }
