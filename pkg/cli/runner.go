@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
-
+	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
-	"github.com/apono-io/apono-cli/pkg/requests"
-
-	"github.com/spf13/cobra"
-
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/auth"
+	"github.com/apono-io/apono-cli/pkg/integrations"
+	"github.com/apono-io/apono-cli/pkg/requests"
 )
 
 func NewRunner(opts *RunnerOptions) (*Runner, error) {
@@ -21,6 +19,7 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 		opts:    opts,
 		configurators: []Configurator{
 			&auth.Configurator{},
+			&integrations.Configurator{},
 			&requests.Configurator{},
 		},
 	}
