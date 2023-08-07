@@ -34,7 +34,7 @@ builds:
     gcflags:
       - all=-trimpath={{ if index .Env "GITHUB_WORKSPACE"  }}{{.Env.GITHUB_WORKSPACE}}{{ else }}{{.Env.PWD}}{{ end }}
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+      - -s -w -X build.Version=v{{.Version}} -X build.Commit={{.ShortCommit}} -X build.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:

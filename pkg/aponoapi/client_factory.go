@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/apono-io/apono-cli/pkg/build"
+
 	"github.com/apono-io/apono-sdk-go"
 	"golang.org/x/oauth2"
 
@@ -52,7 +54,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	clientCfg := apono.NewConfiguration()
 	clientCfg.Scheme = endpointURL.Scheme
 	clientCfg.Host = endpointURL.Host
-	clientCfg.UserAgent = fmt.Sprintf("apono-cli/%s", "p.version")
+	clientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
 	clientCfg.HTTPClient = oauthHTTPClient
 
 	client := apono.NewAPIClient(clientCfg)

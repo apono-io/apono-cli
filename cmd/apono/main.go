@@ -5,23 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/cli"
-)
-
-var (
-	commit  = "dev"
-	date    = time.Now().String()
-	version = "0.0.0"
 )
 
 func main() {
 	runner, err := cli.NewRunner(&cli.RunnerOptions{
 		VersionInfo: cli.VersionInfo{
-			BuildDate: date,
-			Commit:    commit,
-			Version:   version,
+			BuildDate: build.Date,
+			Commit:    build.Commit,
+			Version:   build.Version,
 		},
 	})
 	if err != nil {
