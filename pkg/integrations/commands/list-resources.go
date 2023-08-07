@@ -28,9 +28,9 @@ func ListResources() *cobra.Command {
 			}
 
 			table := uitable.New()
-			table.AddRow("ID", "TYPE", "NAME")
+			table.AddRow("ID", "NAME")
 			for _, resource := range resp.Data {
-				table.AddRow(resource.Id, resource.Type, resource.Name)
+				table.AddRow(resource.Id, resource.Name)
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)

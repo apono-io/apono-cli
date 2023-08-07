@@ -4,10 +4,6 @@ import (
 	"fmt"
 
 	"github.com/apono-io/apono-sdk-go"
-	"github.com/gookit/color"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
@@ -41,33 +37,21 @@ func ListIntegrations() *cobra.Command {
 			}
 
 			table := uitable.New()
-			table.AddRow("INTEGRATION ID", "TYPE", "NAME", "STATUS")
+			table.AddRow("ID", "TYPE", "NAME")
 			for _, integrationID := range selectableIntegrationsResp.Data {
 				if integration, ok := integrations[integrationID.Id]; ok {
-					table.AddRow(integration.Id, integration.Type, integration.Name, coloredStatus(integration.Status))
+					table.AddRow(integration.Id, integration.Type, integration.Name)
 				}
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-			return err
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
 	return cmd
-}
-
-func coloredStatus(status apono.IntegrationStatus) string {
-	statusTitle := cases.Title(language.English).String(string(status))
-	switch status {
-	case apono.INTEGRATIONSTATUS_ACTIVE:
-		return color.Green.Sprint(statusTitle)
-	case apono.INTEGRATIONSTATUS_ERROR:
-		return color.Red.Sprint(statusTitle)
-	case apono.INTEGRATIONSTATUS_WARNING, apono.INTEGRATIONSTATUS_REFRESHING:
-		return color.Yellow.Sprint(statusTitle)
-	case apono.INTEGRATIONSTATUS_INITIALIZING, apono.INTEGRATIONSTATUS_DISABLED:
-		return color.Gray.Sprint(statusTitle)
-	default:
-		return statusTitle
-	}
 }
