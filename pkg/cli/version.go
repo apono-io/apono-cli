@@ -26,7 +26,7 @@ func VersionCommand(info VersionInfo) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch *format {
 			case output.Plain:
-				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Version: v%s\n", info.Version)
+				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Version: %s\n", info.Version)
 				return err
 			case output.JSONFormat:
 				encoder := json.NewEncoder(cmd.OutOrStdout())

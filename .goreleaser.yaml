@@ -34,7 +34,7 @@ builds:
     gcflags:
       - all=-trimpath={{ if index .Env "GITHUB_WORKSPACE"  }}{{.Env.GITHUB_WORKSPACE}}{{ else }}{{.Env.PWD}}{{ end }}
     ldflags:
-      - -s -w -X build.Version=v{{.Version}} -X build.Commit={{.ShortCommit}} -X build.Date={{.Date}}
+      - -s -w -X github.com/apono-io/apono-cli/build.Version=v{{.Version}} -X github.com/apono-io/apono-cli/build.Commit={{.ShortCommit}} -X github.com/apono-io/apono-cli/build.Date={{.Date}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
