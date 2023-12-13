@@ -3,8 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/access"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
@@ -22,7 +20,6 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 			&auth.Configurator{},
 			&integrations.Configurator{},
 			&requests.Configurator{},
-			&access.Configurator{},
 		},
 	}
 	err := r.init()

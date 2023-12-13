@@ -15,6 +15,6 @@ exec openapi-generator-cli generate \
   --generator-name go \
   --input-spec api/openapi.json \
   --git-user-id apono-io \
-  --git-repo-id apono-sdk-go \
+  --git-repo-id apono-cli \
   --output "$PROJECT_ROOT" \
   --config "$PROJECT_ROOT/config.yaml"
