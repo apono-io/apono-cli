@@ -51,10 +51,14 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 
 	oauthHTTPClient := oauth2.NewClient(ctx, ts)
 
-	adminAPIEndpointURL, err := url.Parse(sessionCfg.ApiURL)
+	endpointURL, err := url.Parse(sessionCfg.ApiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing url %s with error: %w", sessionCfg.ApiURL, err)
+	}
+
 	adminAPIClientCfg := apono.NewConfiguration()
-	adminAPIClientCfg.Scheme = adminAPIEndpointURL.Scheme
-	adminAPIClientCfg.Host = adminAPIEndpointURL.Host
+	adminAPIClientCfg.Scheme = endpointURL.Scheme
+	adminAPIClientCfg.Host = endpointURL.Host
 	adminAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
 	adminAPIClientCfg.HTTPClient = oauthHTTPClient
 
@@ -63,14 +67,13 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, fmt.Errorf("failed to create apono client: %w", err)
 	}
 
-	clientAPIEndpointURL, err := url.Parse(sessionCfg.ClientAPIURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clientapi client: %w", err)
 	}
 
 	clientAPIClientCfg := clientapi.NewConfiguration()
-	clientAPIClientCfg.Scheme = clientAPIEndpointURL.Scheme
-	clientAPIClientCfg.Host = clientAPIEndpointURL.Host
+	clientAPIClientCfg.Scheme = endpointURL.Scheme
+	clientAPIClientCfg.Host = endpointURL.Host
 	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
 	clientAPIClientCfg.HTTPClient = oauthHTTPClient
 	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
