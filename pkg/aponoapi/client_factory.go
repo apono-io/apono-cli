@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"net/url"
-
-	"github.com/apono-io/apono-cli/pkg/build"
 
 	"github.com/apono-io/apono-sdk-go"
 	"golang.org/x/oauth2"
 
+	"github.com/apono-io/apono-cli/pkg/build"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 )
 
