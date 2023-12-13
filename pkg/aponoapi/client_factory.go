@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"net/url"
 
 	"github.com/apono-io/apono-cli/pkg/build"
@@ -18,7 +19,8 @@ var ErrProfileNotExists = errors.New("profile not exists")
 
 type AponoClient struct {
 	*apono.APIClient
-	Session *Session
+	ClientAPI *clientapi.APIClient
+	Session   *Session
 }
 
 type Session struct {
@@ -62,8 +64,21 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, fmt.Errorf("failed to create apono client: %w", err)
 	}
 
+	clientAPIEndpointURL, err := url.Parse(sessionCfg.PortalURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create clientapi client: %w", err)
+	}
+
+	clientAPIClientCfg := clientapi.NewConfiguration()
+	clientAPIClientCfg.Scheme = clientAPIEndpointURL.Scheme
+	clientAPIClientCfg.Host = clientAPIEndpointURL.Host
+	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	clientAPIClientCfg.HTTPClient = oauthHTTPClient
+	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
+
 	return &AponoClient{
 		APIClient: client,
+		ClientAPI: clientAPI,
 		Session: &Session{
 			AccountID: sessionCfg.AccountID,
 			UserID:    sessionCfg.UserID,
