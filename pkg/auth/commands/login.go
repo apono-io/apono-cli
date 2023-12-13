@@ -18,20 +18,18 @@ import (
 )
 
 const (
-	clientIDFlagName     = "client-id"
-	apiURLFlagName       = "api-url"
-	appURLFlagName       = "app-url"
-	clientApiURLFlagName = "client-api-url"
+	clientIDFlagName = "client-id"
+	apiURLFlagName   = "api-url"
+	appURLFlagName   = "app-url"
 )
 
 func Login() *cobra.Command {
 	var (
-		profileName  string
-		verbose      bool
-		clientID     string
-		apiURL       string
-		appApiURL    string
-		clientApiURL string
+		profileName string
+		verbose     bool
+		clientID    string
+		apiURL      string
+		appURL      string
 	)
 
 	cmd := &cobra.Command{
@@ -41,8 +39,7 @@ func Login() *cobra.Command {
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL = strings.TrimLeft(apiURL, "/")
-			appApiURL = strings.TrimLeft(appApiURL, "/")
-			clientApiURL = strings.TrimLeft(clientApiURL, "/")
+			appURL = strings.TrimLeft(appURL, "/")
 			pkce, err := oauth2params.NewPKCE()
 			if err != nil {
 				return fmt.Errorf("failed to create code challenge: %w", err)
@@ -54,8 +51,8 @@ func Login() *cobra.Command {
 				OAuth2Config: oauth2.Config{
 					ClientID: clientID,
 					Endpoint: oauth2.Endpoint{
-						AuthURL:   config.GetOAuthAuthURL(appApiURL),
-						TokenURL:  config.GetOAuthTokenURL(appApiURL),
+						AuthURL:   config.GetOAuthAuthURL(appURL),
+						TokenURL:  config.GetOAuthTokenURL(appURL),
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
@@ -95,7 +92,7 @@ func Login() *cobra.Command {
 					return fmt.Errorf("could not get a token: %w", err)
 				}
 
-				session, err := storeProfileToken(profileName, clientID, apiURL, appApiURL, clientApiURL, token)
+				session, err := storeProfileToken(profileName, clientID, apiURL, appURL, token)
 				if err != nil {
 					return fmt.Errorf("could not store access token: %w", err)
 				}
@@ -116,16 +113,14 @@ func Login() *cobra.Command {
 	flags.BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	flags.StringVarP(&clientID, clientIDFlagName, "", "3afae9ff-48e6-45f3-b0e8-37658b7271b7", "oauth client id")
 	flags.StringVarP(&apiURL, apiURLFlagName, "", "https://api.apono.io", "apono api url")
-	flags.StringVarP(&appApiURL, appURLFlagName, "", "https://app.apono.io", "apono app url")
-	flags.StringVarP(&clientApiURL, clientApiURLFlagName, "", "https://portal.apono.io", "portal url")
+	flags.StringVarP(&appURL, appURLFlagName, "", "https://app.apono.io", "apono app url")
 	_ = flags.MarkHidden(clientIDFlagName)
 	_ = flags.MarkHidden(apiURLFlagName)
 	_ = flags.MarkHidden(appURLFlagName)
-	_ = flags.MarkHidden(clientApiURLFlagName)
 	return cmd
 }
 
-func storeProfileToken(profileName, clientID, apiURL, appURL, clientApiURL string, token *oauth2.Token) (*config.SessionConfig, error) {
+func storeProfileToken(profileName, clientID, apiURL, appURL string, token *oauth2.Token) (*config.SessionConfig, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -156,14 +151,13 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, clientApiURL strin
 	}
 
 	session := config.SessionConfig{
-		ClientID:     clientID,
-		ApiURL:       apiURL,
-		AppURL:       appURL,
-		ClientApiURL: clientApiURL,
-		AccountID:    claims.AccountID,
-		UserID:       claims.UserID,
-		Token:        *token,
-		CreatedAt:    time.Now(),
+		ClientID:  clientID,
+		ApiURL:    apiURL,
+		AppURL:    appURL,
+		AccountID: claims.AccountID,
+		UserID:    claims.UserID,
+		Token:     *token,
+		CreatedAt: time.Now(),
 	}
 	cfg.Auth.Profiles[pn] = session
 
