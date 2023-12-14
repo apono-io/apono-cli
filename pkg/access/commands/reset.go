@@ -10,9 +10,9 @@ import (
 
 func AccessReset() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "reset [id]",
+		Use:     "reset-credentials [id]",
 		GroupID: Group.ID,
-		Short:   "List all access sessions",
+		Short:   "Reset access session credentials",
 		Args:    cobra.ExactArgs(1), // This will enforce that exactly 1 argument must be provided
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())

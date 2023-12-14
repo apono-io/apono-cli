@@ -17,7 +17,7 @@ func AccessDetails() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "use [id]",
 		GroupID: Group.ID,
-		Short:   "List all access sessions",
+		Short:   "Get access session details",
 		Args:    cobra.ExactArgs(1), // This will enforce that exactly 1 argument must be provided
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
