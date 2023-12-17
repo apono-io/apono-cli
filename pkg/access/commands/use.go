@@ -116,12 +116,12 @@ func executeAccessDetails(ctx context.Context, client *aponoapi.AponoClient, acc
 
 	err := verifyOutputFormatIsSupported(ctx, client, accessID, cliOutputFormat)
 	if err != nil {
-		return fmt.Errorf("--run flag is not supported for access id %s", accessID)
+		return fmt.Errorf("--run flag is not supported for session id %s", accessID)
 	}
 
 	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, accessID).Execute()
 	if err != nil {
-		return fmt.Errorf("error getting access details for access id %s: %w", accessID, err)
+		return fmt.Errorf("error getting access details for session id %s: %w", accessID, err)
 	}
 
 	cmd := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()) //nolint:gosec // This is a command that should be executed for the user
