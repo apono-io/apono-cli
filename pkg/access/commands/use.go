@@ -105,7 +105,7 @@ func verifyOutputFormatIsSupported(ctx context.Context, client *aponoapi.AponoCl
 
 func executeAccessDetails(ctx context.Context, accessDetails *clientapi.AccessSessionDetailsClientModel) error {
 	if accessDetails.GetCli() == "" {
-		return errors.New("not executable access details")
+		return errors.New("access details does not support cli execution")
 	}
 
 	err := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()).Run() //nolint:gosec // This is a command that should be executed for the user
