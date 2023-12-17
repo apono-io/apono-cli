@@ -6,7 +6,6 @@ api_inventory.go
 client.go
 configuration.go
 model_access_details_client_model.go
-model_access_details_client_model_link.go
 model_access_group_client_model.go
 model_access_group_status.go
 model_access_group_status_client_model.go
@@ -18,6 +17,8 @@ model_access_request_template_type_client_model.go
 model_access_requests_scope_model.go
 model_access_session_client_model.go
 model_access_session_client_model_credentials.go
+model_access_session_details_client_model.go
+model_access_session_details_client_model_link.go
 model_access_sessions_group_client_model.go
 model_access_sessions_group_client_model_integration.go
 model_access_status.go
@@ -36,6 +37,7 @@ model_create_access_request_client_model.go
 model_create_and_update_access_request_template_client_model.go
 model_credentials_client_model.go
 model_icons_config_client_model.go
+model_instruction_client_model.go
 model_integration_client_model.go
 model_link_client_model.go
 model_message_response.go

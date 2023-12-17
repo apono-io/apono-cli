@@ -15,37 +15,37 @@ import (
 	"fmt"
 )
 
-// checks if the LinkClientModel type satisfies the MappedNullable interface at compile time
-var _ MappedNullable = &LinkClientModel{}
+// checks if the AccessSessionDetailsClientModelLink type satisfies the MappedNullable interface at compile time
+var _ MappedNullable = &AccessSessionDetailsClientModelLink{}
 
-// LinkClientModel struct for LinkClientModel
-type LinkClientModel struct {
+// AccessSessionDetailsClientModelLink struct for AccessSessionDetailsClientModelLink
+type AccessSessionDetailsClientModelLink struct {
 	Url   string         `json:"url"`
 	Title NullableString `json:"title,omitempty"`
 }
 
-type _LinkClientModel LinkClientModel
+type _AccessSessionDetailsClientModelLink AccessSessionDetailsClientModelLink
 
-// NewLinkClientModel instantiates a new LinkClientModel object
+// NewAccessSessionDetailsClientModelLink instantiates a new AccessSessionDetailsClientModelLink object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewLinkClientModel(url string) *LinkClientModel {
-	this := LinkClientModel{}
+func NewAccessSessionDetailsClientModelLink(url string) *AccessSessionDetailsClientModelLink {
+	this := AccessSessionDetailsClientModelLink{}
 	this.Url = url
 	return &this
 }
 
-// NewLinkClientModelWithDefaults instantiates a new LinkClientModel object
+// NewAccessSessionDetailsClientModelLinkWithDefaults instantiates a new AccessSessionDetailsClientModelLink object
 // This constructor will only assign default values to properties that have it defined,
 // but it doesn't guarantee that properties required by API are set
-func NewLinkClientModelWithDefaults() *LinkClientModel {
-	this := LinkClientModel{}
+func NewAccessSessionDetailsClientModelLinkWithDefaults() *AccessSessionDetailsClientModelLink {
+	this := AccessSessionDetailsClientModelLink{}
 	return &this
 }
 
 // GetUrl returns the Url field value
-func (o *LinkClientModel) GetUrl() string {
+func (o *AccessSessionDetailsClientModelLink) GetUrl() string {
 	if o == nil {
 		var ret string
 		return ret
@@ -56,7 +56,7 @@ func (o *LinkClientModel) GetUrl() string {
 
 // GetUrlOk returns a tuple with the Url field value
 // and a boolean to check if the value has been set.
-func (o *LinkClientModel) GetUrlOk() (*string, bool) {
+func (o *AccessSessionDetailsClientModelLink) GetUrlOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -64,12 +64,12 @@ func (o *LinkClientModel) GetUrlOk() (*string, bool) {
 }
 
 // SetUrl sets field value
-func (o *LinkClientModel) SetUrl(v string) {
+func (o *AccessSessionDetailsClientModelLink) SetUrl(v string) {
 	o.Url = v
 }
 
 // GetTitle returns the Title field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *LinkClientModel) GetTitle() string {
+func (o *AccessSessionDetailsClientModelLink) GetTitle() string {
 	if o == nil || IsNil(o.Title.Get()) {
 		var ret string
 		return ret
@@ -80,7 +80,7 @@ func (o *LinkClientModel) GetTitle() string {
 // GetTitleOk returns a tuple with the Title field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 // NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *LinkClientModel) GetTitleOk() (*string, bool) {
+func (o *AccessSessionDetailsClientModelLink) GetTitleOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -88,7 +88,7 @@ func (o *LinkClientModel) GetTitleOk() (*string, bool) {
 }
 
 // HasTitle returns a boolean if a field has been set.
-func (o *LinkClientModel) HasTitle() bool {
+func (o *AccessSessionDetailsClientModelLink) HasTitle() bool {
 	if o != nil && o.Title.IsSet() {
 		return true
 	}
@@ -97,21 +97,21 @@ func (o *LinkClientModel) HasTitle() bool {
 }
 
 // SetTitle gets a reference to the given NullableString and assigns it to the Title field.
-func (o *LinkClientModel) SetTitle(v string) {
+func (o *AccessSessionDetailsClientModelLink) SetTitle(v string) {
 	o.Title.Set(&v)
 }
 
 // SetTitleNil sets the value for Title to be an explicit nil
-func (o *LinkClientModel) SetTitleNil() {
+func (o *AccessSessionDetailsClientModelLink) SetTitleNil() {
 	o.Title.Set(nil)
 }
 
 // UnsetTitle ensures that no value is present for Title, not even an explicit nil
-func (o *LinkClientModel) UnsetTitle() {
+func (o *AccessSessionDetailsClientModelLink) UnsetTitle() {
 	o.Title.Unset()
 }
 
-func (o LinkClientModel) MarshalJSON() ([]byte, error) {
+func (o AccessSessionDetailsClientModelLink) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
@@ -119,7 +119,7 @@ func (o LinkClientModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(toSerialize)
 }
 
-func (o LinkClientModel) ToMap() (map[string]interface{}, error) {
+func (o AccessSessionDetailsClientModelLink) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["url"] = o.Url
 	if o.Title.IsSet() {
@@ -128,7 +128,7 @@ func (o LinkClientModel) ToMap() (map[string]interface{}, error) {
 	return toSerialize, nil
 }
 
-func (o *LinkClientModel) UnmarshalJSON(bytes []byte) (err error) {
+func (o *AccessSessionDetailsClientModelLink) UnmarshalJSON(bytes []byte) (err error) {
 	// This validates that all required properties are included in the JSON object
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
@@ -150,51 +150,51 @@ func (o *LinkClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		}
 	}
 
-	varLinkClientModel := _LinkClientModel{}
+	varAccessSessionDetailsClientModelLink := _AccessSessionDetailsClientModelLink{}
 
-	err = json.Unmarshal(bytes, &varLinkClientModel)
+	err = json.Unmarshal(bytes, &varAccessSessionDetailsClientModelLink)
 
 	if err != nil {
 		return err
 	}
 
-	*o = LinkClientModel(varLinkClientModel)
+	*o = AccessSessionDetailsClientModelLink(varAccessSessionDetailsClientModelLink)
 
 	return err
 }
 
-type NullableLinkClientModel struct {
-	value *LinkClientModel
+type NullableAccessSessionDetailsClientModelLink struct {
+	value *AccessSessionDetailsClientModelLink
 	isSet bool
 }
 
-func (v NullableLinkClientModel) Get() *LinkClientModel {
+func (v NullableAccessSessionDetailsClientModelLink) Get() *AccessSessionDetailsClientModelLink {
 	return v.value
 }
 
-func (v *NullableLinkClientModel) Set(val *LinkClientModel) {
+func (v *NullableAccessSessionDetailsClientModelLink) Set(val *AccessSessionDetailsClientModelLink) {
 	v.value = val
 	v.isSet = true
 }
 
-func (v NullableLinkClientModel) IsSet() bool {
+func (v NullableAccessSessionDetailsClientModelLink) IsSet() bool {
 	return v.isSet
 }
 
-func (v *NullableLinkClientModel) Unset() {
+func (v *NullableAccessSessionDetailsClientModelLink) Unset() {
 	v.value = nil
 	v.isSet = false
 }
 
-func NewNullableLinkClientModel(val *LinkClientModel) *NullableLinkClientModel {
-	return &NullableLinkClientModel{value: val, isSet: true}
+func NewNullableAccessSessionDetailsClientModelLink(val *AccessSessionDetailsClientModelLink) *NullableAccessSessionDetailsClientModelLink {
+	return &NullableAccessSessionDetailsClientModelLink{value: val, isSet: true}
 }
 
-func (v NullableLinkClientModel) MarshalJSON() ([]byte, error) {
+func (v NullableAccessSessionDetailsClientModelLink) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v.value)
 }
 
-func (v *NullableLinkClientModel) UnmarshalJSON(src []byte) error {
+func (v *NullableAccessSessionDetailsClientModelLink) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }

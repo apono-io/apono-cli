@@ -130,7 +130,7 @@ type ApiGetAccessSessionAccessDetailsRequest struct {
 	id         string
 }
 
-func (r ApiGetAccessSessionAccessDetailsRequest) Execute() (*AccessDetailsClientModel, *http.Response, error) {
+func (r ApiGetAccessSessionAccessDetailsRequest) Execute() (*AccessSessionDetailsClientModel, *http.Response, error) {
 	return r.ApiService.GetAccessSessionAccessDetailsExecute(r)
 }
 
@@ -151,13 +151,13 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetails(ctx context.Con
 
 // Execute executes the request
 //
-//	@return AccessDetailsClientModel
-func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGetAccessSessionAccessDetailsRequest) (*AccessDetailsClientModel, *http.Response, error) {
+//	@return AccessSessionDetailsClientModel
+func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGetAccessSessionAccessDetailsRequest) (*AccessSessionDetailsClientModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *AccessDetailsClientModel
+		localVarReturnValue *AccessSessionDetailsClientModel
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessSessionsAPIService.GetAccessSessionAccessDetails")
@@ -376,11 +376,12 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 }
 
 type ApiListAccessSessionsGroupsRequest struct {
-	ctx        context.Context
-	ApiService *AccessSessionsAPIService
-	limit      *int32
-	search     *string
-	skip       *int32
+	ctx              context.Context
+	ApiService       *AccessSessionsAPIService
+	limit            *int32
+	search           *string
+	sessionsPageSize *int32
+	skip             *int32
 }
 
 func (r ApiListAccessSessionsGroupsRequest) Limit(limit int32) ApiListAccessSessionsGroupsRequest {
@@ -390,6 +391,11 @@ func (r ApiListAccessSessionsGroupsRequest) Limit(limit int32) ApiListAccessSess
 
 func (r ApiListAccessSessionsGroupsRequest) Search(search string) ApiListAccessSessionsGroupsRequest {
 	r.search = &search
+	return r
+}
+
+func (r ApiListAccessSessionsGroupsRequest) SessionsPageSize(sessionsPageSize int32) ApiListAccessSessionsGroupsRequest {
+	r.sessionsPageSize = &sessionsPageSize
 	return r
 }
 
@@ -445,6 +451,12 @@ func (a *AccessSessionsAPIService) ListAccessSessionsGroupsExecute(r ApiListAcce
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionsPageSize != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "sessions-page-size", r.sessionsPageSize, "")
+	} else {
+		var defaultValue int32 = 10
+		r.sessionsPageSize = &defaultValue
 	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
@@ -512,7 +524,7 @@ type ApiResetAccessSessionCredentialsRequest struct {
 	id         string
 }
 
-func (r ApiResetAccessSessionCredentialsRequest) Execute() (*AccessDetailsClientModel, *http.Response, error) {
+func (r ApiResetAccessSessionCredentialsRequest) Execute() (*MessageResponse, *http.Response, error) {
 	return r.ApiService.ResetAccessSessionCredentialsExecute(r)
 }
 
@@ -533,13 +545,13 @@ func (a *AccessSessionsAPIService) ResetAccessSessionCredentials(ctx context.Con
 
 // Execute executes the request
 //
-//	@return AccessDetailsClientModel
-func (a *AccessSessionsAPIService) ResetAccessSessionCredentialsExecute(r ApiResetAccessSessionCredentialsRequest) (*AccessDetailsClientModel, *http.Response, error) {
+//	@return MessageResponse
+func (a *AccessSessionsAPIService) ResetAccessSessionCredentialsExecute(r ApiResetAccessSessionCredentialsRequest) (*MessageResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *AccessDetailsClientModel
+		localVarReturnValue *MessageResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessSessionsAPIService.ResetAccessSessionCredentials")

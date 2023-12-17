@@ -657,6 +657,15 @@
             }
           },
           {
+            "name": "sessions-page-size",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 10,
+              "type": "integer"
+            }
+          },
+          {
             "name": "skip",
             "in": "query",
             "schema": {
@@ -799,7 +808,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccessDetailsClientModel"
+                  "$ref": "#/components/schemas/AccessSessionDetailsClientModel"
                 }
               }
             }
@@ -830,7 +839,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccessDetailsClientModel"
+                  "$ref": "#/components/schemas/MessageResponse"
                 }
               }
             }
@@ -1232,45 +1241,20 @@
     "schemas": {
       "AccessDetailsClientModel": {
         "required": [
-          "instructions",
-          "instructions_md",
-          "can_reset_credentials",
           "plain",
-          "markdown"
+          "markdown",
+          "can_reset_credentials"
         ],
         "type": "object",
         "properties": {
-          "instructions": {
-            "type": "string"
-          },
-          "instructions_md": {
-            "type": "string"
-          },
-          "can_reset_credentials": {
-            "type": "boolean"
-          },
-          "credentials": {
-            "type": "object",
-            "nullable": true
-          },
-          "cli": {
-            "type": "string",
-            "nullable": true
-          },
-          "link": {
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LinkClientModel"
-              }
-            ],
-            "nullable": true
-          },
           "plain": {
             "type": "string"
           },
           "markdown": {
             "type": "string"
+          },
+          "can_reset_credentials": {
+            "type": "boolean"
           }
         }
       },
@@ -1488,6 +1472,43 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "AccessSessionDetailsClientModel": {
+        "required": [
+          "instructions"
+        ],
+        "type": "object",
+        "properties": {
+          "credentials": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CredentialsClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/InstructionClientModel"
+          },
+          "json": {
+            "type": "object",
+            "nullable": true
+          },
+          "cli": {
+            "type": "string",
+            "nullable": true
+          },
+          "link": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkClientModel"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -1815,6 +1836,21 @@
         "type": "number",
         "example": "{seconds}.{nanos}"
       },
+      "InstructionClientModel": {
+        "required": [
+          "plain",
+          "markdown"
+        ],
+        "type": "object",
+        "properties": {
+          "plain": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          }
+        }
+      },
       "IntegrationClientModel": {
         "required": [
           "id",
@@ -1844,16 +1880,16 @@
       },
       "LinkClientModel": {
         "required": [
-          "url",
-          "label"
+          "url"
         ],
         "type": "object",
         "properties": {
           "url": {
             "type": "string"
           },
-          "label": {
-            "type": "string"
+          "title": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
