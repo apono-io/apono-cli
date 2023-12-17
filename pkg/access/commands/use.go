@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -42,7 +41,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if execute {
-				return executeAccessDetails(cmd.Context(), accessDetails)
+				return executeAccessDetails(cmd.Context(), accessID, accessDetails)
 			}
 
 			err = verifyOutputFormatIsSupported(cmd.Context(), client, accessID, outputFormat)
@@ -103,9 +102,9 @@ func verifyOutputFormatIsSupported(ctx context.Context, client *aponoapi.AponoCl
 	return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
 }
 
-func executeAccessDetails(ctx context.Context, accessDetails *clientapi.AccessSessionDetailsClientModel) error {
+func executeAccessDetails(ctx context.Context, accessID string, accessDetails *clientapi.AccessSessionDetailsClientModel) error {
 	if accessDetails.GetCli() == "" {
-		return errors.New("access details does not support cli execution")
+		return fmt.Errorf("access session with id %s does not support cli execution", accessID)
 	}
 
 	err := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()).Run() //nolint:gosec // This is a command that should be executed for the user
