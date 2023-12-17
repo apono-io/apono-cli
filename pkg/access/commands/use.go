@@ -59,11 +59,7 @@ func AccessDetails() *cobra.Command {
 			var output string
 			switch outputFormat {
 			case cliOutputFormat:
-				if accessDetails.GetCli() != "" {
-					output = accessDetails.GetCli()
-				} else {
-					output = accessDetails.Instructions.Plain
-				}
+				output = accessDetails.Instructions.Plain
 			case linkOutputFormat:
 				link := accessDetails.GetLink()
 				output = link.GetUrl()
@@ -88,7 +84,7 @@ func AccessDetails() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&outputFormat, outputFlagName, "o", "cli", "output format")
+	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", "output format")
 	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "output format")
 
 	return cmd
