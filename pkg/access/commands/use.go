@@ -1,26 +1,33 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
 const (
 	outputFlagName = "output"
 	runFlagName    = "run"
+
+	cliOutputFormat          = "cli"
+	linkOutputFormat         = "link"
+	instructionsOutputFormat = "instructions"
+	jsonOutputFormat         = "json"
 )
 
 func AccessDetails() *cobra.Command {
 	var outputFormat string
-	var run bool
+	var shouldExecuteAccessCommand bool
 
 	cmd := &cobra.Command{
 		Use:     "use [id]",
@@ -35,13 +42,8 @@ func AccessDetails() *cobra.Command {
 
 			accessID := args[0]
 
-			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cmd.Context(), accessID).Execute()
-			if err != nil {
-				return err
-			}
-
-			if run {
-				return executeAccessDetails(cmd.Context(), accessID, accessDetails)
+			if shouldExecuteAccessCommand {
+				return executeAccessDetails(cmd.Context(), client, accessID)
 			}
 
 			err = verifyOutputFormatIsSupported(cmd.Context(), client, accessID, outputFormat)
@@ -49,20 +51,25 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
+			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cmd.Context(), accessID).Execute()
+			if err != nil {
+				return err
+			}
+
 			var output string
 			switch outputFormat {
-			case "cli":
+			case cliOutputFormat:
 				if accessDetails.GetCli() != "" {
 					output = accessDetails.GetCli()
 				} else {
 					output = accessDetails.Instructions.Plain
 				}
-			case "link":
+			case linkOutputFormat:
 				link := accessDetails.GetLink()
 				output = link.GetUrl()
-			case "instructions":
+			case instructionsOutputFormat:
 				output = accessDetails.Instructions.Plain
-			case "json":
+			case jsonOutputFormat:
 				var outputBytes []byte
 				outputBytes, err = json.Marshal(accessDetails.Credentials)
 				if err != nil {
@@ -82,7 +89,7 @@ func AccessDetails() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&outputFormat, outputFlagName, "o", "cli", "output format")
-	flags.BoolVarP(&run, runFlagName, "r", false, "output format")
+	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "output format")
 
 	return cmd
 }
@@ -102,14 +109,27 @@ func verifyOutputFormatIsSupported(ctx context.Context, client *aponoapi.AponoCl
 	return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
 }
 
-func executeAccessDetails(ctx context.Context, accessID string, accessDetails *clientapi.AccessSessionDetailsClientModel) error {
-	if accessDetails.GetCli() == "" {
+func executeAccessDetails(ctx context.Context, client *aponoapi.AponoClient, accessID string) error {
+	if runtime.GOOS == "windows" {
+		return errors.New("--run flag is not supported on windows")
+	}
+
+	err := verifyOutputFormatIsSupported(ctx, client, accessID, cliOutputFormat)
+	if err != nil {
 		return fmt.Errorf("--run flag is not supported for access id %s", accessID)
 	}
 
-	err := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()).Run() //nolint:gosec // This is a command that should be executed for the user
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, accessID).Execute()
 	if err != nil {
-		return fmt.Errorf("error executing command:\n%s\n%w", accessDetails.GetCli(), err)
+		return fmt.Errorf("error getting access details for access id %s: %w", accessID, err)
+	}
+
+	cmd := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()) //nolint:gosec // This is a command that should be executed for the user
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing command:\n%s\n%s", accessDetails.GetCli(), stderr.String())
 	}
 
 	return nil
