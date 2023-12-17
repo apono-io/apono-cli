@@ -39,7 +39,7 @@ func AccessDetails() *cobra.Command {
 				link := accessDetails.GetLink()
 				output = link.GetUrl()
 			case "instructions":
-				output = accessDetails.Instructions
+				output = accessDetails.Instructions.Plain
 			case "json":
 				outputBytes, _ := json.Marshal(accessDetails)
 				output = string(outputBytes)

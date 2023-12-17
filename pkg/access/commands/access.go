@@ -12,7 +12,7 @@ func Access() *cobra.Command {
 		GroupID: Group.ID,
 		Short:   "Access sessions root command",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("you must specify a subcommand: use, list, reset")
+			fmt.Println("you must specify a subcommand: use, list, reset-credentials")
 			return nil
 		},
 	}
