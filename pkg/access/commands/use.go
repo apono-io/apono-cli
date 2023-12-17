@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	outputFlagName  = "output"
-	executeFlagName = "run"
+	outputFlagName = "output"
+	runFlagName    = "run"
 )
 
 func AccessDetails() *cobra.Command {
 	var outputFormat string
-	var execute bool
+	var run bool
 
 	cmd := &cobra.Command{
 		Use:     "use [id]",
@@ -40,7 +40,7 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
-			if execute {
+			if run {
 				return executeAccessDetails(cmd.Context(), accessID, accessDetails)
 			}
 
@@ -82,7 +82,7 @@ func AccessDetails() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&outputFormat, outputFlagName, "o", "cli", "output format")
-	flags.BoolVarP(&execute, executeFlagName, "r", false, "output format")
+	flags.BoolVarP(&run, runFlagName, "r", false, "output format")
 
 	return cmd
 }
@@ -104,7 +104,7 @@ func verifyOutputFormatIsSupported(ctx context.Context, client *aponoapi.AponoCl
 
 func executeAccessDetails(ctx context.Context, accessID string, accessDetails *clientapi.AccessSessionDetailsClientModel) error {
 	if accessDetails.GetCli() == "" {
-		return fmt.Errorf("access session with id %s does not support cli execution", accessID)
+		return fmt.Errorf("--run flag is not supported for access id %s", accessID)
 	}
 
 	err := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()).Run() //nolint:gosec // This is a command that should be executed for the user
