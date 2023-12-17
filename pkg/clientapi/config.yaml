@@ -1,0 +1,4 @@
+enablePostProcessFile: true
+additionalProperties:
+  enumClassPrefix: true
+  packageName: clientapi

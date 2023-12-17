@@ -1,0 +1,2225 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Apono",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Apono Client Api"
+    }
+  ],
+  "security": [
+    {
+      "Authorization": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Access Groups"
+    },
+    {
+      "name": "Access Request Templates"
+    },
+    {
+      "name": "Access Requests"
+    },
+    {
+      "name": "Access Sessions"
+    },
+    {
+      "name": "Inventory"
+    }
+  ],
+  "paths": {
+    "/api/client/v1/access-groups/{id}/details": {
+      "get": {
+        "tags": [
+          "Access Groups"
+        ],
+        "summary": "Get access group details",
+        "operationId": "getAccessGroupDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDetailsClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-groups/{id}/reset": {
+      "post": {
+        "tags": [
+          "Access Groups"
+        ],
+        "summary": "Reset access group credentials",
+        "operationId": "resetAccessGroupCredentials",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-groups/{id}/units": {
+      "get": {
+        "tags": [
+          "Access Groups"
+        ],
+        "summary": "Get access group units",
+        "operationId": "getAccessGroupUnits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "integration-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "resource-type-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessUnitClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-request-templates": {
+      "get": {
+        "tags": [
+          "Access Request Templates"
+        ],
+        "summary": "List access request templates",
+        "operationId": "listAccessRequestTemplates",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessRequestTemplateClientModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Access Request Templates"
+        ],
+        "summary": "Create access request template",
+        "operationId": "createAccessRequestTemplate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAndUpdateAccessRequestTemplateClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestTemplateClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-request-templates/{id}": {
+      "get": {
+        "tags": [
+          "Access Request Templates"
+        ],
+        "summary": "Get access request template by ID",
+        "operationId": "getAccessRequestTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter-available",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestTemplateClientModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Access Request Templates"
+        ],
+        "summary": "Update access request template",
+        "operationId": "updateAccessRequestTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAndUpdateAccessRequestTemplateClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestTemplateClientModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Access Request Templates"
+        ],
+        "summary": "Delete access request template",
+        "operationId": "deleteAccessRequestTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "List access requests",
+        "operationId": "listAccessRequests",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AccessRequestsScopeModel"
+                },
+                {
+                  "default": "MyRequests"
+                }
+              ]
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "statuses",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AccessStatus"
+              },
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessRequestClientModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Create user access request",
+        "operationId": "createUserAccessRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessRequestClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Get access request",
+        "operationId": "getAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}/approve": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Approve access request",
+        "operationId": "approveAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalResultClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}/reject": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Reject access request",
+        "operationId": "rejectAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalResultClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}/request-again": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "request again access request",
+        "operationId": "requestAgainAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestAgainClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}/revoke": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Revoke access request",
+        "operationId": "revokeAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-session-groups": {
+      "get": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "List access sessions groups",
+        "operationId": "listAccessSessionsGroups",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessSessionsGroupClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-sessions": {
+      "get": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "List access sessions",
+        "operationId": "listAccessSessions",
+        "parameters": [
+          {
+            "name": "credentials_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessSessionClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-sessions/{id}": {
+      "get": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "Get access session",
+        "operationId": "getAccessSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSessionClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-sessions/{id}/access-details": {
+      "get": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "Get access session details",
+        "operationId": "getAccessSessionAccessDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDetailsClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-sessions/{id}/reset-credentials": {
+      "post": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "Reset access session credentials",
+        "operationId": "resetAccessSessionCredentials",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDetailsClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/access-units": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List access units",
+        "operationId": "listAccessUnits",
+        "parameters": [
+          {
+            "name": "bundle-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "integration-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "permission-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "resource-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "resource-type-ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAccessUnitClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/bundles": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List access bundles",
+        "operationId": "listAccessBundles",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelBundleClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/integrations": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List integrations",
+        "operationId": "listIntegration",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelIntegrationClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/permissions": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List permissions",
+        "operationId": "listPermissions",
+        "parameters": [
+          {
+            "name": "integration-id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "resource-type-id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelPermissionClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/resource-types": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List resource types",
+        "operationId": "listResourceTypes",
+        "parameters": [
+          {
+            "name": "integration-id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelResourceTypeClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/inventory/resources": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "List resources",
+        "operationId": "listResources",
+        "parameters": [
+          {
+            "name": "integration-id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "resource-type-id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelResourceClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessDetailsClientModel": {
+        "required": [
+          "instructions",
+          "instructions_md",
+          "can_reset_credentials",
+          "plain",
+          "markdown"
+        ],
+        "type": "object",
+        "properties": {
+          "instructions": {
+            "type": "string"
+          },
+          "instructions_md": {
+            "type": "string"
+          },
+          "can_reset_credentials": {
+            "type": "boolean"
+          },
+          "credentials": {
+            "type": "object",
+            "nullable": true
+          },
+          "cli": {
+            "type": "string",
+            "nullable": true
+          },
+          "link": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "plain": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessGroupClientModel": {
+        "required": [
+          "integration",
+          "resource_types",
+          "id",
+          "has_new_credentials",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "integration": {
+            "$ref": "#/components/schemas/IntegrationClientModel"
+          },
+          "resource_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeClientModel"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "has_new_credentials": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AccessGroupStatusClientModel"
+          }
+        }
+      },
+      "AccessGroupStatus": {
+        "enum": [
+          "Success",
+          "Failure",
+          "Warning"
+        ],
+        "type": "string"
+      },
+      "AccessGroupStatusClientModel": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AccessGroupStatus"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AccessRequestClientModel": {
+        "required": [
+          "id",
+          "requestor",
+          "creation_time",
+          "status",
+          "access_groups"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "requestor": {
+            "$ref": "#/components/schemas/UserClientModel"
+          },
+          "creation_time": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "revocation_time": {
+            "type": "number",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatusClientModel"
+          },
+          "justification": {
+            "type": "string",
+            "nullable": true
+          },
+          "access_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessGroupClientModel"
+            }
+          },
+          "bundle": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BundleClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "challenge": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChallengeInfoClientModel"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "AccessRequestTemplateClientModel": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "integrations",
+          "resource_types",
+          "resources",
+          "permissions",
+          "create_date"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AccessRequestTemplateTypeClientModel"
+          },
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationClientModel"
+            }
+          },
+          "resource_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeClientModel"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceClientModel"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionClientModel"
+            }
+          },
+          "create_date": {
+            "$ref": "#/components/schemas/Instant"
+          }
+        }
+      },
+      "AccessRequestTemplateTypeClientModel": {
+        "enum": [
+          "IntegrationRequest"
+        ],
+        "type": "string"
+      },
+      "AccessRequestsScopeModel": {
+        "enum": [
+          "MyRequests",
+          "MyTasks"
+        ],
+        "type": "string"
+      },
+      "AccessSessionClientModel": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "integration",
+          "connection_methods"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SessionTypeClientModel"
+          },
+          "integration": {
+            "$ref": "#/components/schemas/IntegrationClientModel"
+          },
+          "credentials": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CredentialsClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "connection_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AccessSessionsGroupClientModel": {
+        "required": [
+          "total",
+          "sessions"
+        ],
+        "type": "object",
+        "properties": {
+          "integration": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "total": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessSessionClientModel"
+            }
+          }
+        }
+      },
+      "AccessStatus": {
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "GRANTED",
+          "REVOKING",
+          "EXPIRED",
+          "FAILED"
+        ],
+        "type": "string"
+      },
+      "AccessUnitClientModel": {
+        "required": [
+          "id",
+          "resource",
+          "permission"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceClientModel"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionClientModel"
+          },
+          "status": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccessUnitStatusClientModel"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "AccessUnitStatusClient": {
+        "enum": [
+          "Granted",
+          "Failure",
+          "Pending",
+          "Revoked"
+        ],
+        "type": "string"
+      },
+      "AccessUnitStatusClientModel": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AccessUnitStatusClient"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ApprovalResultClientModel": {
+        "type": "object",
+        "properties": {
+          "justification": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "BundleClientModel": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ChallengeApproverClientModel": {
+        "required": [
+          "name",
+          "type",
+          "status",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ClientChallengeType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClientChallengeStatus"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ChallengeInfoClientModel": {
+        "required": [
+          "logical_relation",
+          "approvers"
+        ],
+        "type": "object",
+        "properties": {
+          "logical_relation": {
+            "$ref": "#/components/schemas/ClientChallengeLogicalRelation"
+          },
+          "approvers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChallengeApproverClientModel"
+            }
+          }
+        }
+      },
+      "ClientChallengeLogicalRelation": {
+        "enum": [
+          "AnyOf",
+          "AllOf"
+        ],
+        "type": "string"
+      },
+      "ClientChallengeStatus": {
+        "enum": [
+          "Approved",
+          "Rejected",
+          "Pending"
+        ],
+        "type": "string"
+      },
+      "ClientChallengeType": {
+        "enum": [
+          "User",
+          "Group",
+          "Shift",
+          "Manager"
+        ],
+        "type": "string"
+      },
+      "CreateAccessRequestClientModel": {
+        "required": [
+          "filter_integration_ids",
+          "filter_bundle_ids",
+          "filter_resource_type_ids",
+          "filter_resource_ids",
+          "filter_permission_ids",
+          "filter_access_unit_ids",
+          "justification"
+        ],
+        "type": "object",
+        "properties": {
+          "filter_integration_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_bundle_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_resource_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_permission_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_access_unit_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "justification": {
+            "type": "string"
+          },
+          "duration": {
+            "format": "int64",
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "CreateAndUpdateAccessRequestTemplateClientModel": {
+        "required": [
+          "name",
+          "type",
+          "filter_integration_ids",
+          "filter_resource_type_ids",
+          "filter_resource_ids",
+          "filter_permission_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AccessRequestTemplateTypeClientModel"
+          },
+          "filter_integration_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_resource_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filter_permission_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CredentialsClientModel": {
+        "required": [
+          "id",
+          "status",
+          "can_reset"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "can_reset": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IconsConfigClientModel": {
+        "required": [
+          "png",
+          "svg"
+        ],
+        "type": "object",
+        "properties": {
+          "png": {
+            "type": "string"
+          },
+          "svg": {
+            "type": "string"
+          }
+        }
+      },
+      "Instant": {
+        "format": "double",
+        "type": "number",
+        "example": "{seconds}.{nanos}"
+      },
+      "IntegrationClientModel": {
+        "required": [
+          "id",
+          "type",
+          "type_display_name",
+          "name",
+          "icons"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "type_display_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icons": {
+            "$ref": "#/components/schemas/IconsConfigClientModel"
+          }
+        }
+      },
+      "LinkClientModel": {
+        "required": [
+          "url",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "MessageResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAccessRequestClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessRequestClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAccessRequestTemplateClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessRequestTemplateClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAccessSessionClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessSessionClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAccessSessionsGroupClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessSessionsGroupClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAccessUnitClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessUnitClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelBundleClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BundleClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelIntegrationClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelPermissionClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelResourceClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelResourceTypeClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginationClientInfoModel": {
+        "required": [
+          "limit",
+          "offset"
+        ],
+        "type": "object",
+        "properties": {
+          "limit": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "offset": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int32",
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "PermissionClientModel": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "RequestAgainClientModel": {
+        "required": [
+          "justification"
+        ],
+        "type": "object",
+        "properties": {
+          "justification": {
+            "type": "string"
+          }
+        }
+      },
+      "RequestStatusClientModel": {
+        "required": [
+          "status",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AccessStatus"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ResourceClientModel": {
+        "required": [
+          "id",
+          "name",
+          "path",
+          "type",
+          "integration"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ResourceTypeClientModel"
+          },
+          "integration": {
+            "$ref": "#/components/schemas/IntegrationClientModel"
+          }
+        }
+      },
+      "ResourceTypeClientModel": {
+        "required": [
+          "id",
+          "name",
+          "display_path",
+          "allow_multiple_permissions",
+          "icons"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "display_path": {
+            "type": "string"
+          },
+          "allow_multiple_permissions": {
+            "type": "boolean"
+          },
+          "icons": {
+            "$ref": "#/components/schemas/IconsConfigClientModel"
+          }
+        }
+      },
+      "SessionTypeClientModel": {
+        "required": [
+          "id",
+          "name",
+          "icons"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icons": {
+            "$ref": "#/components/schemas/IconsConfigClientModel"
+          }
+        }
+      },
+      "UserClientModel": {
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "photo": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
