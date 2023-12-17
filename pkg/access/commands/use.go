@@ -52,7 +52,7 @@ func AccessDetails() *cobra.Command {
 				}
 				output = accessDetails.Instructions.Plain
 			case "json":
-				if accessDetails.Credentials == nil {
+				if accessDetails.Json == nil {
 					return errors.New("no output for format: json")
 				}
 				var outputBytes []byte

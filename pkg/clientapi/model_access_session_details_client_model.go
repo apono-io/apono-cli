@@ -20,8 +20,9 @@ var _ MappedNullable = &AccessSessionDetailsClientModel{}
 
 // AccessSessionDetailsClientModel struct for AccessSessionDetailsClientModel
 type AccessSessionDetailsClientModel struct {
+	Credentials  NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
 	Instructions InstructionClientModel                      `json:"instructions"`
-	Credentials  map[string]interface{}                      `json:"credentials,omitempty"`
+	Json         map[string]interface{}                      `json:"json,omitempty"`
 	Cli          NullableString                              `json:"cli,omitempty"`
 	Link         NullableAccessSessionDetailsClientModelLink `json:"link,omitempty"`
 }
@@ -44,6 +45,49 @@ func NewAccessSessionDetailsClientModel(instructions InstructionClientModel) *Ac
 func NewAccessSessionDetailsClientModelWithDefaults() *AccessSessionDetailsClientModel {
 	this := AccessSessionDetailsClientModel{}
 	return &this
+}
+
+// GetCredentials returns the Credentials field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionDetailsClientModel) GetCredentials() AccessSessionClientModelCredentials {
+	if o == nil || IsNil(o.Credentials.Get()) {
+		var ret AccessSessionClientModelCredentials
+		return ret
+	}
+	return *o.Credentials.Get()
+}
+
+// GetCredentialsOk returns a tuple with the Credentials field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessSessionDetailsClientModel) GetCredentialsOk() (*AccessSessionClientModelCredentials, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Credentials.Get(), o.Credentials.IsSet()
+}
+
+// HasCredentials returns a boolean if a field has been set.
+func (o *AccessSessionDetailsClientModel) HasCredentials() bool {
+	if o != nil && o.Credentials.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCredentials gets a reference to the given NullableAccessSessionClientModelCredentials and assigns it to the Credentials field.
+func (o *AccessSessionDetailsClientModel) SetCredentials(v AccessSessionClientModelCredentials) {
+	o.Credentials.Set(&v)
+}
+
+// SetCredentialsNil sets the value for Credentials to be an explicit nil
+func (o *AccessSessionDetailsClientModel) SetCredentialsNil() {
+	o.Credentials.Set(nil)
+}
+
+// UnsetCredentials ensures that no value is present for Credentials, not even an explicit nil
+func (o *AccessSessionDetailsClientModel) UnsetCredentials() {
+	o.Credentials.Unset()
 }
 
 // GetInstructions returns the Instructions field value
@@ -70,37 +114,37 @@ func (o *AccessSessionDetailsClientModel) SetInstructions(v InstructionClientMod
 	o.Instructions = v
 }
 
-// GetCredentials returns the Credentials field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *AccessSessionDetailsClientModel) GetCredentials() map[string]interface{} {
+// GetJson returns the Json field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionDetailsClientModel) GetJson() map[string]interface{} {
 	if o == nil {
 		var ret map[string]interface{}
 		return ret
 	}
-	return o.Credentials
+	return o.Json
 }
 
-// GetCredentialsOk returns a tuple with the Credentials field value if set, nil otherwise
+// GetJsonOk returns a tuple with the Json field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 // NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *AccessSessionDetailsClientModel) GetCredentialsOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.Credentials) {
+func (o *AccessSessionDetailsClientModel) GetJsonOk() (map[string]interface{}, bool) {
+	if o == nil || IsNil(o.Json) {
 		return map[string]interface{}{}, false
 	}
-	return o.Credentials, true
+	return o.Json, true
 }
 
-// HasCredentials returns a boolean if a field has been set.
-func (o *AccessSessionDetailsClientModel) HasCredentials() bool {
-	if o != nil && IsNil(o.Credentials) {
+// HasJson returns a boolean if a field has been set.
+func (o *AccessSessionDetailsClientModel) HasJson() bool {
+	if o != nil && IsNil(o.Json) {
 		return true
 	}
 
 	return false
 }
 
-// SetCredentials gets a reference to the given map[string]interface{} and assigns it to the Credentials field.
-func (o *AccessSessionDetailsClientModel) SetCredentials(v map[string]interface{}) {
-	o.Credentials = v
+// SetJson gets a reference to the given map[string]interface{} and assigns it to the Json field.
+func (o *AccessSessionDetailsClientModel) SetJson(v map[string]interface{}) {
+	o.Json = v
 }
 
 // GetCli returns the Cli field value if set, zero value otherwise (both if not set or set to explicit null).
@@ -199,9 +243,12 @@ func (o AccessSessionDetailsClientModel) MarshalJSON() ([]byte, error) {
 
 func (o AccessSessionDetailsClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if o.Credentials.IsSet() {
+		toSerialize["credentials"] = o.Credentials.Get()
+	}
 	toSerialize["instructions"] = o.Instructions
-	if o.Credentials != nil {
-		toSerialize["credentials"] = o.Credentials
+	if o.Json != nil {
+		toSerialize["json"] = o.Json
 	}
 	if o.Cli.IsSet() {
 		toSerialize["cli"] = o.Cli.Get()

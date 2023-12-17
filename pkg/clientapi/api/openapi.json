@@ -1481,10 +1481,19 @@
         ],
         "type": "object",
         "properties": {
+          "credentials": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CredentialsClientModel"
+              }
+            ],
+            "nullable": true
+          },
           "instructions": {
             "$ref": "#/components/schemas/InstructionClientModel"
           },
-          "credentials": {
+          "json": {
             "type": "object",
             "nullable": true
           },
