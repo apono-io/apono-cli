@@ -89,7 +89,7 @@ func AccessDetails() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", "output format")
+	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", cliOutputFormat, linkOutputFormat, instructionsOutputFormat, jsonOutputFormat))
 	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 
 	return cmd
