@@ -2,13 +2,14 @@ package commands
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 
 	"github.com/spf13/cobra"
 
@@ -40,18 +41,22 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
-			accessID := args[0]
+			sessionID := args[0]
+
+			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+			if err != nil {
+				return fmt.Errorf("access session with id %s not found", sessionID)
+			}
 
 			if shouldExecuteAccessCommand {
-				return executeAccessDetails(cmd.Context(), client, accessID)
+				return executeAccessDetails(cmd, client, session)
 			}
 
-			err = verifyOutputFormatIsSupported(cmd.Context(), client, accessID, outputFormat)
-			if err != nil {
-				return err
+			if !contains(session.ConnectionMethods, outputFormat) {
+				return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
 			}
 
-			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cmd.Context(), accessID).Execute()
+			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cmd.Context(), sessionID).Execute()
 			if err != nil {
 				return err
 			}
@@ -59,7 +64,7 @@ func AccessDetails() *cobra.Command {
 			var output string
 			switch outputFormat {
 			case cliOutputFormat:
-				output = accessDetails.Instructions.Plain
+				output = *accessDetails.Cli.Get()
 			case linkOutputFormat:
 				link := accessDetails.GetLink()
 				output = link.GetUrl()
@@ -67,7 +72,7 @@ func AccessDetails() *cobra.Command {
 				output = accessDetails.Instructions.Plain
 			case jsonOutputFormat:
 				var outputBytes []byte
-				outputBytes, err = json.Marshal(accessDetails.Credentials)
+				outputBytes, err = json.Marshal(accessDetails.Json)
 				if err != nil {
 					return err
 				}
@@ -85,48 +90,53 @@ func AccessDetails() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", "output format")
-	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "output format")
+	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 
 	return cmd
 }
 
-func verifyOutputFormatIsSupported(ctx context.Context, client *aponoapi.AponoClient, id string, outputFormat string) error {
-	session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, id).Execute()
-	if err != nil {
-		return fmt.Errorf("access session with id %s not found", id)
-	}
-
-	for _, supportedFormat := range session.ConnectionMethods {
-		if supportedFormat == outputFormat {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
-}
-
-func executeAccessDetails(ctx context.Context, client *aponoapi.AponoClient, accessID string) error {
+func executeAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
 	if runtime.GOOS == "windows" {
 		return errors.New("--run flag is not supported on windows")
 	}
 
-	err := verifyOutputFormatIsSupported(ctx, client, accessID, cliOutputFormat)
-	if err != nil {
-		return fmt.Errorf("--run flag is not supported for session id %s", accessID)
+	if !contains(session.ConnectionMethods, cliOutputFormat) {
+		return fmt.Errorf("--run flag is not supported for session id %s", session.Id)
 	}
 
-	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, accessID).Execute()
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).Execute()
 	if err != nil {
-		return fmt.Errorf("error getting access details for session id %s: %w", accessID, err)
+		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
 	}
 
-	cmd := exec.CommandContext(ctx, "sh", "-c", accessDetails.GetCli()) //nolint:gosec // This is a command that should be executed for the user
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	err = cmd.Run()
+	err = executeCommand(cobraCmd, accessDetails.GetCli())
 	if err != nil {
-		return fmt.Errorf("error executing command:\n%s\n%s", accessDetails.GetCli(), stderr.String())
+		return err
 	}
 
 	return nil
+}
+
+func executeCommand(cobraCmd *cobra.Command, command string) error {
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(cobraCmd.Context(), "sh", "-c", command)
+	cmd.Stdout = cobraCmd.OutOrStdout()
+	cmd.Stdin = cobraCmd.InOrStdin()
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing command:\n%s\n%s", command, stderr.String())
+	}
+
+	return nil
+}
+
+func contains(availableCommands []string, command string) bool {
+	for _, c := range availableCommands {
+		if command == c {
+			return true
+		}
+	}
+	return false
 }
