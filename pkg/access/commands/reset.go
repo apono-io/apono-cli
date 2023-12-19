@@ -11,7 +11,7 @@ import (
 
 const (
 	newCredentialsStatus = "new"
-	maxWaitAttempts      = 30
+	maxWaitTime          = 30 * time.Second
 )
 
 func AccessReset() *cobra.Command {
@@ -33,12 +33,12 @@ func AccessReset() *cobra.Command {
 				return err
 			}
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), "credentials reset request has been submitted, waiting until finished...")
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "credentials reset request has been submitted, waiting for new credentials...")
 			if err != nil {
 				return err
 			}
 
-			retries := 0
+			startTime := time.Now()
 			for {
 				session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
 				if err != nil {
@@ -51,8 +51,7 @@ func AccessReset() *cobra.Command {
 
 				time.Sleep(1 * time.Second)
 
-				retries++
-				if retries > maxWaitAttempts {
+				if time.Now().After(startTime.Add(maxWaitTime)) {
 					return fmt.Errorf("timeout while waiting for credentials to reset")
 				}
 			}
