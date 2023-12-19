@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -53,7 +52,7 @@ func AccessDetails() *cobra.Command {
 				return executeAccessDetails(cmd, client, session)
 			}
 
-			if !slices.Contains(session.ConnectionMethods, outputFormat) {
+			if !contains(session.ConnectionMethods, outputFormat) {
 				return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
 			}
 
@@ -101,7 +100,7 @@ func executeAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return errors.New("--run flag is not supported on windows")
 	}
 
-	if !slices.Contains(session.ConnectionMethods, cliOutputFormat) {
+	if !contains(session.ConnectionMethods, cliOutputFormat) {
 		return fmt.Errorf("--run flag is not supported for session id %s", session.Id)
 	}
 
@@ -131,4 +130,13 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 	}
 
 	return nil
+}
+
+func contains(availableCommands []string, command string) bool {
+	for _, c := range availableCommands {
+		if command == c {
+			return true
+		}
+	}
+	return false
 }
