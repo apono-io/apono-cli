@@ -1,6 +1,6 @@
 module github.com/apono-io/apono-cli
 
-go 1.21
+go 1.20
 
 require (
 	github.com/apono-io/apono-sdk-go v0.1.0-alpha2
