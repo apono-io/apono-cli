@@ -8,26 +8,25 @@ import (
 	"github.com/gosuri/uitable"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"strings"
 )
 
 func GenerateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
 	table := uitable.New()
 	table.AddRow("REQUEST ID", "CREATION DATE", "INTEGRATIONS", "JUSTIFICATION", "STATUS")
 	for _, request := range requests {
-		var integration string
-		for index, accessGroup := range request.AccessGroups {
-			if index != len(request.AccessGroups)-1 {
-				integration += accessGroup.Integration.Name + ", "
-			} else {
-				integration += accessGroup.Integration.Name
-			}
+		var requestIntegrations []string
+		for _, accessGroup := range request.AccessGroups {
+			requestIntegrations = append(requestIntegrations, accessGroup.Integration.Name)
 		}
-		if integration == "" {
-			integration = "UNKNOWN"
+
+		integrations := strings.Join(requestIntegrations, ", ")
+		if integrations == "" {
+			integrations = "UNKNOWN"
 		}
 
 		creationTime := ConvertUnixTimeToTime(request.CreationTime)
-		table.AddRow(request.Id, DisplayTime(creationTime), integration, *request.Justification.Get(), coloredStatus(request.Status.Status))
+		table.AddRow(request.Id, DisplayTime(creationTime), integrations, *request.Justification.Get(), coloredStatus(request.Status.Status))
 	}
 
 	return table
