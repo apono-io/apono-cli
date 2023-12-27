@@ -9,9 +9,12 @@ import (
 type Configurator struct{}
 
 func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
+	requestsRootCmd := commands.Requests()
+	rootCmd.AddCommand(requestsRootCmd)
 	rootCmd.AddGroup(commands.Group)
-	rootCmd.AddCommand(commands.List())
-	rootCmd.AddCommand(commands.New())
-	rootCmd.AddCommand(commands.Details())
+
+	requestsRootCmd.AddCommand(commands.List())
+	requestsRootCmd.AddCommand(commands.Describe())
+	requestsRootCmd.AddCommand(commands.New())
 	return nil
 }

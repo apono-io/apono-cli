@@ -23,9 +23,8 @@ func New() *cobra.Command {
 	req := apono.CreateAccessRequest{}
 	var resourceType string
 	cmd := &cobra.Command{
-		Use:     "request",
-		GroupID: Group.ID,
-		Short:   "New access request",
+		Use:   "create",
+		Short: "Create a new access request",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
