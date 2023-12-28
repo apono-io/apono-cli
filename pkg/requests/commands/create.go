@@ -28,8 +28,8 @@ func Create() *cobra.Command {
 	req.FilterBundleIds = []string{}
 	req.FilterAccessUnitIds = []string{}
 
-	var integrationIdOrName string
-	var bundleIdOrName string
+	var integrationIDOrName string
+	var bundleIDOrName string
 	var resourceType string
 
 	cmd := &cobra.Command{
@@ -41,12 +41,12 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			if integrationIdOrName == "" && bundleIdOrName == "" {
+			if integrationIDOrName == "" && bundleIDOrName == "" {
 				return fmt.Errorf("either integration or bundle must be specified")
 			}
 
-			if integrationIdOrName != "" {
-				integration, err := utils.GetIntegrationByIdOrTypePlusName(cmd.Context(), client, integrationIdOrName)
+			if integrationIDOrName != "" {
+				integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationIDOrName)
 				if err != nil {
 					return err
 				}
@@ -58,7 +58,7 @@ func Create() *cobra.Command {
 				req.FilterIntegrationIds = []string{}
 				req.FilterResourceTypeIds = []string{}
 
-				bundle, err := utils.GetBundleByNameOrId(cmd.Context(), client, bundleIdOrName)
+				bundle, err := utils.GetBundleByNameOrID(cmd.Context(), client, bundleIDOrName)
 				if err != nil {
 					return err
 				}
@@ -90,8 +90,8 @@ func Create() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&bundleIdOrName, bundleFlagName, "b", "", "The bundle id or name")
-	flags.StringVarP(&integrationIdOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws/My AWS integration\"")
+	flags.StringVarP(&bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
+	flags.StringVarP(&integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws/My AWS integration\"")
 	flags.StringVarP(&resourceType, resourceTypeFlagName, "t", "", "The resource type")
 	flags.StringSliceVarP(&req.FilterResourceIds, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&req.FilterPermissionIds, permissionFlagName, "p", []string{}, "The permission names")
@@ -106,15 +106,15 @@ func Create() *cobra.Command {
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(resourceTypeFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return resourceTypeAutocompleteFunc(cmd, integrationIdOrName, toComplete)
+		return resourceTypeAutocompleteFunc(cmd, integrationIDOrName, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(resourceFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return resourcesAutocompleteFunc(cmd, integrationIdOrName, resourceType, toComplete)
+		return resourcesAutocompleteFunc(cmd, integrationIDOrName, resourceType, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(permissionFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return permissionsAutocompleteFunc(cmd, integrationIdOrName, resourceType, toComplete)
+		return permissionsAutocompleteFunc(cmd, integrationIDOrName, resourceType, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(bundleFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -151,7 +151,7 @@ func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationID string, toCo
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIdOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -177,7 +177,7 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourc
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIdOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -203,7 +203,7 @@ func permissionsAutocompleteFunc(cmd *cobra.Command, integrationID string, resou
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIdOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -258,9 +258,9 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 }
 
 func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, userOldLastRequest *clientapi.AccessRequestClientModel) (*clientapi.AccessRequestClientModel, error) {
-	var userOldLastRequestId string
+	var userOldLastRequestID string
 	if userOldLastRequest != nil {
-		userOldLastRequestId = userOldLastRequest.Id
+		userOldLastRequestID = userOldLastRequest.Id
 	}
 
 	startTime := time.Now()
@@ -271,7 +271,7 @@ func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, userOld
 			return nil, err
 		}
 
-		if lastRequest.Id != userOldLastRequestId {
+		if lastRequest.Id != userOldLastRequestID {
 			newAccessRequest = lastRequest
 
 			break

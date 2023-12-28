@@ -8,7 +8,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-func GetBundleByNameOrId(ctx context.Context, client *aponoapi.AponoClient, bundleNameOrId string) (*clientapi.BundleClientModel, error) {
+func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bundleNameOrId string) (*clientapi.BundleClientModel, error) {
 	bundles, err := ListBundles(ctx, client)
 	if err != nil {
 		return nil, err

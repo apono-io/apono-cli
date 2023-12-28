@@ -26,10 +26,10 @@ func ListIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]clie
 	})
 }
 
-func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integrationId string) ([]clientapi.ResourceTypeClientModel, error) {
+func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integrationID string) ([]clientapi.ResourceTypeClientModel, error) {
 	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceTypeClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListResourceTypes(ctx).
-			IntegrationId(integrationId).
+			IntegrationId(integrationID).
 			Skip(skip).
 			Execute()
 		if err != nil {
@@ -40,10 +40,10 @@ func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integr
 	})
 }
 
-func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationId string, resourceType string) ([]clientapi.ResourceClientModel, error) {
+func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.ResourceClientModel, error) {
 	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListResources(ctx).
-			IntegrationId(integrationId).
+			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
 			Skip(skip).
 			Execute()
@@ -55,10 +55,10 @@ func ListResources(ctx context.Context, client *aponoapi.AponoClient, integratio
 	})
 }
 
-func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrationId string, resourceType string) ([]clientapi.PermissionClientModel, error) {
+func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.PermissionClientModel, error) {
 	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.PermissionClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListPermissions(ctx).
-			IntegrationId(integrationId).
+			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
 			Skip(skip).
 			Execute()
@@ -70,7 +70,7 @@ func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrat
 	})
 }
 
-func GetIntegrationByIdOrTypePlusName(ctx context.Context, client *aponoapi.AponoClient, integrationIdOrName string) (*clientapi.IntegrationClientModel, error) {
+func GetIntegrationByIDOrTypePlusName(ctx context.Context, client *aponoapi.AponoClient, integrationIdOrName string) (*clientapi.IntegrationClientModel, error) {
 	integrations, err := ListIntegrations(ctx, client)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func GetIntegrationByIdOrTypePlusName(ctx context.Context, client *aponoapi.Apon
 
 		integration = findIntegrationByTypeAndName(integrations, parts[0], parts[1])
 	} else {
-		integration = findIntegrationById(integrations, integrationIdOrName)
+		integration = findIntegrationByID(integrations, integrationIdOrName)
 	}
 
 	if integration == nil {
@@ -105,7 +105,7 @@ func findIntegrationByTypeAndName(integrations []clientapi.IntegrationClientMode
 	return nil
 }
 
-func findIntegrationById(integrations []clientapi.IntegrationClientModel, integrationId string) *clientapi.IntegrationClientModel {
+func findIntegrationByID(integrations []clientapi.IntegrationClientModel, integrationId string) *clientapi.IntegrationClientModel {
 	for _, integration := range integrations {
 		if integration.Id == integrationId {
 			return &integration
