@@ -1,9 +1,11 @@
 package commands
 
 import (
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 )
 
 func Describe() *cobra.Command {

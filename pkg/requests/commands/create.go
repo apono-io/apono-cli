@@ -46,7 +46,8 @@ func Create() *cobra.Command {
 			}
 
 			if integrationIDOrName != "" {
-				integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationIDOrName)
+				var integration *clientapi.IntegrationClientModel
+				integration, err = utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationIDOrName)
 				if err != nil {
 					return err
 				}
@@ -58,7 +59,8 @@ func Create() *cobra.Command {
 				req.FilterIntegrationIds = []string{}
 				req.FilterResourceTypeIds = []string{}
 
-				bundle, err := utils.GetBundleByNameOrID(cmd.Context(), client, bundleIDOrName)
+				var bundle *clientapi.BundleClientModel
+				bundle, err = utils.GetBundleByNameOrID(cmd.Context(), client, bundleIDOrName)
 				if err != nil {
 					return err
 				}
@@ -167,6 +169,7 @@ func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationID string, toCo
 	})
 }
 
+//nolint:dupl // remove duplication error
 func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationID == "" {
 		return nil, cobra.ShellCompDirectiveError
@@ -193,6 +196,7 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourc
 	})
 }
 
+//nolint:dupl // remove duplication error
 func permissionsAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationID == "" {
 		return nil, cobra.ShellCompDirectiveError

@@ -11,8 +11,7 @@ func GetAllPages[T any](ctx context.Context, client *aponoapi.AponoClient, nextP
 	var result []T
 
 	skip := 0
-	hasNextPage := true
-	for ok := true; ok; ok = hasNextPage {
+	for {
 		resp, pagination, err := nextPageFunc(ctx, client, int32(skip))
 		if err != nil {
 			return nil, err
@@ -20,8 +19,12 @@ func GetAllPages[T any](ctx context.Context, client *aponoapi.AponoClient, nextP
 
 		result = append(result, resp...)
 
-		hasNextPage = int(pagination.Limit) <= len(resp)
 		skip += int(pagination.Limit)
+
+		hasNextPage := int(pagination.Limit) <= len(resp)
+		if !hasNextPage {
+			break
+		}
 	}
 
 	return result, nil

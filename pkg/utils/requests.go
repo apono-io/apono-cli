@@ -61,8 +61,7 @@ func ListRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset 
 	var resultRequests []clientapi.AccessRequestClientModel
 
 	skip := 0
-	hasNextPage := true
-	for ok := true; ok; ok = hasNextPage {
+	for {
 		resp, _, err := client.ClientAPI.AccessRequestsAPI.ListAccessRequests(ctx).
 			Scope(clientapi.ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS).
 			Skip(int32(skip)).
@@ -78,7 +77,11 @@ func ListRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset 
 		}
 
 		skip += len(resp.Data)
-		hasNextPage = int(resp.Pagination.Limit) <= len(resp.Data) && len(resultRequests) == skip
+
+		hasNextPage := int(resp.Pagination.Limit) <= len(resp.Data) && len(resultRequests) == skip
+		if !hasNextPage {
+			break
+		}
 	}
 
 	return resultRequests, nil
