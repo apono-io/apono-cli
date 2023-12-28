@@ -169,7 +169,7 @@ func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationID string, toCo
 	})
 }
 
-//nolint:dupl // remove duplication error
+//nolint:dupl // Remove duplication error
 func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationID == "" {
 		return nil, cobra.ShellCompDirectiveError
@@ -196,7 +196,7 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourc
 	})
 }
 
-//nolint:dupl // remove duplication error
+//nolint:dupl // Remove duplication error
 func permissionsAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationID == "" {
 		return nil, cobra.ShellCompDirectiveError
