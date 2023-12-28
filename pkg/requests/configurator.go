@@ -15,6 +15,6 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 
 	requestsRootCmd.AddCommand(commands.List())
 	requestsRootCmd.AddCommand(commands.Describe())
-	requestsRootCmd.AddCommand(commands.New())
+	requestsRootCmd.AddCommand(commands.Create())
 	return nil
 }
