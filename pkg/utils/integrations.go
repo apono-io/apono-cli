@@ -70,26 +70,26 @@ func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrat
 	})
 }
 
-func GetIntegrationByIDOrTypePlusName(ctx context.Context, client *aponoapi.AponoClient, integrationIdOrName string) (*clientapi.IntegrationClientModel, error) {
+func GetIntegrationByIDOrTypePlusName(ctx context.Context, client *aponoapi.AponoClient, integrationIDOrName string) (*clientapi.IntegrationClientModel, error) {
 	integrations, err := ListIntegrations(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
 	var integration *clientapi.IntegrationClientModel
-	if strings.Contains(integrationIdOrName, integrationNameSeparator) {
-		parts := strings.Split(integrationIdOrName, integrationNameSeparator)
+	if strings.Contains(integrationIDOrName, integrationNameSeparator) {
+		parts := strings.Split(integrationIDOrName, integrationNameSeparator)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid integration name: %s", integrationIdOrName)
+			return nil, fmt.Errorf("invalid integration name: %s", integrationIDOrName)
 		}
 
 		integration = findIntegrationByTypeAndName(integrations, parts[0], parts[1])
 	} else {
-		integration = findIntegrationByID(integrations, integrationIdOrName)
+		integration = findIntegrationByID(integrations, integrationIDOrName)
 	}
 
 	if integration == nil {
-		return nil, fmt.Errorf("integration %s not found", integrationIdOrName)
+		return nil, fmt.Errorf("integration %s not found", integrationIDOrName)
 	}
 
 	return integration, nil
@@ -105,9 +105,9 @@ func findIntegrationByTypeAndName(integrations []clientapi.IntegrationClientMode
 	return nil
 }
 
-func findIntegrationByID(integrations []clientapi.IntegrationClientModel, integrationId string) *clientapi.IntegrationClientModel {
+func findIntegrationByID(integrations []clientapi.IntegrationClientModel, integrationID string) *clientapi.IntegrationClientModel {
 	for _, integration := range integrations {
-		if integration.Id == integrationId {
+		if integration.Id == integrationID {
 			return &integration
 		}
 	}

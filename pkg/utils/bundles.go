@@ -8,19 +8,19 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bundleNameOrId string) (*clientapi.BundleClientModel, error) {
+func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bundleNameOrID string) (*clientapi.BundleClientModel, error) {
 	bundles, err := ListBundles(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, bundle := range bundles {
-		if bundle.Name == bundleNameOrId || bundle.Id == bundleNameOrId {
+		if bundle.Name == bundleNameOrID || bundle.Id == bundleNameOrID {
 			return &bundle, nil
 		}
 	}
 
-	return nil, fmt.Errorf("bundle %s not found", bundleNameOrId)
+	return nil, fmt.Errorf("bundle %s not found", bundleNameOrID)
 }
 
 func ListBundles(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.BundleClientModel, error) {
