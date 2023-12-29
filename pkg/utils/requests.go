@@ -87,6 +87,38 @@ func ListRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset 
 	return resultRequests, nil
 }
 
+func ListAccessRequestAccessUnits(ctx context.Context, client *aponoapi.AponoClient, requestID string) ([]clientapi.AccessUnitClientModel, error) {
+	accessRequest, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var requestAccessUnits []clientapi.AccessUnitClientModel
+	for _, accessGroup := range accessRequest.AccessGroups {
+		groupAccessUnits, err := ListAccessGroupAccessUnits(ctx, client, accessGroup.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		requestAccessUnits = append(requestAccessUnits, groupAccessUnits...)
+	}
+
+	return requestAccessUnits, nil
+}
+
+func ListAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClient, accessGroupID string) ([]clientapi.AccessUnitClientModel, error) {
+	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessUnitClientModel, *clientapi.PaginationClientInfoModel, error) {
+		resp, _, err := client.ClientAPI.AccessGroupsAPI.GetAccessGroupUnits(ctx, accessGroupID).
+			Skip(skip).
+			Execute()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return resp.Data, &resp.Pagination, nil
+	})
+}
+
 func coloredStatus(status clientapi.AccessStatus) string {
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
