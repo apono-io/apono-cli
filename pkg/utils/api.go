@@ -2,6 +2,9 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -28,4 +31,19 @@ func GetAllPages[T any](ctx context.Context, client *aponoapi.AponoClient, nextP
 	}
 
 	return result, nil
+}
+
+func ReturnApiResponseError(resp *http.Response) error {
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		bodyString := string(bodyBytes)
+		return fmt.Errorf("api error: %s", bodyString)
+	}
+
+	return nil
 }

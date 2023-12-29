@@ -119,6 +119,18 @@ func ListAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClien
 	})
 }
 
+func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID string) error {
+	_, resp, err := client.ClientAPI.AccessRequestsAPI.RevokeAccessRequest(ctx, requestID).Execute()
+	if resp != nil {
+		apiError := ReturnApiResponseError(resp)
+		if apiError != nil {
+			return apiError
+		}
+	}
+
+	return err
+}
+
 func coloredStatus(status clientapi.AccessStatus) string {
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
