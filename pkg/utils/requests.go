@@ -122,7 +122,7 @@ func ListAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClien
 func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID string) error {
 	_, resp, err := client.ClientAPI.AccessRequestsAPI.RevokeAccessRequest(ctx, requestID).Execute()
 	if resp != nil {
-		apiError := ReturnApiResponseError(resp)
+		apiError := ReturnAPIResponseError(resp)
 		if apiError != nil {
 			return apiError
 		}

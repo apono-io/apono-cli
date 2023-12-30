@@ -2,12 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/utils"
+
 	"github.com/spf13/cobra"
-	"os"
-	"time"
 )
 
 const (

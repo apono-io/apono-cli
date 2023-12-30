@@ -33,8 +33,10 @@ func GetAllPages[T any](ctx context.Context, client *aponoapi.AponoClient, nextP
 	return result, nil
 }
 
-func ReturnApiResponseError(resp *http.Response) error {
-	defer resp.Body.Close()
+func ReturnAPIResponseError(resp *http.Response) error {
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
 		bodyBytes, err := io.ReadAll(resp.Body)
