@@ -2,12 +2,15 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-func GetAllPages[T any](
+func getAllPages[T any](
 	ctx context.Context,
 	client *aponoapi.AponoClient,
 	nextPageFunc func(context.Context, *aponoapi.AponoClient, int32) ([]T, *clientapi.PaginationClientInfoModel, error),
@@ -32,4 +35,21 @@ func GetAllPages[T any](
 	}
 
 	return result, nil
+}
+
+func returnAPIResponseError(resp *http.Response) error {
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		bodyString := string(bodyBytes)
+		return fmt.Errorf("api error: %s", bodyString)
+	}
+
+	return nil
 }

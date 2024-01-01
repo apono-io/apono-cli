@@ -14,7 +14,7 @@ const (
 )
 
 func ListIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.IntegrationClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.IntegrationClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.IntegrationClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListIntegration(ctx).
 			Skip(skip).
 			Execute()
@@ -27,7 +27,7 @@ func ListIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]clie
 }
 
 func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integrationID string) ([]clientapi.ResourceTypeClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceTypeClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceTypeClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListResourceTypes(ctx).
 			IntegrationId(integrationID).
 			Skip(skip).
@@ -41,7 +41,7 @@ func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integr
 }
 
 func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.ResourceClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListResources(ctx).
 			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
@@ -56,7 +56,7 @@ func ListResources(ctx context.Context, client *aponoapi.AponoClient, integratio
 }
 
 func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.PermissionClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.PermissionClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.PermissionClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListPermissions(ctx).
 			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
