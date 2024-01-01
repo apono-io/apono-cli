@@ -24,7 +24,7 @@ func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bund
 }
 
 func ListBundles(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.BundleClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.BundleClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.BundleClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListAccessBundles(ctx).
 			Skip(skip).
 			Execute()

@@ -107,7 +107,7 @@ func ListAccessRequestAccessUnits(ctx context.Context, client *aponoapi.AponoCli
 }
 
 func listAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClient, accessGroupID string) ([]clientapi.AccessUnitClientModel, error) {
-	return GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessUnitClientModel, *clientapi.PaginationClientInfoModel, error) {
+	return getAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessUnitClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.AccessGroupsAPI.GetAccessGroupUnits(ctx, accessGroupID).
 			Skip(skip).
 			Execute()
@@ -122,7 +122,7 @@ func listAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClien
 func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID string) error {
 	_, resp, err := client.ClientAPI.AccessRequestsAPI.RevokeAccessRequest(ctx, requestID).Execute()
 	if resp != nil {
-		apiError := ReturnAPIResponseError(resp)
+		apiError := returnAPIResponseError(resp)
 		if apiError != nil {
 			return apiError
 		}
