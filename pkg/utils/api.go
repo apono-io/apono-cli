@@ -10,7 +10,11 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-func getAllPages[T any](ctx context.Context, client *aponoapi.AponoClient, nextPageFunc func(context.Context, *aponoapi.AponoClient, int32) ([]T, *clientapi.PaginationClientInfoModel, error)) ([]T, error) {
+func getAllPages[T any](
+	ctx context.Context,
+	client *aponoapi.AponoClient,
+	nextPageFunc func(context.Context, *aponoapi.AponoClient, int32) ([]T, *clientapi.PaginationClientInfoModel, error),
+) ([]T, error) {
 	var result []T
 
 	skip := 0

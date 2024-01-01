@@ -70,7 +70,7 @@ func ListPermissions(ctx context.Context, client *aponoapi.AponoClient, integrat
 	})
 }
 
-func GetIntegrationByIDOrTypePlusName(ctx context.Context, client *aponoapi.AponoClient, integrationIDOrName string) (*clientapi.IntegrationClientModel, error) {
+func GetIntegrationByIDOrByTypeAndName(ctx context.Context, client *aponoapi.AponoClient, integrationIDOrName string) (*clientapi.IntegrationClientModel, error) {
 	integrations, err := ListIntegrations(ctx, client)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func GetIntegrationByIDOrTypePlusName(ctx context.Context, client *aponoapi.Apon
 
 	var integration *clientapi.IntegrationClientModel
 	if strings.Contains(integrationIDOrName, integrationNameSeparator) {
-		parts := strings.Split(integrationIDOrName, integrationNameSeparator)
+		parts := strings.SplitN(integrationIDOrName, integrationNameSeparator, 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid integration name: %s", integrationIDOrName)
 		}

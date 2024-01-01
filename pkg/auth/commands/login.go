@@ -57,8 +57,6 @@ func Login() *cobra.Command {
 					},
 					Scopes: []string{
 						"integrations:read",
-						"requests:read",
-						"requests:write",
 						"end_user:access_sessions:read",
 						"end_user:access_sessions:write",
 						"end_user:access_requests:read",

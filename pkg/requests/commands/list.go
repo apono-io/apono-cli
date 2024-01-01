@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 
-	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
@@ -23,7 +22,7 @@ func List() *cobra.Command {
 				return err
 			}
 
-			return showRequestsSummary(cmd, client, daysOffset)
+			return listRequestsOutput(cmd, client, daysOffset)
 		},
 	}
 
@@ -33,19 +32,7 @@ func List() *cobra.Command {
 	return cmd
 }
 
-func showRequestStatus(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
-	resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(cmd.Context(), requestID).Execute()
-	if err != nil {
-		return err
-	}
-
-	table := utils.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*resp})
-
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-	return err
-}
-
-func showRequestsSummary(cmd *cobra.Command, client *aponoapi.AponoClient, daysOffset int64) error {
+func listRequestsOutput(cmd *cobra.Command, client *aponoapi.AponoClient, daysOffset int64) error {
 	requests, err := utils.ListRequests(cmd.Context(), client, daysOffset)
 	if err != nil {
 		return err
