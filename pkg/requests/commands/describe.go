@@ -1,7 +1,11 @@
 package commands
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
 
@@ -29,9 +33,21 @@ func Describe() *cobra.Command {
 			}
 
 			requestID := args[0]
-			return showRequestStatus(cmd, client, requestID)
+			return getRequestOutput(cmd, client, requestID)
 		},
 	}
 
 	return cmd
+}
+
+func getRequestOutput(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
+	resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(cmd.Context(), requestID).Execute()
+	if err != nil {
+		return err
+	}
+
+	table := utils.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*resp})
+
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+	return err
 }

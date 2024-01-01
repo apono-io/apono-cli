@@ -41,13 +41,10 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			if integrationIDOrName == "" && bundleIDOrName == "" {
-				return fmt.Errorf("either integration or bundle must be specified")
-			}
-
-			if integrationIDOrName != "" {
+			switch {
+			case integrationIDOrName != "":
 				var integration *clientapi.IntegrationClientModel
-				integration, err = utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationIDOrName)
+				integration, err = utils.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
 				if err != nil {
 					return err
 				}
@@ -55,7 +52,8 @@ func Create() *cobra.Command {
 				req.FilterIntegrationIds = []string{integration.Id}
 				req.FilterResourceTypeIds = []string{resourceType}
 				req.FilterBundleIds = []string{}
-			} else {
+
+			case bundleIDOrName != "":
 				req.FilterIntegrationIds = []string{}
 				req.FilterResourceTypeIds = []string{}
 
@@ -65,12 +63,12 @@ func Create() *cobra.Command {
 					return err
 				}
 				req.FilterBundleIds = []string{bundle.Id}
+
+			default:
+				return fmt.Errorf("either integration or bundle must be specified")
 			}
 
-			userOldLastRequest, err := utils.GetUserLastRequest(cmd.Context(), client)
-			if err != nil {
-				return err
-			}
+			creationTime := time.Now()
 
 			_, _, err = client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
 				CreateAccessRequestClientModel(req).
@@ -79,7 +77,7 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			newAccessRequest, err := waitForNewRequest(cmd, client, userOldLastRequest)
+			newAccessRequest, err := waitForNewRequest(cmd, client, &creationTime)
 			if err != nil {
 				return err
 			}
@@ -93,7 +91,7 @@ func Create() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVarP(&bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
-	flags.StringVarP(&integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws/My AWS integration\"")
+	flags.StringVarP(&integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&resourceType, resourceTypeFlagName, "t", "", "The resource type")
 	flags.StringSliceVarP(&req.FilterResourceIds, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&req.FilterPermissionIds, permissionFlagName, "p", []string{}, "The permission names")
@@ -147,13 +145,13 @@ func integrationsAutocompleteFunc(cmd *cobra.Command, toComplete string) ([]stri
 	})
 }
 
-func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationID string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if integrationID == "" {
+func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if integrationIDOrName == "" {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -170,8 +168,8 @@ func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationID string, toCo
 }
 
 //nolint:dupl // Remove duplication error
-func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if integrationID == "" {
+func resourcesAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if integrationIDOrName == "" {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
@@ -180,7 +178,7 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourc
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -197,8 +195,8 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationID string, resourc
 }
 
 //nolint:dupl // Remove duplication error
-func permissionsAutocompleteFunc(cmd *cobra.Command, integrationID string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if integrationID == "" {
+func permissionsAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if integrationIDOrName == "" {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
@@ -207,7 +205,7 @@ func permissionsAutocompleteFunc(cmd *cobra.Command, integrationID string, resou
 	}
 
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		integration, err := utils.GetIntegrationByIDOrTypePlusName(cmd.Context(), client, integrationID)
+		integration, err := utils.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch integration:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -261,24 +259,17 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 	return options
 }
 
-func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, userOldLastRequest *clientapi.AccessRequestClientModel) (*clientapi.AccessRequestClientModel, error) {
-	var userOldLastRequestID string
-	if userOldLastRequest != nil {
-		userOldLastRequestID = userOldLastRequest.Id
-	}
-
+func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, creationTime *time.Time) (*clientapi.AccessRequestClientModel, error) {
 	startTime := time.Now()
-	var newAccessRequest *clientapi.AccessRequestClientModel
 	for {
 		lastRequest, err := utils.GetUserLastRequest(cmd.Context(), client)
 		if err != nil {
 			return nil, err
 		}
 
-		if lastRequest.Id != userOldLastRequestID {
-			newAccessRequest = lastRequest
-
-			break
+		lastRequestCreationTime := utils.ConvertUnixTimeToTime(lastRequest.CreationTime)
+		if lastRequestCreationTime.After(*creationTime) {
+			return lastRequest, nil
 		}
 
 		time.Sleep(1 * time.Second)
@@ -287,6 +278,4 @@ func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, userOld
 			return nil, fmt.Errorf("timeout while waiting for request to be created")
 		}
 	}
-
-	return newAccessRequest, nil
 }
