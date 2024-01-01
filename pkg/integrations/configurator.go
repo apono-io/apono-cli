@@ -14,5 +14,6 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	rootCmd.AddCommand(commands.ListPermissions())
 	rootCmd.AddCommand(commands.ListResourceTypes())
 	rootCmd.AddCommand(commands.ListResources())
+	rootCmd.AddCommand(commands.ListBundles())
 	return nil
 }
