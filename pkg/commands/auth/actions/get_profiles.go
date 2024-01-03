@@ -11,9 +11,8 @@ import (
 
 func GetProfiles() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "get-profiles",
-		GroupID:           Group.ID,
-		Short:             "Describe one or many profiles",
+		Use:               "list",
+		Short:             "List all profiles",
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()

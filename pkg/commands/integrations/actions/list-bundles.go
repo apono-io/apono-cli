@@ -14,8 +14,8 @@ import (
 func ListBundles() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "bundles",
-		GroupID: Group.ID,
 		Short:   "List all bundles available for requesting access",
+		Aliases: []string{"bundle"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {

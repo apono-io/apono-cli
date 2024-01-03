@@ -5,12 +5,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Access() *cobra.Command {
+func Inventory() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "access",
-		Short:   "Manage access to resources",
+		Use:     "inventory",
+		Short:   "Manage requestable objects such as resources, permissions, and integrations",
 		GroupID: groups.ManagementCommandsGroup.ID,
-		Aliases: []string{"sessions", "session"},
 	}
 
 	return cmd

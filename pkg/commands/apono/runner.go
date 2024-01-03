@@ -3,11 +3,11 @@ package apono
 import (
 	"context"
 	"fmt"
-
 	"github.com/apono-io/apono-cli/pkg/commands/access"
 	"github.com/apono-io/apono-cli/pkg/commands/auth"
 	"github.com/apono-io/apono-cli/pkg/commands/integrations"
 	"github.com/apono-io/apono-cli/pkg/commands/requests"
+	"github.com/apono-io/apono-cli/pkg/groups"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -57,6 +57,7 @@ func (r *Runner) init() error {
 		}
 	}
 
+	r.rootCmd.AddGroup(groups.ManagementCommandsGroup)
 	r.rootCmd.AddGroup(otherCommandsGroup)
 	r.rootCmd.SetCompletionCommandGroupID(otherCommandsGroup.ID)
 	r.rootCmd.SetHelpCommandGroupID(otherCommandsGroup.ID)

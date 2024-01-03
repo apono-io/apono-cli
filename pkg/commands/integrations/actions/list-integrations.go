@@ -13,8 +13,8 @@ import (
 func ListIntegrations() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "integrations",
-		GroupID: Group.ID,
 		Short:   "List all integrations available for requesting access",
+		Aliases: []string{"integration"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {

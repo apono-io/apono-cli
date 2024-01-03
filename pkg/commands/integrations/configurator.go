@@ -9,11 +9,13 @@ import (
 type Configurator struct{}
 
 func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
-	rootCmd.AddGroup(actions.Group)
-	rootCmd.AddCommand(actions.ListIntegrations())
-	rootCmd.AddCommand(actions.ListPermissions())
-	rootCmd.AddCommand(actions.ListResourceTypes())
-	rootCmd.AddCommand(actions.ListResources())
-	rootCmd.AddCommand(actions.ListBundles())
+	inventoryRootCmd := actions.Inventory()
+	rootCmd.AddCommand(inventoryRootCmd)
+
+	inventoryRootCmd.AddCommand(actions.ListIntegrations())
+	inventoryRootCmd.AddCommand(actions.ListPermissions())
+	inventoryRootCmd.AddCommand(actions.ListResourceTypes())
+	inventoryRootCmd.AddCommand(actions.ListResources())
+	inventoryRootCmd.AddCommand(actions.ListBundles())
 	return nil
 }
