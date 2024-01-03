@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/apono-io/apono-cli/pkg/cli"
+	"github.com/apono-io/apono-cli/pkg/commands/apono"
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 		log.Fatalf("usage: %s (bash|powershell|zsh)", os.Args[0])
 	}
 
-	runner, err := cli.NewRunner(&cli.RunnerOptions{})
+	runner, err := apono.NewRunner(&apono.RunnerOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

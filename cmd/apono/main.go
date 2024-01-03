@@ -6,13 +6,14 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/apono-io/apono-cli/pkg/commands/apono"
+
 	"github.com/apono-io/apono-cli/pkg/build"
-	"github.com/apono-io/apono-cli/pkg/cli"
 )
 
 func main() {
-	runner, err := cli.NewRunner(&cli.RunnerOptions{
-		VersionInfo: cli.VersionInfo{
+	runner, err := apono.NewRunner(&apono.RunnerOptions{
+		VersionInfo: apono.VersionInfo{
 			BuildDate: build.Date,
 			Commit:    build.Commit,
 			Version:   build.Version,
@@ -31,7 +32,7 @@ func main() {
 	}
 }
 
-func execute(runner *cli.Runner) error {
+func execute(runner *apono.Runner) error {
 	// trap Ctrl+C and call cancel on the context
 	ctx, cancel := context.WithCancel(context.Background())
 	c := make(chan os.Signal, 1)

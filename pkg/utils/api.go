@@ -10,7 +10,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-func getAllPages[T any](
+func GetAllPages[T any](
 	ctx context.Context,
 	client *aponoapi.AponoClient,
 	nextPageFunc func(context.Context, *aponoapi.AponoClient, int32) ([]T, *clientapi.PaginationClientInfoModel, error),
@@ -37,7 +37,7 @@ func getAllPages[T any](
 	return result, nil
 }
 
-func returnAPIResponseError(resp *http.Response) error {
+func ReturnAPIResponseError(resp *http.Response) error {
 	defer func() {
 		_ = resp.Body.Close()
 	}()

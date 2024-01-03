@@ -11,7 +11,7 @@ func ConvertUnixTimeToTime(timeUnix float64) time.Time {
 	return time.Unix(unixTimeInt, nanoSeconds)
 }
 
-func isDateAfterDaysOffset(date time.Time, daysOffset int64) bool {
+func IsDateAfterDaysOffset(date time.Time, daysOffset int64) bool {
 	return date.After(time.Now().AddDate(0, 0, -int(daysOffset)))
 }
 
