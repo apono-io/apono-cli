@@ -3,6 +3,7 @@ api_access_request_templates.go
 api_access_requests.go
 api_access_sessions.go
 api_inventory.go
+api_user_session.go
 client.go
 configuration.go
 model_access_details_client_model.go
@@ -26,6 +27,7 @@ model_access_unit_client_model.go
 model_access_unit_client_model_status.go
 model_access_unit_status_client.go
 model_access_unit_status_client_model.go
+model_account_client_model.go
 model_approval_result_client_model.go
 model_bundle_client_model.go
 model_challenge_approver_client_model.go
@@ -59,5 +61,6 @@ model_resource_client_model.go
 model_resource_type_client_model.go
 model_session_type_client_model.go
 model_user_client_model.go
+model_user_session_client_model.go
 response.go
 utils.go
