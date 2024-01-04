@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/groups"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/int128/oauth2cli"
 	"github.com/int128/oauth2cli/oauth2params"
@@ -34,8 +36,8 @@ func Login() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:               "login",
-		GroupID:           Group.ID,
 		Short:             "Login to Apono",
+		GroupID:           groups.AuthCommandsGroup.ID,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL = strings.TrimLeft(apiURL, "/")

@@ -3,6 +3,8 @@ package actions
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/groups"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
 	"github.com/spf13/cobra"
@@ -13,8 +15,8 @@ import (
 func Logout() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "logout [NAME]",
-		GroupID:           Group.ID,
 		Short:             "Logout from Apono",
+		GroupID:           groups.AuthCommandsGroup.ID,
 		Args:              cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(_ *cobra.Command, args []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
