@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/groups"
+
 	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
@@ -22,7 +24,7 @@ func VersionCommand(info VersionInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "version",
 		Short:   "Print the version information",
-		GroupID: otherCommandsGroup.ID,
+		GroupID: groups.OtherCommandsGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch *format {
 			case utils.Plain:

@@ -1,8 +1,8 @@
-package actions
+package groups
 
 import "github.com/spf13/cobra"
 
-var Group = &cobra.Group{
+var AuthCommandsGroup = &cobra.Group{
 	ID:    "auth",
 	Title: "Authentication Commands",
 }
