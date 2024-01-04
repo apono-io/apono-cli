@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/apono-io/apono-cli/pkg/cli"
+	"github.com/apono-io/apono-cli/pkg/commands/apono"
 )
 
 func main() {
-	runner, err := cli.NewRunner(&cli.RunnerOptions{})
+	runner, err := apono.NewRunner(&apono.RunnerOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
