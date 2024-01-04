@@ -10,7 +10,10 @@ type Configurator struct{}
 
 func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	accessCmd := actions.Access()
+	accessCmd.AddGroup(actions.Group)
+
 	rootCmd.AddCommand(accessCmd)
+	rootCmd.AddGroup(actions.Group)
 
 	accessCmd.AddCommand(actions.AccessList())
 	accessCmd.AddCommand(actions.AccessDetails())
