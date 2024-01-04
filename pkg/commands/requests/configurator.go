@@ -11,7 +11,6 @@ type Configurator struct{}
 func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	requestsRootCmd := actions.Requests()
 	rootCmd.AddCommand(requestsRootCmd)
-	rootCmd.AddGroup(actions.Group)
 
 	requestsRootCmd.AddCommand(actions.List())
 	requestsRootCmd.AddCommand(actions.Describe())

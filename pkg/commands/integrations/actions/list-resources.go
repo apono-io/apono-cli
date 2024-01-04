@@ -14,8 +14,8 @@ func ListResources() *cobra.Command {
 	var resourceType string
 	cmd := &cobra.Command{
 		Use:     "resources",
-		GroupID: Group.ID,
 		Short:   "List all resources of integration resource type",
+		Aliases: []string{"resource"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {

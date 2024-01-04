@@ -12,8 +12,7 @@ import (
 
 func SetProfile() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "set-profile NAME",
-		GroupID:           Group.ID,
+		Use:               "set NAME",
 		Short:             "Set active profile",
 		Args:              cobra.ExactArgs(1),
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },

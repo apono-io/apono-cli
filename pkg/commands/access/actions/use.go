@@ -31,10 +31,9 @@ func AccessDetails() *cobra.Command {
 	var shouldExecuteAccessCommand bool
 
 	cmd := &cobra.Command{
-		Use:     "use [id]",
-		GroupID: Group.ID,
-		Short:   "Get access session details",
-		Args:    cobra.MinimumNArgs(1), // This will enforce that exactly 1 argument must be provided
+		Use:   "use <id>",
+		Short: "Get access session details",
+		Args:  cobra.MinimumNArgs(1), // This will enforce that exactly 1 argument must be provided
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {

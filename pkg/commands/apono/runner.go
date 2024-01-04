@@ -8,6 +8,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/commands/auth"
 	"github.com/apono-io/apono-cli/pkg/commands/integrations"
 	"github.com/apono-io/apono-cli/pkg/commands/requests"
+	"github.com/apono-io/apono-cli/pkg/groups"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -57,9 +58,10 @@ func (r *Runner) init() error {
 		}
 	}
 
-	r.rootCmd.AddGroup(otherCommandsGroup)
-	r.rootCmd.SetCompletionCommandGroupID(otherCommandsGroup.ID)
-	r.rootCmd.SetHelpCommandGroupID(otherCommandsGroup.ID)
+	r.rootCmd.AddGroup(groups.ManagementCommandsGroup)
+	r.rootCmd.AddGroup(groups.OtherCommandsGroup)
+	r.rootCmd.SetCompletionCommandGroupID(groups.OtherCommandsGroup.ID)
+	r.rootCmd.SetHelpCommandGroupID(groups.OtherCommandsGroup.ID)
 	r.rootCmd.AddCommand(VersionCommand(r.opts.VersionInfo))
 
 	return nil
@@ -84,11 +86,6 @@ func (r *Runner) GenManTree(dir string) error {
 	}
 
 	return doc.GenManTree(r.rootCmd, header, dir)
-}
-
-var otherCommandsGroup = &cobra.Group{
-	ID:    "other",
-	Title: "Other Commands",
 }
 
 func createRootCommand() *cobra.Command {

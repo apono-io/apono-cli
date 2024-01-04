@@ -11,9 +11,8 @@ import (
 
 func AccessList() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "list",
-		GroupID: Group.ID,
-		Short:   "List all access sessions",
+		Use:   "list",
+		Short: "List all access sessions",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {

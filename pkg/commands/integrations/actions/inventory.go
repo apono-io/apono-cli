@@ -6,12 +6,11 @@ import (
 	"github.com/apono-io/apono-cli/pkg/groups"
 )
 
-func Requests() *cobra.Command {
+func Inventory() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "requests",
-		Short:   "Manage your access requests",
+		Use:     "inventory",
+		Short:   "Manage requestable objects such as resources, permissions, and integrations",
 		GroupID: groups.ManagementCommandsGroup.ID,
-		Aliases: []string{"request"},
 	}
 
 	return cmd
