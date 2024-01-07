@@ -31,11 +31,7 @@ func AccessList() *cobra.Command {
 				return err
 			}
 
-			var integrationIDs []string
-			if integrationFilter != "" {
-				integrationIDs = []string{integrationFilter}
-			}
-
+			integrationIDs := resolveIntegrationNameOrIDFlag(cmd.Context(), client, integrationFilter)
 			bundleIDsFilter := resolveBundleNameOrIDFlag(cmd.Context(), client, bundleFilter)
 
 			accessSessions, err := services.ListAccessSessions(cmd.Context(), client, integrationIDs, bundleIDsFilter)
@@ -59,7 +55,7 @@ func AccessList() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&integrationFilter, integrationFilterFlagName, "i", "", "filter by integration name or id")
+	flags.StringVarP(&integrationFilter, integrationFilterFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&bundleFilter, bundleFilterFlagName, "b", "", "filter by bundle name or id")
 
 	return cmd
@@ -86,4 +82,21 @@ func resolveBundleNameOrIDFlag(ctx context.Context, client *aponoapi.AponoClient
 	}
 
 	return []string{bundleIDOrName}
+}
+
+func resolveIntegrationNameOrIDFlag(ctx context.Context, client *aponoapi.AponoClient, integrationIDOrName string) []string {
+	if integrationIDOrName == "" {
+		return nil
+	}
+
+	if utils.IsValidUUID(integrationIDOrName) {
+		return []string{integrationIDOrName}
+	}
+
+	integration, err := services.GetIntegrationByIDOrByTypeAndName(ctx, client, integrationIDOrName)
+	if err != nil {
+		return []string{integrationIDOrName}
+	}
+
+	return []string{integration.Id}
 }
