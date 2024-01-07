@@ -10,15 +10,15 @@ import (
 
 func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integrationIds []string, bundleIds []string) ([]clientapi.AccessSessionClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessSessionClientModel, *clientapi.PaginationClientInfoModel, error) {
-		listBundleRequest := client.ClientAPI.AccessSessionsAPI.ListAccessSessions(ctx).Skip(skip)
+		listSessionsRequest := client.ClientAPI.AccessSessionsAPI.ListAccessSessions(ctx).Skip(skip)
 		if integrationIds != nil {
-			listBundleRequest = listBundleRequest.IntegrationId(integrationIds)
+			listSessionsRequest = listSessionsRequest.IntegrationId(integrationIds)
 		}
 		if bundleIds != nil {
-			listBundleRequest = listBundleRequest.BundleId(bundleIds)
+			listSessionsRequest = listSessionsRequest.BundleId(bundleIds)
 		}
 
-		resp, _, err := listBundleRequest.Execute()
+		resp, _, err := listSessionsRequest.Execute()
 		if err != nil {
 			return nil, nil, err
 		}

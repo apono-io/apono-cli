@@ -76,7 +76,7 @@ func resolveBundleNameOrIDFlag(ctx context.Context, client *aponoapi.AponoClient
 	}
 
 	for _, bundle := range bundles {
-		if bundle.Id == bundleIDOrName || bundle.Name == bundleIDOrName {
+		if bundle.Name == bundleIDOrName {
 			return []string{bundle.Id}
 		}
 	}
@@ -87,10 +87,6 @@ func resolveBundleNameOrIDFlag(ctx context.Context, client *aponoapi.AponoClient
 func resolveIntegrationNameOrIDFlag(ctx context.Context, client *aponoapi.AponoClient, integrationIDOrName string) []string {
 	if integrationIDOrName == "" {
 		return nil
-	}
-
-	if utils.IsValidUUID(integrationIDOrName) {
-		return []string{integrationIDOrName}
 	}
 
 	integration, err := services.GetIntegrationByIDOrByTypeAndName(ctx, client, integrationIDOrName)
