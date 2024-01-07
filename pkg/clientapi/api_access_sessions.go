@@ -16,6 +16,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
@@ -128,6 +129,12 @@ type ApiGetAccessSessionAccessDetailsRequest struct {
 	ctx        context.Context
 	ApiService *AccessSessionsAPIService
 	id         string
+	aponoSec   *map[string]interface{}
+}
+
+func (r ApiGetAccessSessionAccessDetailsRequest) AponoSec(aponoSec map[string]interface{}) ApiGetAccessSessionAccessDetailsRequest {
+	r.aponoSec = &aponoSec
+	return r
 }
 
 func (r ApiGetAccessSessionAccessDetailsRequest) Execute() (*AccessSessionDetailsClientModel, *http.Response, error) {
@@ -229,25 +236,37 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGet
 type ApiListAccessSessionsRequest struct {
 	ctx           context.Context
 	ApiService    *AccessSessionsAPIService
-	credentialsId *string
-	integrationId *string
+	bundleId      *[]string
+	credentialsId *[]string
+	integrationId *[]string
 	limit         *int32
+	requestId     *[]string
 	search        *string
 	skip          *int32
 }
 
-func (r ApiListAccessSessionsRequest) CredentialsId(credentialsId string) ApiListAccessSessionsRequest {
+func (r ApiListAccessSessionsRequest) BundleId(bundleId []string) ApiListAccessSessionsRequest {
+	r.bundleId = &bundleId
+	return r
+}
+
+func (r ApiListAccessSessionsRequest) CredentialsId(credentialsId []string) ApiListAccessSessionsRequest {
 	r.credentialsId = &credentialsId
 	return r
 }
 
-func (r ApiListAccessSessionsRequest) IntegrationId(integrationId string) ApiListAccessSessionsRequest {
+func (r ApiListAccessSessionsRequest) IntegrationId(integrationId []string) ApiListAccessSessionsRequest {
 	r.integrationId = &integrationId
 	return r
 }
 
 func (r ApiListAccessSessionsRequest) Limit(limit int32) ApiListAccessSessionsRequest {
 	r.limit = &limit
+	return r
+}
+
+func (r ApiListAccessSessionsRequest) RequestId(requestId []string) ApiListAccessSessionsRequest {
+	r.requestId = &requestId
 	return r
 }
 
@@ -300,17 +319,55 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.bundleId != nil {
+		t := *r.bundleId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "bundle_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "bundle_id", t, "multi")
+		}
+	}
 	if r.credentialsId != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "credentials_id", r.credentialsId, "")
+		t := *r.credentialsId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "credentials_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "credentials_id", t, "multi")
+		}
 	}
 	if r.integrationId != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", r.integrationId, "")
+		t := *r.integrationId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", t, "multi")
+		}
 	}
 	if r.limit != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "")
 	} else {
 		var defaultValue int32 = 100
 		r.limit = &defaultValue
+	}
+	if r.requestId != nil {
+		t := *r.requestId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "request_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "request_id", t, "multi")
+		}
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")

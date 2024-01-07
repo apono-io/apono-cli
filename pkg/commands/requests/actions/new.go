@@ -225,7 +225,7 @@ func permissionsAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string,
 
 func bundlesAutoCompleteFunc(cmd *cobra.Command, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return completeWithClient(cmd, func(client *aponoapi.AponoClient) ([]string, cobra.ShellCompDirective) {
-		selectableBundles, err := services.ListBundles(cmd.Context(), client)
+		selectableBundles, err := services.ListBundles(cmd.Context(), client, "")
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available bundles:", err)
 			return nil, cobra.ShellCompDirectiveError

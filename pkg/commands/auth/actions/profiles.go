@@ -1,9 +1,9 @@
 package actions
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/apono-io/apono-cli/pkg/groups"
+
+	"github.com/spf13/cobra"
 )
 
 func Profiles() *cobra.Command {

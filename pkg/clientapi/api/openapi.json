@@ -30,6 +30,9 @@
     },
     {
       "name": "Inventory"
+    },
+    {
+      "name": "User Session"
     }
   ],
   "paths": {
@@ -698,10 +701,24 @@
         "operationId": "listAccessSessions",
         "parameters": [
           {
+            "name": "bundle_id",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
             "name": "credentials_id",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
               "nullable": true
             }
           },
@@ -709,7 +726,10 @@
             "name": "integration_id",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
               "nullable": true
             }
           },
@@ -720,6 +740,17 @@
               "format": "int32",
               "default": 100,
               "type": "integer"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
             }
           },
           {
@@ -799,6 +830,14 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "apono-sec",
+            "in": "cookie",
+            "schema": {
+              "type": "object",
+              "nullable": true
             }
           }
         ],
@@ -1235,6 +1274,26 @@
           }
         }
       }
+    },
+    "/api/client/v1/session": {
+      "get": {
+        "tags": [
+          "User Session"
+        ],
+        "operationId": "getUserSession",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSessionClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1601,6 +1660,25 @@
           "message": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "AccountClientModel": {
+        "required": [
+          "id",
+          "name",
+          "plan"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
           }
         }
       },
@@ -2247,6 +2325,21 @@
           "photo": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "UserSessionClientModel": {
+        "required": [
+          "user",
+          "account"
+        ],
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserClientModel"
+          },
+          "account": {
+            "$ref": "#/components/schemas/AccountClientModel"
           }
         }
       }
