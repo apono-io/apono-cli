@@ -1,15 +1,25 @@
-package inputs
+package list_select
 
-import "github.com/charmbracelet/bubbles/key"
+import (
+	"fmt"
+	"github.com/charmbracelet/bubbles/key"
+)
+
+const (
+	submitKey            = "enter"
+	multiSelectChoiceKey = " "
+	abortKey             = "ctrl+c"
+	quitKey              = "esc"
+)
 
 var (
 	abortKeyBinding = key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc/ctrl+c", "abort"),
+		key.WithKeys(quitKey, abortKey),
+		key.WithHelp(fmt.Sprintf("%s/%s", quitKey, abortKey), "abort"),
 	)
 	submitKeyBinding = key.NewBinding(
-		key.WithKeys("enter"),
-		key.WithHelp("enter", "submit"),
+		key.WithKeys(submitKey),
+		key.WithHelp(submitKey, "submit"),
 	)
 	selectKeyBinding = key.NewBinding(
 		key.WithKeys("space"),
