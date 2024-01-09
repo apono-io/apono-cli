@@ -4,6 +4,9 @@ go 1.20
 
 require (
 	github.com/apono-io/apono-sdk-go v0.1.0-alpha2
+	github.com/charmbracelet/bubbles v0.17.1
+	github.com/charmbracelet/bubbletea v0.25.0
+	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0-rc.2
 	github.com/gookit/color v1.5.3
 	github.com/gosuri/uitable v0.0.4
@@ -22,9 +25,6 @@ require (
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/bubbles v0.17.1 // indirect
-	github.com/charmbracelet/bubbletea v0.25.0 // indirect
-	github.com/charmbracelet/lipgloss v0.9.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/fatih/color v1.15.0 // indirect

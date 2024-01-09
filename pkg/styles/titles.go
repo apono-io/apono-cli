@@ -2,6 +2,7 @@ package styles
 
 import (
 	"fmt"
+
 	"github.com/gookit/color"
 )
 

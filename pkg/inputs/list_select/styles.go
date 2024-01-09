@@ -2,9 +2,10 @@ package list_select
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
-	"strings"
 )
 
 const (

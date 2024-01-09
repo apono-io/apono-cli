@@ -2,18 +2,16 @@ package actions
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/interactive"
 	"strings"
 	"time"
 
-	"github.com/apono-io/apono-cli/pkg/services"
-
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/interactive"
+	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
-
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
 )
 
 const (
@@ -132,7 +130,6 @@ func Create() *cobra.Command {
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
-	//_ = cmd.MarkFlagRequired(justificationFlagName)
 
 	_ = cmd.RegisterFlagCompletionFunc(integrationFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return integrationsAutocompleteFunc(cmd, toComplete)

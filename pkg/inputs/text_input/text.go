@@ -2,6 +2,7 @@ package text_input
 
 import (
 	"fmt"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )

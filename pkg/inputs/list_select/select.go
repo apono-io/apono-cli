@@ -2,6 +2,7 @@ package list_select
 
 import (
 	"fmt"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )

@@ -2,9 +2,10 @@ package list_select
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"io"
 )
 
 type selectItemDelegate[T any] struct{}
