@@ -10,13 +10,13 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, integrationId string) (*clientapi.ResourceTypeClientModel, error) {
-	resourceTypes, err := services.ListResourceTypes(ctx, client, integrationId)
+func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, integrationID string) (*clientapi.ResourceTypeClientModel, error) {
+	resourceTypes, err := services.ListResourceTypes(ctx, client, integrationID)
 	if err != nil {
 		return nil, err
 	}
 	if len(resourceTypes) == 0 {
-		return nil, fmt.Errorf("no resource types found for integration %s", integrationId)
+		return nil, fmt.Errorf("no resource types found for integration %s", integrationID)
 	}
 
 	resourceTypeInput := list_select.SelectInput[clientapi.ResourceTypeClientModel]{

@@ -22,7 +22,7 @@ type model struct {
 	title      string
 	err        error
 	submitting bool
-	quitting   bool
+	aborting   bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -36,7 +36,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case abortKey, quitKey:
-			m.quitting = true
+			m.aborting = true
 			return m, tea.Quit
 
 		case submitKey:
@@ -57,7 +57,7 @@ func (m model) View() string {
 	if m.submitting {
 		return ""
 	}
-	if m.quitting {
+	if m.aborting {
 		return aborttingText
 	}
 
@@ -88,8 +88,8 @@ func LaunchTextInput(input TextInput) (string, error) {
 	}
 
 	resultModel := result.(model)
-	if resultModel.quitting {
-		return "", nil
+	if resultModel.aborting {
+		return "", fmt.Errorf("aborted by user")
 	}
 
 	justification := resultModel.textInput.Value()

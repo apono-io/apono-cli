@@ -6,6 +6,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const (
+	abortingText = "Aborting..."
+	noSelectText = "No items selected"
+)
+
 func (m model[T]) Init() tea.Cmd { return nil }
 
 func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -16,7 +21,7 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case abortKey:
+		case abortKey, quitKey:
 			m.aborting = true
 			return m, tea.Quit
 
@@ -26,11 +31,18 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				if !item.input.MultipleSelection {
 					m.list.SetItems(handleItemSelection[T](m.list.Items(), item))
+				} else {
+					if getNumberOfSelectedItems[T](m.list.Items()) == 0 {
+						m.submitting = false
+						m.list.NewStatusMessage(noSelectionStyle.Render(noSelectText))
+						return m, nil
+					}
 				}
 			}
 			return m, tea.Quit
 
 		case multiSelectChoiceKey:
+			m.list.NewStatusMessage("")
 			item, ok := m.list.SelectedItem().(selectItem[T])
 			if ok {
 				if item.input.MultipleSelection {
@@ -58,12 +70,23 @@ func handleItemSelection[T any](items []list.Item, selectedItem selectItem[T]) [
 	return items
 }
 
+func getNumberOfSelectedItems[T any](items []list.Item) int {
+	var count int
+	for _, item := range items {
+		if item.(selectItem[T]).selected {
+			count++
+		}
+	}
+
+	return count
+}
+
 func (m model[T]) View() string {
 	if m.submitting {
 		return ""
 	}
 	if m.aborting {
-		return titleStyle.Render("Aborting...")
+		return titleStyle.Render(abortingText)
 	}
 
 	return m.list.View()
@@ -101,6 +124,10 @@ func LaunchSelector[T any](inputModel SelectInput[T]) ([]T, error) {
 	}
 
 	resultModel := result.(model[T])
+	if resultModel.aborting {
+		return nil, fmt.Errorf("aborted by user")
+	}
+
 	var selectedItems []T
 	for _, item := range resultModel.list.Items() {
 		if item.(selectItem[T]).selected {

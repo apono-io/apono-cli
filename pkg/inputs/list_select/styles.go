@@ -16,6 +16,7 @@ var (
 	titleStyle        = lipgloss.NewStyle().Margin(0, 0, 0, 0)
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("6"))
+	noSelectionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#9e413c"))
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )

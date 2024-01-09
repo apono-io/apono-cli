@@ -9,8 +9,8 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func RunPermissionSelector(ctx context.Context, client *aponoapi.AponoClient, integrationId string, resourceTypeId string, multipleChoice bool) ([]clientapi.PermissionClientModel, error) {
-	permissions, err := services.ListPermissions(ctx, client, integrationId, resourceTypeId)
+func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, multipleChoice bool) ([]clientapi.PermissionClientModel, error) {
+	permissions, err := services.ListPermissions(ctx, client, integrationID, resourceTypeID)
 	if err != nil {
 		return nil, err
 	}
