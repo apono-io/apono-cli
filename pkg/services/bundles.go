@@ -11,7 +11,7 @@ import (
 )
 
 func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bundleNameOrID string) (*clientapi.BundleClientModel, error) {
-	bundles, err := ListBundles(ctx, client)
+	bundles, err := ListBundles(ctx, client, "")
 	if err != nil {
 		return nil, err
 	}
@@ -25,11 +25,14 @@ func GetBundleByNameOrID(ctx context.Context, client *aponoapi.AponoClient, bund
 	return nil, fmt.Errorf("bundle %s not found", bundleNameOrID)
 }
 
-func ListBundles(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.BundleClientModel, error) {
+func ListBundles(ctx context.Context, client *aponoapi.AponoClient, search string) ([]clientapi.BundleClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.BundleClientModel, *clientapi.PaginationClientInfoModel, error) {
-		resp, _, err := client.ClientAPI.InventoryAPI.ListAccessBundles(ctx).
-			Skip(skip).
-			Execute()
+		listBundleRequest := client.ClientAPI.InventoryAPI.ListAccessBundles(ctx).Skip(skip)
+		if search != "" {
+			listBundleRequest.Search(search)
+		}
+
+		resp, _, err := listBundleRequest.Execute()
 		if err != nil {
 			return nil, nil, err
 		}

@@ -22,7 +22,7 @@ func ListBundles() *cobra.Command {
 				return err
 			}
 
-			bundles, err := services.ListBundles(cmd.Context(), client)
+			bundles, err := services.ListBundles(cmd.Context(), client, "")
 			if err != nil {
 				return err
 			}

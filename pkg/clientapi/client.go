@@ -57,6 +57,8 @@ type APIClient struct {
 	AccessSessionsAPI *AccessSessionsAPIService
 
 	InventoryAPI *InventoryAPIService
+
+	UserSessionAPI *UserSessionAPIService
 }
 
 type service struct {
@@ -80,6 +82,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.AccessRequestsAPI = (*AccessRequestsAPIService)(&c.common)
 	c.AccessSessionsAPI = (*AccessSessionsAPIService)(&c.common)
 	c.InventoryAPI = (*InventoryAPIService)(&c.common)
+	c.UserSessionAPI = (*UserSessionAPIService)(&c.common)
 
 	return c
 }
