@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/interactive"
 	"strings"
 	"time"
 
@@ -26,13 +27,15 @@ const (
 )
 
 func Create() *cobra.Command {
-	req := clientapi.CreateAccessRequestClientModel{}
-	req.FilterBundleIds = []string{}
-	req.FilterAccessUnitIds = []string{}
+	req := getEmptyRequest()
 
 	var integrationIDOrName string
 	var bundleIDOrName string
 	var resourceType string
+	var resourceIds []string
+	var permissionIds []string
+	var dontRunInteractive bool
+	var justification string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -51,31 +54,56 @@ func Create() *cobra.Command {
 					return err
 				}
 
-				req.FilterIntegrationIds = []string{integration.Id}
-				req.FilterResourceTypeIds = []string{resourceType}
-				req.FilterBundleIds = []string{}
+				if dontRunInteractive {
+					req.FilterIntegrationIds = []string{integration.Id}
+					req.FilterResourceTypeIds = []string{resourceType}
+					req.FilterResourceIds = resourceIds
+					req.FilterPermissionIds = permissionIds
+				} else {
+					req, err = startIntegrationRequestInteractiveMode(cmd, client, integration.Id, resourceType, resourceIds, permissionIds, justification)
+					if err != nil {
+						return err
+					}
+				}
 
 			case bundleIDOrName != "":
-				req.FilterIntegrationIds = []string{}
-				req.FilterResourceTypeIds = []string{}
-
 				var bundle *clientapi.BundleClientModel
 				bundle, err = services.GetBundleByNameOrID(cmd.Context(), client, bundleIDOrName)
 				if err != nil {
 					return err
 				}
-				req.FilterBundleIds = []string{bundle.Id}
+
+				if dontRunInteractive {
+					req.FilterBundleIds = []string{bundle.Id}
+				} else {
+					req, err = startBundleRequestInteractiveMode(cmd, client, bundle.Id, justification)
+					if err != nil {
+						return err
+					}
+				}
 
 			default:
-				return fmt.Errorf("either integration or bundle must be specified")
+				if dontRunInteractive {
+					return fmt.Errorf("either integration or bundle must be specified")
+				} else {
+					req, err = startRequestInteractiveMode(cmd, client)
+					if err != nil {
+						return err
+					}
+				}
 			}
 
 			creationTime := time.Now()
 
-			_, _, err = client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
-				CreateAccessRequestClientModel(req).
+			_, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
+				CreateAccessRequestClientModel(*req).
 				Execute()
 			if err != nil {
+				apiError := utils.ReturnAPIResponseError(resp)
+				if apiError != nil {
+					return apiError
+				}
+
 				return err
 			}
 
@@ -86,7 +114,9 @@ func Create() *cobra.Command {
 
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
 
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "")
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+
 			return err
 		},
 	}
@@ -95,13 +125,14 @@ func Create() *cobra.Command {
 	flags.StringVarP(&bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
 	flags.StringVarP(&integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&resourceType, resourceTypeFlagName, "t", "", "The resource type")
-	flags.StringSliceVarP(&req.FilterResourceIds, resourceFlagName, "r", []string{}, "The resource id's")
-	flags.StringSliceVarP(&req.FilterPermissionIds, permissionFlagName, "p", []string{}, "The permission names")
-	flags.StringVarP(&req.Justification, justificationFlagName, "j", "", "The justification for the access request")
+	flags.StringSliceVarP(&resourceIds, resourceFlagName, "r", []string{}, "The resource id's")
+	flags.StringSliceVarP(&permissionIds, permissionFlagName, "p", []string{}, "The permission names")
+	flags.StringVarP(&justification, justificationFlagName, "j", "", "The justification for the access request")
+	flags.BoolVar(&dontRunInteractive, "no-interactive", false, "Dont run in interactive mode")
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
-	_ = cmd.MarkFlagRequired(justificationFlagName)
+	//_ = cmd.MarkFlagRequired(justificationFlagName)
 
 	_ = cmd.RegisterFlagCompletionFunc(integrationFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return integrationsAutocompleteFunc(cmd, toComplete)
@@ -279,5 +310,134 @@ func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, creatio
 		if time.Now().After(startTime.Add(maxWaitTimeForNewRequest)) {
 			return nil, fmt.Errorf("timeout while waiting for request to be created")
 		}
+	}
+}
+
+func startRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, error) {
+	requestType, err := interactive.RunRequestTypeSelector()
+	if err != nil {
+		return nil, err
+	}
+	switch requestType {
+	case interactive.BundleRequestType:
+		return startBundleRequestInteractiveMode(cmd, client, "", "")
+	case interactive.IntegrationRequestType:
+		return startIntegrationRequestInteractiveMode(cmd, client, "", "", []string{}, []string{}, "")
+	default:
+		return nil, fmt.Errorf("invalid request type: %s", requestType)
+	}
+}
+
+func startBundleRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient, bundleID string, justification string) (*clientapi.CreateAccessRequestClientModel, error) {
+	request := getEmptyRequest()
+
+	if bundleID == "" {
+		bundle, err := interactive.RunBundleSelector(cmd.Context(), client)
+		if err != nil {
+			return nil, err
+		}
+
+		bundleID = bundle.Id
+	}
+	request.FilterBundleIds = []string{bundleID}
+
+	if justification == "" {
+		newJustification, err := interactive.RunJustificationInput()
+		if err != nil {
+			return nil, err
+		}
+
+		justification = newJustification
+	}
+	request.Justification = justification
+
+	return request, nil
+}
+
+func startIntegrationRequestInteractiveMode(
+	cmd *cobra.Command,
+	client *aponoapi.AponoClient,
+	integrationID string,
+	resourceTypeID string,
+	resourceIDs []string,
+	permissionIDs []string,
+	justification string,
+) (*clientapi.CreateAccessRequestClientModel, error) {
+	request := getEmptyRequest()
+
+	if integrationID == "" {
+		integration, err := interactive.RunIntegrationSelector(cmd.Context(), client)
+		if err != nil {
+			return nil, err
+		}
+
+		integrationID = integration.Id
+	}
+	request.FilterIntegrationIds = []string{integrationID}
+
+	var allowMultiplePermissions bool
+	if resourceTypeID == "" {
+		resourceType, err := interactive.RunResourceTypeSelector(cmd.Context(), client, integrationID)
+		if err != nil {
+			return nil, err
+		}
+
+		resourceTypeID = resourceType.Id
+		allowMultiplePermissions = resourceType.AllowMultiplePermissions
+	} else {
+		resourceType, err := services.GetResourceTypeByID(cmd.Context(), client, integrationID, resourceTypeID)
+		if err != nil {
+			return nil, err
+		}
+
+		allowMultiplePermissions = resourceType.AllowMultiplePermissions
+	}
+	request.FilterResourceTypeIds = []string{resourceTypeID}
+
+	if len(resourceIDs) == 0 {
+		resources, err := interactive.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, resource := range resources {
+			resourceIDs = append(resourceIDs, resource.Id)
+		}
+	}
+	request.FilterResourceIds = resourceIDs
+
+	if len(permissionIDs) == 0 {
+		permissions, err := interactive.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceTypeID, allowMultiplePermissions)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, permission := range permissions {
+			permissionIDs = append(permissionIDs, permission.Id)
+		}
+	}
+	request.FilterPermissionIds = permissionIDs
+
+	if justification == "" {
+		newJustification, err := interactive.RunJustificationInput()
+		if err != nil {
+			return nil, err
+		}
+
+		justification = newJustification
+	}
+	request.Justification = justification
+
+	return request, nil
+}
+
+func getEmptyRequest() *clientapi.CreateAccessRequestClientModel {
+	return &clientapi.CreateAccessRequestClientModel{
+		FilterBundleIds:       []string{},
+		FilterIntegrationIds:  []string{},
+		FilterResourceTypeIds: []string{},
+		FilterResourceIds:     []string{},
+		FilterPermissionIds:   []string{},
+		FilterAccessUnitIds:   []string{},
 	}
 }
