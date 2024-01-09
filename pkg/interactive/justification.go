@@ -5,7 +5,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func runJustificationInput() (string, error) {
+func RunJustificationInput() (string, error) {
 	justificationInput := text_input.TextInput{
 		Title:       styles.BeforeSelectingItemsTitleStyle("Enter justification"),
 		Placeholder: "Justification",

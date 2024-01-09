@@ -9,7 +9,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func runBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.BundleClientModel, error) {
+func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.BundleClientModel, error) {
 	bundles, err := services.ListBundles(ctx, client)
 	if err != nil {
 		return nil, err

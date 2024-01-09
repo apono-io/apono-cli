@@ -10,7 +10,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func runIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.IntegrationClientModel, error) {
+func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.IntegrationClientModel, error) {
 	integrations, err := services.ListIntegrations(ctx, client)
 	if err != nil {
 		return nil, err

@@ -9,7 +9,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
-func runResourceSelector(ctx context.Context, client *aponoapi.AponoClient, integrationId string, resourceTypeId string) ([]clientapi.ResourceClientModel, error) {
+func RunResourceSelector(ctx context.Context, client *aponoapi.AponoClient, integrationId string, resourceTypeId string) ([]clientapi.ResourceClientModel, error) {
 	resources, err := services.ListResources(ctx, client, integrationId, resourceTypeId)
 	if err != nil {
 		return nil, err
