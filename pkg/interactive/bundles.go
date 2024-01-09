@@ -11,7 +11,7 @@ import (
 )
 
 func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.BundleClientModel, error) {
-	bundles, err := services.ListBundles(ctx, client)
+	bundles, err := services.ListBundles(ctx, client, "")
 	if err != nil {
 		return nil, err
 	}
