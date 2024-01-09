@@ -1,12 +1,12 @@
 package interactive
 
 import (
-	"github.com/apono-io/apono-cli/pkg/inputs/text_input"
+	textinput "github.com/apono-io/apono-cli/pkg/inputs/text_input"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 func RunJustificationInput() (string, error) {
-	justificationInput := text_input.TextInput{
+	justificationInput := textinput.TextInput{
 		Title:       styles.BeforeSelectingItemsTitleStyle("Enter justification"),
 		Placeholder: "Justification",
 		PostMessage: func(s string) string {
@@ -14,7 +14,7 @@ func RunJustificationInput() (string, error) {
 		},
 	}
 
-	justification, err := text_input.LaunchTextInput(justificationInput)
+	justification, err := textinput.LaunchTextInput(justificationInput)
 	if err != nil {
 		return "", err
 	}

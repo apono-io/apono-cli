@@ -5,7 +5,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/apono-io/apono-cli/pkg/inputs/list_select"
+	listselect "github.com/apono-io/apono-cli/pkg/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
@@ -16,7 +16,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		return nil, err
 	}
 
-	bundleInput := list_select.SelectInput[clientapi.BundleClientModel]{
+	bundleInput := listselect.SelectInput[clientapi.BundleClientModel]{
 		Title:       styles.BeforeSelectingItemsTitleStyle("Select bundle"),
 		Options:     bundles,
 		FilterFunc:  func(s clientapi.BundleClientModel) string { return s.Name },
@@ -30,7 +30,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		ShowItemCount: true,
 	}
 
-	selectedBundles, err := list_select.LaunchSelector(bundleInput)
+	selectedBundles, err := listselect.LaunchSelector(bundleInput)
 	if err != nil {
 		return nil, err
 	}

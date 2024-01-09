@@ -6,7 +6,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/apono-io/apono-cli/pkg/inputs/list_select"
+	listselect "github.com/apono-io/apono-cli/pkg/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
@@ -20,7 +20,7 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 		return nil, fmt.Errorf("no resource types found for integration %s", integrationID)
 	}
 
-	resourceTypeInput := list_select.SelectInput[clientapi.ResourceTypeClientModel]{
+	resourceTypeInput := listselect.SelectInput[clientapi.ResourceTypeClientModel]{
 		Title:       styles.BeforeSelectingItemsTitleStyle("Select resource type"),
 		Options:     resourceTypes,
 		FilterFunc:  func(s clientapi.ResourceTypeClientModel) string { return s.Name },
@@ -36,7 +36,7 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 		ShowItemCount: true,
 	}
 
-	selectedResourceTypes, err := list_select.LaunchSelector(resourceTypeInput)
+	selectedResourceTypes, err := listselect.LaunchSelector(resourceTypeInput)
 	if err != nil {
 		return nil, err
 	}

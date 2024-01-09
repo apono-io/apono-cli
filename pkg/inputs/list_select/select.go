@@ -1,4 +1,4 @@
-package list_select
+package listselect
 
 import (
 	"fmt"
@@ -30,14 +30,14 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.submitting = true
 			item, ok := m.list.SelectedItem().(selectItem[T])
 			if ok {
-				if !item.input.MultipleSelection {
-					m.list.SetItems(handleItemSelection[T](m.list.Items(), item))
-				} else {
+				if item.input.MultipleSelection {
 					if getNumberOfSelectedItems[T](m.list.Items()) == 0 {
 						m.submitting = false
 						m.list.NewStatusMessage(noSelectionStyle.Render(noSelectText))
 						return m, nil
 					}
+				} else {
+					m.list.SetItems(handleItemSelection[T](m.list.Items(), item))
 				}
 			}
 			return m, tea.Quit

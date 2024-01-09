@@ -1,4 +1,4 @@
-package list_select
+package listselect
 
 import "github.com/charmbracelet/bubbles/list"
 

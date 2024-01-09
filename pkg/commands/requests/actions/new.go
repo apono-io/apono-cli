@@ -24,16 +24,18 @@ const (
 	maxWaitTimeForNewRequest = 30 * time.Second
 )
 
-func Create() *cobra.Command {
-	req := getEmptyRequest()
+type createRequestFlags struct {
+	bundleIDOrName      string
+	integrationIDOrName string
+	resourceType        string
+	resourceIDs         []string
+	permissionIDs       []string
+	justification       string
+	dontRunInteractive  bool
+}
 
-	var integrationIDOrName string
-	var bundleIDOrName string
-	var resourceType string
-	var resourceIds []string
-	var permissionIds []string
-	var dontRunInteractive bool
-	var justification string
+func Create() *cobra.Command {
+	cmdFlags := &createRequestFlags{}
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -44,51 +46,9 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			switch {
-			case integrationIDOrName != "":
-				var integration *clientapi.IntegrationClientModel
-				integration, err = services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
-				if err != nil {
-					return err
-				}
-
-				if dontRunInteractive {
-					req.FilterIntegrationIds = []string{integration.Id}
-					req.FilterResourceTypeIds = []string{resourceType}
-					req.FilterResourceIds = resourceIds
-					req.FilterPermissionIds = permissionIds
-				} else {
-					req, err = startIntegrationRequestInteractiveMode(cmd, client, integration.Id, resourceType, resourceIds, permissionIds, justification)
-					if err != nil {
-						return err
-					}
-				}
-
-			case bundleIDOrName != "":
-				var bundle *clientapi.BundleClientModel
-				bundle, err = services.GetBundleByNameOrID(cmd.Context(), client, bundleIDOrName)
-				if err != nil {
-					return err
-				}
-
-				if dontRunInteractive {
-					req.FilterBundleIds = []string{bundle.Id}
-				} else {
-					req, err = startBundleRequestInteractiveMode(cmd, client, bundle.Id, justification)
-					if err != nil {
-						return err
-					}
-				}
-
-			default:
-				if dontRunInteractive {
-					return fmt.Errorf("either integration or bundle must be specified")
-				} else {
-					req, err = startRequestInteractiveMode(cmd, client)
-					if err != nil {
-						return err
-					}
-				}
+			req, err2 := createNewRequestAPIModelFromFlags(cmd, client, cmdFlags)
+			if err2 != nil {
+				return err2
 			}
 
 			creationTime := time.Now()
@@ -113,20 +73,23 @@ func Create() *cobra.Command {
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), "")
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+			if err != nil {
+				return err
+			}
 
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
 			return err
 		},
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
-	flags.StringVarP(&integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
-	flags.StringVarP(&resourceType, resourceTypeFlagName, "t", "", "The resource type")
-	flags.StringSliceVarP(&resourceIds, resourceFlagName, "r", []string{}, "The resource id's")
-	flags.StringSliceVarP(&permissionIds, permissionFlagName, "p", []string{}, "The permission names")
-	flags.StringVarP(&justification, justificationFlagName, "j", "", "The justification for the access request")
-	flags.BoolVar(&dontRunInteractive, "no-interactive", false, "Dont run in interactive mode")
+	flags.StringVarP(&cmdFlags.bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
+	flags.StringVarP(&cmdFlags.integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
+	flags.StringVarP(&cmdFlags.resourceType, resourceTypeFlagName, "t", "", "The resource type")
+	flags.StringSliceVarP(&cmdFlags.resourceIDs, resourceFlagName, "r", []string{}, "The resource id's")
+	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
+	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
+	flags.BoolVar(&cmdFlags.dontRunInteractive, "no-interactive", false, "Dont run in interactive mode")
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
@@ -136,15 +99,15 @@ func Create() *cobra.Command {
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(resourceTypeFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return resourceTypeAutocompleteFunc(cmd, integrationIDOrName, toComplete)
+		return resourceTypeAutocompleteFunc(cmd, cmdFlags.integrationIDOrName, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(resourceFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return resourcesAutocompleteFunc(cmd, integrationIDOrName, resourceType, toComplete)
+		return resourcesAutocompleteFunc(cmd, cmdFlags.integrationIDOrName, cmdFlags.resourceType, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(permissionFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return permissionsAutocompleteFunc(cmd, integrationIDOrName, resourceType, toComplete)
+		return permissionsAutocompleteFunc(cmd, cmdFlags.integrationIDOrName, cmdFlags.resourceType, toComplete)
 	})
 
 	_ = cmd.RegisterFlagCompletionFunc(bundleFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -152,6 +115,61 @@ func Create() *cobra.Command {
 	})
 
 	return cmd
+}
+
+func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags) (*clientapi.CreateAccessRequestClientModel, error) {
+	req := getEmptyRequest()
+	req.Justification = flags.justification
+
+	switch {
+	case flags.integrationIDOrName != "":
+		var integration *clientapi.IntegrationClientModel
+		integration, err := services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, flags.integrationIDOrName)
+		if err != nil {
+			return nil, err
+		}
+
+		if flags.dontRunInteractive {
+			req.FilterIntegrationIds = []string{integration.Id}
+			req.FilterResourceTypeIds = []string{flags.resourceType}
+			req.FilterResourceIds = flags.resourceIDs
+			req.FilterPermissionIds = flags.permissionIDs
+		} else {
+			req, err = startIntegrationRequestInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	case flags.bundleIDOrName != "":
+		var bundle *clientapi.BundleClientModel
+		bundle, err := services.GetBundleByNameOrID(cmd.Context(), client, flags.bundleIDOrName)
+		if err != nil {
+			return nil, err
+		}
+
+		if flags.dontRunInteractive {
+			req.FilterBundleIds = []string{bundle.Id}
+		} else {
+			req, err = startBundleRequestInteractiveMode(cmd, client, bundle.Id, flags.justification)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	default:
+		if flags.dontRunInteractive {
+			return nil, fmt.Errorf("either integration or bundle must be specified")
+		} else {
+			var err error
+			req, err = startRequestInteractiveMode(cmd, client)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return req, nil
 }
 
 func integrationsAutocompleteFunc(cmd *cobra.Command, toComplete string) ([]string, cobra.ShellCompDirective) {

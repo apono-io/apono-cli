@@ -1,4 +1,4 @@
-package text_input
+package textinput
 
 type TextInput struct {
 	Title       string

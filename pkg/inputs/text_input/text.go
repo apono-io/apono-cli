@@ -1,4 +1,4 @@
-package text_input
+package textinput
 
 import (
 	"fmt"
