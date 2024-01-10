@@ -46,9 +46,9 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			req, err2 := createNewRequestAPIModelFromFlags(cmd, client, cmdFlags)
-			if err2 != nil {
-				return err2
+			req, err := createNewRequestAPIModelFromFlags(cmd, client, cmdFlags)
+			if err != nil {
+				return err
 			}
 
 			creationTime := time.Now()
