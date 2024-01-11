@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -20,7 +21,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		return nil, fmt.Errorf("no bundles found")
 	}
 
-	bundleById := make(map[string]clientapi.BundleClientModel)
+	bundleByID := make(map[string]clientapi.BundleClientModel)
 	var options []listselect.SelectOption
 	for _, bundle := range bundles {
 		options = append(options, listselect.SelectOption{
@@ -28,7 +29,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 			Label:  bundle.Name,
 			Filter: bundle.Name,
 		})
-		bundleById[bundle.Id] = bundle
+		bundleByID[bundle.Id] = bundle
 	}
 
 	bundleInput := listselect.SelectInput{
@@ -47,7 +48,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		return nil, err
 	}
 
-	selectedBundle, ok := bundleById[selectedItems[0].ID]
+	selectedBundle, ok := bundleByID[selectedItems[0].ID]
 	if !ok {
 		return nil, fmt.Errorf("bundle not found")
 	}

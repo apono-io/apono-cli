@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -21,7 +22,7 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 		return nil, fmt.Errorf("no permissions found for integration %s and resource type %s", integrationID, resourceTypeID)
 	}
 
-	permissionById := make(map[string]clientapi.PermissionClientModel)
+	permissionByID := make(map[string]clientapi.PermissionClientModel)
 	var options []listselect.SelectOption
 	for _, permission := range permissions {
 		options = append(options, listselect.SelectOption{
@@ -29,7 +30,7 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 			Label:  permission.Name,
 			Filter: permission.Name,
 		})
-		permissionById[permission.Id] = permission
+		permissionByID[permission.Id] = permission
 	}
 
 	permissionsInput := listselect.SelectInput{
@@ -55,7 +56,7 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 
 	var selectedPermissions []clientapi.PermissionClientModel
 	for _, selectedItem := range selectedItems {
-		selectedPermission, ok := permissionById[selectedItem.ID]
+		selectedPermission, ok := permissionByID[selectedItem.ID]
 		if !ok {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -21,7 +22,7 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 		return nil, fmt.Errorf("no resources found for integration %s and resource type %s", integrationID, resourceTypeID)
 	}
 
-	resourceById := make(map[string]clientapi.ResourceClientModel)
+	resourceByID := make(map[string]clientapi.ResourceClientModel)
 	var options []listselect.SelectOption
 	for _, resource := range resources {
 		options = append(options, listselect.SelectOption{
@@ -29,7 +30,7 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 			Label:  resource.Path,
 			Filter: resource.Path,
 		})
-		resourceById[resource.Id] = resource
+		resourceByID[resource.Id] = resource
 	}
 
 	resourceInput := listselect.SelectInput{
@@ -55,7 +56,7 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 
 	var selectedResources []clientapi.ResourceClientModel
 	for _, selectedItem := range selectedItems {
-		selectedResource, ok := resourceById[selectedItem.ID]
+		selectedResource, ok := resourceByID[selectedItem.ID]
 		if !ok {
 			return nil, err
 		}

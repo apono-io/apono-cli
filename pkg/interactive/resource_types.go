@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -20,7 +21,7 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 		return nil, fmt.Errorf("no resource types found for integration %s", integrationID)
 	}
 
-	resourceTypeById := make(map[string]clientapi.ResourceTypeClientModel)
+	resourceTypeByID := make(map[string]clientapi.ResourceTypeClientModel)
 	var options []listselect.SelectOption
 	for _, resourceType := range resourceTypes {
 		options = append(options, listselect.SelectOption{
@@ -28,7 +29,7 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 			Label:  resourceType.Name,
 			Filter: resourceType.Name,
 		})
-		resourceTypeById[resourceType.Id] = resourceType
+		resourceTypeByID[resourceType.Id] = resourceType
 	}
 
 	resourceTypeInput := listselect.SelectInput{
@@ -47,7 +48,7 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 		return nil, err
 	}
 
-	selectedResourceType, ok := resourceTypeById[selectedItems[0].ID]
+	selectedResourceType, ok := resourceTypeByID[selectedItems[0].ID]
 	if !ok {
 		return nil, fmt.Errorf("resource type not found")
 	}
