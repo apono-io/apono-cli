@@ -43,14 +43,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case multiSelectChoiceKey:
-			m.list.NewStatusMessage("")
-			item, ok := m.list.SelectedItem().(selectItem)
-			if ok {
-				if item.input.MultipleSelection {
-					m.list.SetItems(handleItemSelection(m.list.Items(), item))
+			if m.list.FilterState() != list.Filtering {
+				m.list.NewStatusMessage("")
+				item, ok := m.list.SelectedItem().(selectItem)
+				if ok {
+					if item.input.MultipleSelection {
+						m.list.SetItems(handleItemSelection(m.list.Items(), item))
+					}
 				}
+				return m, nil
 			}
-			return m, nil
 		}
 	}
 
