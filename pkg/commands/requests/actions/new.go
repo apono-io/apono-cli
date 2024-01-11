@@ -72,16 +72,10 @@ func Create() *cobra.Command {
 			}
 
 			var newAccessRequest *clientapi.AccessRequestClientModel
-			if cmdFlags.dontRunInteractive {
-				newAccessRequest, err = services.WaitForNewRequest(cmd.Context(), client, creationTime, cmdFlags.timeout)
-				if err != nil {
-					return err
-				}
-			} else {
-				newAccessRequest, err = requestloader.RunRequestLoader(cmd.Context(), client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
-				if err != nil {
-					return err
-				}
+
+			newAccessRequest, err = requestloader.RunRequestLoader(cmd.Context(), client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
+			if err != nil {
+				return err
 			}
 
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
