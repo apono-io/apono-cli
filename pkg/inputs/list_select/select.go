@@ -33,7 +33,7 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if item.input.MultipleSelection {
 					if getNumberOfSelectedItems[T](m.list.Items()) == 0 {
 						m.submitting = false
-						m.list.NewStatusMessage(noSelectionStyle.Render(noSelectText))
+						m.list.NewStatusMessage(defaultNoSelectionStyle.Render(noSelectText))
 						return m, nil
 					}
 				} else {
@@ -87,7 +87,7 @@ func (m model[T]) View() string {
 		return ""
 	}
 	if m.aborting {
-		return titleStyle.Render(abortingText)
+		return defaultTitleStyle.Render(abortingText)
 	}
 
 	return m.list.View()
@@ -114,9 +114,9 @@ func LaunchSelector[T any](inputModel SelectInput[T]) ([]T, error) {
 	l.SetShowStatusBar(inputModel.ShowItemCount)
 
 	l.Title = inputModel.Title
-	l.Styles.Title = titleStyle
-	l.Styles.PaginationStyle = paginationStyle
-	l.Styles.HelpStyle = helpStyle
+	l.Styles.Title = defaultTitleStyle
+	l.Styles.PaginationStyle = defaultPaginationStyle
+	l.Styles.HelpStyle = defaultHelpStyle
 
 	initModel := model[T]{list: l}
 	result, err := tea.NewProgram(initModel).Run()

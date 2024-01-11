@@ -14,16 +14,16 @@ const (
 )
 
 var (
-	titleStyle        = lipgloss.NewStyle().Margin(0, 0, 0, 0)
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("6"))
-	noSelectionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#9e413c"))
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
-	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+	defaultTitleStyle        = lipgloss.NewStyle().Margin(0, 0, 0, 0)
+	defaultItemStyle         = lipgloss.NewStyle().PaddingLeft(4)
+	defaultSelectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("6"))
+	defaultNoSelectionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#9e413c"))
+	defaultPaginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
+	defaultHelpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 )
 
 func hoveredItemRender(s ...string) string {
-	return selectedItemStyle.Render("> " + strings.Join(s, " "))
+	return defaultSelectedItemStyle.Render("> " + strings.Join(s, " "))
 }
 
 func multiSelectItemRender(item string, selected bool) string {

@@ -31,7 +31,7 @@ func (d selectItemDelegate[T]) Render(w io.Writer, m list.Model, index int, list
 		str = item.input.DisplayFunc(item.data)
 	}
 
-	fn := itemStyle.Render
+	fn := defaultItemStyle.Render
 	if index == m.Index() {
 		fn = hoveredItemRender
 	}
