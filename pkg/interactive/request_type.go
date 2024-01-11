@@ -1,7 +1,7 @@
 package interactive
 
 import (
-	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	"github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
@@ -11,7 +11,7 @@ const (
 )
 
 func RunRequestTypeSelector() (string, error) {
-	options := []listselect2.SelectOption{
+	options := []listselect.SelectOption{
 		{
 			ID:    BundleRequestType,
 			Label: BundleRequestType,
@@ -22,15 +22,15 @@ func RunRequestTypeSelector() (string, error) {
 		},
 	}
 
-	requestTypeInput := listselect2.SelectInput{
+	requestTypeInput := listselect.SelectInput{
 		Title:   styles.BeforeSelectingItemsTitleStyle("Select request type"),
 		Options: options,
-		PostMessage: func(s []listselect2.SelectOption) string {
+		PostMessage: func(s []listselect.SelectOption) string {
 			return styles.AfterSelectingItemsTitleStyle("Selected request type", []string{s[0].Label})
 		},
 	}
 
-	selectedRequestTypes, err := listselect2.LaunchSelector(requestTypeInput)
+	selectedRequestTypes, err := listselect.LaunchSelector(requestTypeInput)
 	if err != nil {
 		return "", err
 	}

@@ -2,6 +2,7 @@ package styles
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gookit/color"
 )
@@ -25,14 +26,10 @@ func AfterSelectingItemsTitleStyle(name string, items []string) string {
 }
 
 func joinNames(names []string) string {
-	var result string
-	for i, name := range names {
-		if i != len(names)-1 {
-			result += selectedItemsColor.Sprint(name) + ", "
-		} else {
-			result += selectedItemsColor.Sprint(name)
-		}
+	var coloredNames []string
+	for _, name := range names {
+		coloredNames = append(coloredNames, selectedItemsColor.Sprint(name))
 	}
 
-	return result
+	return strings.Join(coloredNames, ", ")
 }

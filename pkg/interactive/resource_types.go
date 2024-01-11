@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	"github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
