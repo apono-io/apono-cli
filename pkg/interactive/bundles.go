@@ -2,10 +2,10 @@ package interactive
 
 import (
 	"context"
+	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	listselect "github.com/apono-io/apono-cli/pkg/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
@@ -16,7 +16,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		return nil, err
 	}
 
-	bundleInput := listselect.SelectInput[clientapi.BundleClientModel]{
+	bundleInput := listselect2.SelectInput[clientapi.BundleClientModel]{
 		Title:       styles.BeforeSelectingItemsTitleStyle("Select bundle"),
 		Options:     bundles,
 		FilterFunc:  func(s clientapi.BundleClientModel) string { return s.Name },
@@ -30,7 +30,7 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 		ShowItemCount: true,
 	}
 
-	selectedBundles, err := listselect.LaunchSelector(bundleInput)
+	selectedBundles, err := listselect2.LaunchSelector(bundleInput)
 	if err != nil {
 		return nil, err
 	}

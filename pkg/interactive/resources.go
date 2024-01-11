@@ -2,10 +2,10 @@ package interactive
 
 import (
 	"context"
+	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	listselect "github.com/apono-io/apono-cli/pkg/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
@@ -17,7 +17,7 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 		return nil, err
 	}
 
-	resourceInput := listselect.SelectInput[clientapi.ResourceClientModel]{
+	resourceInput := listselect2.SelectInput[clientapi.ResourceClientModel]{
 		Title:             styles.BeforeSelectingItemsTitleStyle("Select resources"),
 		Options:           resources,
 		MultipleSelection: true,
@@ -38,7 +38,7 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 		ShowItemCount: true,
 	}
 
-	selectedResources, err := listselect.LaunchSelector(resourceInput)
+	selectedResources, err := listselect2.LaunchSelector(resourceInput)
 	if err != nil {
 		return nil, err
 	}
