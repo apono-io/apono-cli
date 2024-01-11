@@ -1,7 +1,7 @@
 package interactive
 
 import (
-	"github.com/apono-io/apono-cli/pkg/interactive/inputs/text_input"
+	textinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/text_input"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 

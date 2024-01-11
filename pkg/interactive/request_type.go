@@ -1,7 +1,7 @@
 package interactive
 
 import (
-	"github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
