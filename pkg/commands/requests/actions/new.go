@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/interactive/inputs/request_loader"
 	"strings"
 	"time"
 
@@ -15,13 +16,15 @@ import (
 )
 
 const (
-	bundleFlagName           = "bundle"
-	integrationFlagName      = "integration"
-	resourceTypeFlagName     = "resource-type"
-	resourceFlagName         = "resources"
-	permissionFlagName       = "permissions"
-	justificationFlagName    = "justification"
-	maxWaitTimeForNewRequest = 30 * time.Second
+	bundleFlagName               = "bundle"
+	integrationFlagName          = "integration"
+	resourceTypeFlagName         = "resource-type"
+	resourceFlagName             = "resources"
+	permissionFlagName           = "permissions"
+	justificationFlagName        = "justification"
+	noWaitFlagName               = "no-wait"
+	timeoutFlagName              = "timeout"
+	defaultWaitTimeForNewRequest = 30 * time.Second
 )
 
 type createRequestFlags struct {
@@ -32,6 +35,8 @@ type createRequestFlags struct {
 	permissionIDs       []string
 	justification       string
 	dontRunInteractive  bool
+	noWait              bool
+	timeout             time.Duration
 }
 
 func Create() *cobra.Command {
@@ -65,9 +70,17 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			newAccessRequest, err := waitForNewRequest(cmd, client, &creationTime)
-			if err != nil {
-				return err
+			var newAccessRequest *clientapi.AccessRequestClientModel
+			if cmdFlags.dontRunInteractive {
+				newAccessRequest, err = services.WaitForNewRequest(cmd.Context(), client, creationTime, cmdFlags.timeout)
+				if err != nil {
+					return err
+				}
+			} else {
+				newAccessRequest, err = requestloader.RunRequestLoader(cmd.Context(), client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
+				if err != nil {
+					return err
+				}
 			}
 
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
@@ -90,6 +103,8 @@ func Create() *cobra.Command {
 	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
 	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
 	flags.BoolVar(&cmdFlags.dontRunInteractive, "no-interactive", false, "Dont run in interactive mode")
+	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
+	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
@@ -305,27 +320,6 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 	}
 
 	return options
-}
-
-func waitForNewRequest(cmd *cobra.Command, client *aponoapi.AponoClient, creationTime *time.Time) (*clientapi.AccessRequestClientModel, error) {
-	startTime := time.Now()
-	for {
-		lastRequest, err := services.GetUserLastRequest(cmd.Context(), client)
-		if err != nil {
-			return nil, err
-		}
-
-		lastRequestCreationTime := utils.ConvertUnixTimeToTime(lastRequest.CreationTime)
-		if lastRequestCreationTime.After(*creationTime) {
-			return lastRequest, nil
-		}
-
-		time.Sleep(1 * time.Second)
-
-		if time.Now().After(startTime.Add(maxWaitTimeForNewRequest)) {
-			return nil, fmt.Errorf("timeout while waiting for request to be created")
-		}
-	}
 }
 
 func startRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, error) {

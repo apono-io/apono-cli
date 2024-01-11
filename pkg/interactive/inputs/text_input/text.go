@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	inputWidth = 200
+	inputWidth   = 200
+	abortingText = "Aborting..."
 )
 
 var (
-	aborttingText = "Aborting..."
-	helpText      = fmt.Sprintf("(%s/%s to abort or %s to submit)", abortKey, quitKey, submitKey)
+	helpText = fmt.Sprintf("(%s/%s to abort or %s to submit)", abortKey, quitKey, submitKey)
 )
 
 type errMsg error
@@ -59,7 +59,7 @@ func (m model) View() string {
 		return ""
 	}
 	if m.aborting {
-		return aborttingText
+		return abortingText
 	}
 
 	return fmt.Sprintf("%s \n\n%s\n\n%s",
