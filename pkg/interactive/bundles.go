@@ -2,7 +2,8 @@ package interactive
 
 import (
 	"context"
-	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	"fmt"
+	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -15,25 +16,41 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 	if err != nil {
 		return nil, err
 	}
+	if len(bundles) == 0 {
+		return nil, fmt.Errorf("no bundles found")
+	}
 
-	bundleInput := listselect2.SelectInput[clientapi.BundleClientModel]{
-		Title:       styles.BeforeSelectingItemsTitleStyle("Select bundle"),
-		Options:     bundles,
-		FilterFunc:  func(s clientapi.BundleClientModel) string { return s.Name },
-		DisplayFunc: func(s clientapi.BundleClientModel) string { return s.Name },
-		IsEqual:     func(s clientapi.BundleClientModel, s2 clientapi.BundleClientModel) bool { return s.Id == s2.Id },
-		PostMessage: func(s []clientapi.BundleClientModel) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected bundle", []string{s[0].Name})
+	bundleById := make(map[string]clientapi.BundleClientModel)
+	var options []listselect.SelectOption
+	for _, bundle := range bundles {
+		options = append(options, listselect.SelectOption{
+			ID:     bundle.Id,
+			Label:  bundle.Name,
+			Filter: bundle.Name,
+		})
+		bundleById[bundle.Id] = bundle
+	}
+
+	bundleInput := listselect.SelectInput{
+		Title:   styles.BeforeSelectingItemsTitleStyle("Select bundle"),
+		Options: options,
+		PostMessage: func(s []listselect.SelectOption) string {
+			return styles.AfterSelectingItemsTitleStyle("Selected bundle", []string{s[0].Label})
 		},
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,
 	}
 
-	selectedBundles, err := listselect2.LaunchSelector(bundleInput)
+	selectedItems, err := listselect.LaunchSelector(bundleInput)
 	if err != nil {
 		return nil, err
 	}
 
-	return &selectedBundles[0], nil
+	selectedBundle, ok := bundleById[selectedItems[0].ID]
+	if !ok {
+		return nil, fmt.Errorf("bundle not found")
+	}
+
+	return &selectedBundle, nil
 }

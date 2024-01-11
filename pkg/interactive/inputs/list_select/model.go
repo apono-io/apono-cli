@@ -2,26 +2,29 @@ package listselect
 
 import "github.com/charmbracelet/bubbles/list"
 
-type SelectInput[T any] struct {
+type SelectOption struct {
+	ID     string
+	Label  string
+	Filter string
+}
+
+type SelectInput struct {
 	Title             string
-	Options           []T
+	Options           []SelectOption
 	MultipleSelection bool
-	PostMessage       func([]T) string
-	FilterFunc        func(T) string
-	DisplayFunc       func(T) string
-	IsEqual           func(T, T) bool
+	PostMessage       func([]SelectOption) string
 	ShowHelp          bool
 	EnableFilter      bool
 	ShowItemCount     bool
 }
 
-type selectItem[T any] struct {
-	data     T
+type selectItem struct {
+	data     SelectOption
 	selected bool
-	input    SelectInput[T]
+	input    SelectInput
 }
 
-type model[T any] struct {
+type model struct {
 	list       list.Model
 	aborting   bool
 	submitting bool

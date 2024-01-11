@@ -3,7 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
-	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -20,26 +20,37 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 		return nil, fmt.Errorf("no resource types found for integration %s", integrationID)
 	}
 
-	resourceTypeInput := listselect2.SelectInput[clientapi.ResourceTypeClientModel]{
-		Title:       styles.BeforeSelectingItemsTitleStyle("Select resource type"),
-		Options:     resourceTypes,
-		FilterFunc:  func(s clientapi.ResourceTypeClientModel) string { return s.Name },
-		DisplayFunc: func(s clientapi.ResourceTypeClientModel) string { return s.Name },
-		IsEqual: func(s clientapi.ResourceTypeClientModel, s2 clientapi.ResourceTypeClientModel) bool {
-			return s.Id == s2.Id
-		},
-		PostMessage: func(s []clientapi.ResourceTypeClientModel) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected resource type", []string{s[0].Name})
+	resourceTypeById := make(map[string]clientapi.ResourceTypeClientModel)
+	var options []listselect.SelectOption
+	for _, resourceType := range resourceTypes {
+		options = append(options, listselect.SelectOption{
+			ID:     resourceType.Id,
+			Label:  resourceType.Name,
+			Filter: resourceType.Name,
+		})
+		resourceTypeById[resourceType.Id] = resourceType
+	}
+
+	resourceTypeInput := listselect.SelectInput{
+		Title:   styles.BeforeSelectingItemsTitleStyle("Select resource type"),
+		Options: options,
+		PostMessage: func(s []listselect.SelectOption) string {
+			return styles.AfterSelectingItemsTitleStyle("Selected resource type", []string{s[0].Label})
 		},
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,
 	}
 
-	selectedResourceTypes, err := listselect2.LaunchSelector(resourceTypeInput)
+	selectedItems, err := listselect.LaunchSelector(resourceTypeInput)
 	if err != nil {
 		return nil, err
 	}
 
-	return &selectedResourceTypes[0], nil
+	selectedResourceType, ok := resourceTypeById[selectedItems[0].ID]
+	if !ok {
+		return nil, fmt.Errorf("resource type not found")
+	}
+
+	return &selectedResourceType, nil
 }

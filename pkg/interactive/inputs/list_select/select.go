@@ -12,9 +12,9 @@ const (
 	noSelectText = "No items selected"
 )
 
-func (m model[T]) Init() tea.Cmd { return nil }
+func (m model) Init() tea.Cmd { return nil }
 
-func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
@@ -28,26 +28,26 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case submitKey:
 			m.submitting = true
-			item, ok := m.list.SelectedItem().(selectItem[T])
+			item, ok := m.list.SelectedItem().(selectItem)
 			if ok {
 				if item.input.MultipleSelection {
-					if getNumberOfSelectedItems[T](m.list.Items()) == 0 {
+					if getNumberOfSelectedItems(m.list.Items()) == 0 {
 						m.submitting = false
 						m.list.NewStatusMessage(defaultNoSelectionStyle.Render(noSelectText))
 						return m, nil
 					}
 				} else {
-					m.list.SetItems(handleItemSelection[T](m.list.Items(), item))
+					m.list.SetItems(handleItemSelection(m.list.Items(), item))
 				}
 			}
 			return m, tea.Quit
 
 		case multiSelectChoiceKey:
 			m.list.NewStatusMessage("")
-			item, ok := m.list.SelectedItem().(selectItem[T])
+			item, ok := m.list.SelectedItem().(selectItem)
 			if ok {
 				if item.input.MultipleSelection {
-					m.list.SetItems(handleItemSelection[T](m.list.Items(), item))
+					m.list.SetItems(handleItemSelection(m.list.Items(), item))
 				}
 			}
 			return m, nil
@@ -59,10 +59,10 @@ func (m model[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func handleItemSelection[T any](items []list.Item, selectedItem selectItem[T]) []list.Item {
+func handleItemSelection(items []list.Item, selectedItem selectItem) []list.Item {
 	for index, item := range items {
-		currentItem := item.(selectItem[T])
-		if currentItem.input.IsEqual(currentItem.data, selectedItem.data) {
+		currentItem := item.(selectItem)
+		if currentItem.data.ID == selectedItem.data.ID {
 			currentItem.selected = !currentItem.selected
 			items[index] = currentItem
 		}
@@ -71,10 +71,10 @@ func handleItemSelection[T any](items []list.Item, selectedItem selectItem[T]) [
 	return items
 }
 
-func getNumberOfSelectedItems[T any](items []list.Item) int {
+func getNumberOfSelectedItems(items []list.Item) int {
 	var count int
 	for _, item := range items {
-		if item.(selectItem[T]).selected {
+		if item.(selectItem).selected {
 			count++
 		}
 	}
@@ -82,7 +82,7 @@ func getNumberOfSelectedItems[T any](items []list.Item) int {
 	return count
 }
 
-func (m model[T]) View() string {
+func (m model) View() string {
 	if m.submitting {
 		return ""
 	}
@@ -93,13 +93,13 @@ func (m model[T]) View() string {
 	return m.list.View()
 }
 
-func LaunchSelector[T any](inputModel SelectInput[T]) ([]T, error) {
+func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 	var items []list.Item
 	for _, option := range inputModel.Options {
-		items = append(items, selectItem[T]{data: option, input: inputModel})
+		items = append(items, selectItem{data: option, input: inputModel})
 	}
 
-	l := list.New(items, selectItemDelegate[T]{}, defaultListWidth, defaultListHeight)
+	l := list.New(items, selectItemDelegate{}, defaultListWidth, defaultListHeight)
 
 	if inputModel.MultipleSelection {
 		l.AdditionalShortHelpKeys = multiSelectAdditionalHelpKeys
@@ -118,21 +118,21 @@ func LaunchSelector[T any](inputModel SelectInput[T]) ([]T, error) {
 	l.Styles.PaginationStyle = defaultPaginationStyle
 	l.Styles.HelpStyle = defaultHelpStyle
 
-	initModel := model[T]{list: l}
+	initModel := model{list: l}
 	result, err := tea.NewProgram(initModel).Run()
 	if err != nil {
 		return nil, err
 	}
 
-	resultModel := result.(model[T])
+	resultModel := result.(model)
 	if resultModel.aborting {
 		return nil, fmt.Errorf("aborted by user")
 	}
 
-	var selectedItems []T
+	var selectedItems []SelectOption
 	for _, item := range resultModel.list.Items() {
-		if item.(selectItem[T]).selected {
-			selectedItems = append(selectedItems, item.(selectItem[T]).data)
+		if item.(selectItem).selected {
+			selectedItems = append(selectedItems, item.(selectItem).data)
 		}
 	}
 

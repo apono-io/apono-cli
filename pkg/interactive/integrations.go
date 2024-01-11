@@ -3,7 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
-	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -16,27 +16,41 @@ func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (
 	if err != nil {
 		return nil, err
 	}
+	if len(integrations) == 0 {
+		return nil, fmt.Errorf("no integrations found")
+	}
 
-	integrationInput := listselect2.SelectInput[clientapi.IntegrationClientModel]{
-		Title:       styles.BeforeSelectingItemsTitleStyle("Select integration"),
-		Options:     integrations,
-		FilterFunc:  func(s clientapi.IntegrationClientModel) string { return fmt.Sprintf("%s %s", s.Type, s.Name) },
-		DisplayFunc: func(s clientapi.IntegrationClientModel) string { return fmt.Sprintf("%s/%s", s.Type, s.Name) },
-		IsEqual: func(s clientapi.IntegrationClientModel, s2 clientapi.IntegrationClientModel) bool {
-			return s.Id == s2.Id
-		},
-		PostMessage: func(s []clientapi.IntegrationClientModel) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected integration", []string{s[0].Name})
+	integrationById := make(map[string]clientapi.IntegrationClientModel)
+	var options []listselect.SelectOption
+	for _, integration := range integrations {
+		options = append(options, listselect.SelectOption{
+			ID:     integration.Id,
+			Label:  fmt.Sprintf("%s/%s", integration.Type, integration.Name),
+			Filter: fmt.Sprintf("%s %s", integration.Type, integration.Name),
+		})
+		integrationById[integration.Id] = integration
+	}
+
+	integrationInput := listselect.SelectInput{
+		Title:   styles.BeforeSelectingItemsTitleStyle("Select integration"),
+		Options: options,
+		PostMessage: func(s []listselect.SelectOption) string {
+			return styles.AfterSelectingItemsTitleStyle("Selected integration", []string{s[0].Label})
 		},
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,
 	}
 
-	selectedIntegrations, err := listselect2.LaunchSelector(integrationInput)
+	selectedItems, err := listselect.LaunchSelector(integrationInput)
 	if err != nil {
 		return nil, err
 	}
 
-	return &selectedIntegrations[0], nil
+	selectedIntegration, ok := integrationById[selectedItems[0].ID]
+	if !ok {
+		return nil, fmt.Errorf("integration not found")
+	}
+
+	return &selectedIntegration, nil
 }

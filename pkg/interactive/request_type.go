@@ -11,14 +11,24 @@ const (
 )
 
 func RunRequestTypeSelector() (string, error) {
-	requestTypeInput := listselect2.SelectInput[string]{
-		Title:       styles.BeforeSelectingItemsTitleStyle("Select request type"),
-		Options:     []string{BundleRequestType, IntegrationRequestType},
-		FilterFunc:  func(s string) string { return s },
-		DisplayFunc: func(s string) string { return s },
-		IsEqual:     func(s string, s2 string) bool { return s == s2 },
-		PostMessage: func(s []string) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected request type", []string{s[0]})
+	options := []listselect2.SelectOption{
+		{
+			ID:     BundleRequestType,
+			Label:  BundleRequestType,
+			Filter: BundleRequestType,
+		},
+		{
+			ID:     IntegrationRequestType,
+			Label:  IntegrationRequestType,
+			Filter: IntegrationRequestType,
+		},
+	}
+
+	requestTypeInput := listselect2.SelectInput{
+		Title:   styles.BeforeSelectingItemsTitleStyle("Select request type"),
+		Options: options,
+		PostMessage: func(s []listselect2.SelectOption) string {
+			return styles.AfterSelectingItemsTitleStyle("Selected request type", []string{s[0].Label})
 		},
 	}
 
@@ -27,5 +37,5 @@ func RunRequestTypeSelector() (string, error) {
 		return "", err
 	}
 
-	return selectedRequestTypes[0], nil
+	return selectedRequestTypes[0].ID, nil
 }

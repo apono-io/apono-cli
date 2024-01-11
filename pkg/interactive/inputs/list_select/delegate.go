@@ -8,27 +8,27 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type selectItemDelegate[T any] struct{}
+type selectItemDelegate struct{}
 
-func (i selectItem[T]) FilterValue() string { return i.input.FilterFunc(i.data) }
+func (i selectItem) FilterValue() string { return i.data.Filter }
 
-func (d selectItemDelegate[T]) Height() int { return 1 }
+func (d selectItemDelegate) Height() int { return 1 }
 
-func (d selectItemDelegate[T]) Spacing() int { return 0 }
+func (d selectItemDelegate) Spacing() int { return 0 }
 
-func (d selectItemDelegate[T]) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d selectItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
-func (d selectItemDelegate[T]) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	item, ok := listItem.(selectItem[T])
+func (d selectItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	item, ok := listItem.(selectItem)
 	if !ok {
 		return
 	}
 
 	var str string
 	if item.input.MultipleSelection {
-		str = multiSelectItemRender(item.input.DisplayFunc(item.data), item.selected)
+		str = multiSelectItemRender(item.data.Label, item.selected)
 	} else {
-		str = item.input.DisplayFunc(item.data)
+		str = item.data.Label
 	}
 
 	fn := defaultItemStyle.Render

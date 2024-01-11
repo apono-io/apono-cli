@@ -2,7 +2,8 @@ package interactive
 
 import (
 	"context"
-	listselect2 "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
+	"fmt"
+	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -16,20 +17,29 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 	if err != nil {
 		return nil, err
 	}
+	if len(permissions) == 0 {
+		return nil, fmt.Errorf("no permissions found for integration %s and resource type %s", integrationID, resourceTypeID)
+	}
 
-	permissionsInput := listselect2.SelectInput[clientapi.PermissionClientModel]{
+	permissionById := make(map[string]clientapi.PermissionClientModel)
+	var options []listselect.SelectOption
+	for _, permission := range permissions {
+		options = append(options, listselect.SelectOption{
+			ID:     permission.Id,
+			Label:  permission.Name,
+			Filter: permission.Name,
+		})
+		permissionById[permission.Id] = permission
+	}
+
+	permissionsInput := listselect.SelectInput{
 		Title:             styles.BeforeSelectingItemsTitleStyle("Select permissions"),
-		Options:           permissions,
+		Options:           options,
 		MultipleSelection: multipleChoice,
-		FilterFunc:        func(s clientapi.PermissionClientModel) string { return s.Name },
-		DisplayFunc:       func(s clientapi.PermissionClientModel) string { return s.Name },
-		IsEqual: func(s clientapi.PermissionClientModel, s2 clientapi.PermissionClientModel) bool {
-			return s.Id == s2.Id
-		},
-		PostMessage: func(s []clientapi.PermissionClientModel) string {
+		PostMessage: func(s []listselect.SelectOption) string {
 			var names []string
 			for _, permission := range s {
-				names = append(names, permission.Name)
+				names = append(names, permission.Label)
 			}
 			return styles.AfterSelectingItemsTitleStyle("Selected permissions", names)
 		},
@@ -38,9 +48,18 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 		ShowItemCount: true,
 	}
 
-	selectedPermissions, err := listselect2.LaunchSelector(permissionsInput)
+	selectedItems, err := listselect.LaunchSelector(permissionsInput)
 	if err != nil {
 		return nil, err
+	}
+
+	var selectedPermissions []clientapi.PermissionClientModel
+	for _, selectedItem := range selectedItems {
+		selectedPermission, ok := permissionById[selectedItem.ID]
+		if !ok {
+			return nil, err
+		}
+		selectedPermissions = append(selectedPermissions, selectedPermission)
 	}
 
 	return selectedPermissions, nil

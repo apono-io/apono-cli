@@ -664,7 +664,7 @@ func formatErrorMessage(status string, v interface{}) string {
 	metaValue := reflect.ValueOf(v).Elem()
 
 	if metaValue.Kind() == reflect.Struct {
-		field := metaValue.FieldByName("Title")
+		field := metaValue.FieldByName("Label")
 		if field != (reflect.Value{}) {
 			str = fmt.Sprintf("%s", field.Interface())
 		}
