@@ -12,9 +12,7 @@ const (
 	abortingText = "Aborting..."
 )
 
-var (
-	helpText = fmt.Sprintf("(%s/%s to abort or %s to submit)", abortKey, quitKey, submitKey)
-)
+var helpText = fmt.Sprintf("(%s/%s to abort or %s to submit)", abortKey, quitKey, submitKey)
 
 type errMsg error
 

@@ -2,11 +2,13 @@ package requestloader
 
 import (
 	"context"
+	"time"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"time"
 )
 
 func getUpdatedRequest(ctx context.Context, client *aponoapi.AponoClient, requestID string) tea.Cmd {

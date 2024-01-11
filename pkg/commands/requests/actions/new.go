@@ -2,9 +2,10 @@ package actions
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/interactive/inputs/request_loader"
 	"strings"
 	"time"
+
+	requestloader "github.com/apono-io/apono-cli/pkg/interactive/inputs/request_loader"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"

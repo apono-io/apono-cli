@@ -2,10 +2,12 @@ package requestloader
 
 import (
 	"context"
+	"time"
+
+	"github.com/charmbracelet/bubbles/spinner"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/charmbracelet/bubbles/spinner"
-	"time"
 )
 
 type model struct {

@@ -3,14 +3,16 @@ package requestloader
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gookit/color"
-	"time"
 )
 
 const (
@@ -25,7 +27,6 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case statusMsg:
 		m.request = (*clientapi.AccessRequestClientModel)(&msg)
 		if m.noWaitForGrant || shouldStopLoading(m.request) {
@@ -44,8 +45,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case abortKey:
+		if msg.String() == abortKey {
 			m.aborting = true
 			return m, tea.Quit
 		}
