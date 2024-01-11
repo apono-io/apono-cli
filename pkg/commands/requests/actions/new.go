@@ -80,9 +80,11 @@ func Create() *cobra.Command {
 
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), "")
-			if err != nil {
-				return err
+			if !cmdFlags.dontRunInteractive {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "")
+				if err != nil {
+					return err
+				}
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
