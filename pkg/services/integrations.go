@@ -42,6 +42,21 @@ func ListResourceTypes(ctx context.Context, client *aponoapi.AponoClient, integr
 	})
 }
 
+func GetResourceTypeByID(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceTypeID string) (*clientapi.ResourceTypeClientModel, error) {
+	resourceTypes, err := ListResourceTypes(ctx, client, integrationID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, resourceType := range resourceTypes {
+		if resourceType.Id == resourceTypeID {
+			return &resourceType, nil
+		}
+	}
+
+	return nil, fmt.Errorf("resource type %s not found", resourceTypeID)
+}
+
 func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.ResourceClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.InventoryAPI.ListResources(ctx).
