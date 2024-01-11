@@ -10,7 +10,7 @@ import (
 
 type selectItemDelegate struct{}
 
-func (i selectItem) FilterValue() string { return i.data.Filter }
+func (i selectItem) FilterValue() string { return i.data.Label }
 
 func (d selectItemDelegate) Height() int { return 1 }
 

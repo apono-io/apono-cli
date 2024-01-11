@@ -13,14 +13,12 @@ const (
 func RunRequestTypeSelector() (string, error) {
 	options := []listselect2.SelectOption{
 		{
-			ID:     BundleRequestType,
-			Label:  BundleRequestType,
-			Filter: BundleRequestType,
+			ID:    BundleRequestType,
+			Label: BundleRequestType,
 		},
 		{
-			ID:     IntegrationRequestType,
-			Label:  IntegrationRequestType,
-			Filter: IntegrationRequestType,
+			ID:    IntegrationRequestType,
+			Label: IntegrationRequestType,
 		},
 	}
 

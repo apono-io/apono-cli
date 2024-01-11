@@ -25,9 +25,8 @@ func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (
 	var options []listselect.SelectOption
 	for _, integration := range integrations {
 		options = append(options, listselect.SelectOption{
-			ID:     integration.Id,
-			Label:  fmt.Sprintf("%s/%s", integration.Type, integration.Name),
-			Filter: fmt.Sprintf("%s %s", integration.Type, integration.Name),
+			ID:    integration.Id,
+			Label: fmt.Sprintf("%s/%s", integration.Type, integration.Name),
 		})
 		integrationByID[integration.Id] = integration
 	}

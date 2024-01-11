@@ -26,9 +26,8 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 	var options []listselect.SelectOption
 	for _, permission := range permissions {
 		options = append(options, listselect.SelectOption{
-			ID:     permission.Id,
-			Label:  permission.Name,
-			Filter: permission.Name,
+			ID:    permission.Id,
+			Label: permission.Name,
 		})
 		permissionByID[permission.Id] = permission
 	}

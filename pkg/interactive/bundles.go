@@ -25,9 +25,8 @@ func RunBundleSelector(ctx context.Context, client *aponoapi.AponoClient) (*clie
 	var options []listselect.SelectOption
 	for _, bundle := range bundles {
 		options = append(options, listselect.SelectOption{
-			ID:     bundle.Id,
-			Label:  bundle.Name,
-			Filter: bundle.Name,
+			ID:    bundle.Id,
+			Label: bundle.Name,
 		})
 		bundleByID[bundle.Id] = bundle
 	}

@@ -3,9 +3,8 @@ package listselect
 import "github.com/charmbracelet/bubbles/list"
 
 type SelectOption struct {
-	ID     string
-	Label  string
-	Filter string
+	ID    string
+	Label string
 }
 
 type SelectInput struct {

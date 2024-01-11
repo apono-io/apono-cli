@@ -26,9 +26,8 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 	var options []listselect.SelectOption
 	for _, resource := range resources {
 		options = append(options, listselect.SelectOption{
-			ID:     resource.Id,
-			Label:  resource.Path,
-			Filter: resource.Path,
+			ID:    resource.Id,
+			Label: resource.Path,
 		})
 		resourceByID[resource.Id] = resource
 	}
