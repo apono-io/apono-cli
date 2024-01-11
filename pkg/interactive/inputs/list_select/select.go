@@ -22,25 +22,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case abortKey, quitKey:
+		case abortKey:
 			m.aborting = true
 			return m, tea.Quit
-
-		case submitKey:
-			m.submitting = true
-			item, ok := m.list.SelectedItem().(selectItem)
-			if ok {
-				if item.input.MultipleSelection {
-					if getNumberOfSelectedItems(m.list.Items()) == 0 {
-						m.submitting = false
-						m.list.NewStatusMessage(defaultNoSelectionStyle.Render(noSelectText))
-						return m, nil
-					}
-				} else {
-					m.list.SetItems(handleItemSelection(m.list.Items(), item))
-				}
+		case quitKey:
+			if m.list.FilterState() != list.Filtering {
+				m.aborting = true
+				return m, tea.Quit
 			}
-			return m, tea.Quit
+		case submitKey:
+			if m.list.FilterState() != list.Filtering {
+				m.submitting = true
+				item, ok := m.list.SelectedItem().(selectItem)
+				if ok {
+					if item.input.MultipleSelection {
+						if getNumberOfSelectedItems(m.list.Items()) == 0 {
+							m.submitting = false
+							m.list.NewStatusMessage(defaultNoSelectionStyle.Render(noSelectText))
+							return m, nil
+						}
+					} else {
+						m.list.SetItems(handleItemSelection(m.list.Items(), item))
+					}
+				}
+
+				return m, tea.Quit
+			}
 
 		case multiSelectChoiceKey:
 			if m.list.FilterState() != list.Filtering {
