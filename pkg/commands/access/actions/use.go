@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/apono-io/apono-cli/pkg/utils"
+
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/interactive"
 
@@ -29,16 +31,20 @@ const (
 	jsonOutputFormat         = "json"
 )
 
+type accessUseCommandFlags struct {
+	outputFormat               string
+	shouldExecuteAccessCommand bool
+	dontRunInteractive         bool
+}
+
 func AccessDetails() *cobra.Command {
-	var outputFormat string
-	var shouldExecuteAccessCommand bool
-	var dontRunInteractive bool
+	cmdFlags := &accessUseCommandFlags{}
 
 	cmd := &cobra.Command{
 		Use:   "use <id>",
 		Short: "Get access session details",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 && dontRunInteractive {
+			if len(args) == 0 && cmdFlags.dontRunInteractive {
 				return fmt.Errorf("session id is required when using --%s flag", noInteractiveFlagName)
 			}
 
@@ -48,7 +54,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			var session *clientapi.AccessSessionClientModel
-			if len(args) == 0 && !dontRunInteractive {
+			if len(args) == 0 && !cmdFlags.dontRunInteractive {
 				session, err = interactive.RunSessionsSelector(cmd.Context(), client)
 				if err != nil {
 					return err
@@ -62,8 +68,8 @@ func AccessDetails() *cobra.Command {
 			}
 
 			var connectionDetailsOutputFormat string
-			if dontRunInteractive || cmd.Flags().Lookup(outputFlagName).Changed {
-				connectionDetailsOutputFormat = outputFormat
+			if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, outputFlagName) {
+				connectionDetailsOutputFormat = cmdFlags.outputFormat
 			} else {
 				connectionDetailsOutputFormat, err = interactive.RunSessionDetailsTypeSelector(session)
 				if err != nil {
@@ -75,7 +81,12 @@ func AccessDetails() *cobra.Command {
 				return fmt.Errorf("unsupported output format: %s. use one of: %s", connectionDetailsOutputFormat, strings.Join(session.ConnectionMethods, ", "))
 			}
 
-			if shouldExecuteAccessCommand {
+			shouldRunCommand, err := resolveShouldExecuteCommandFlag(cmd, cmdFlags, connectionDetailsOutputFormat)
+			if err != nil {
+				return err
+			}
+
+			if shouldRunCommand {
 				return executeAccessDetails(cmd, client, session)
 			}
 
@@ -85,18 +96,15 @@ func AccessDetails() *cobra.Command {
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), accessDetails)
-			if err != nil {
-				return err
-			}
 
-			return nil
+			return err
 		},
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", cliOutputFormat, linkOutputFormat, instructionsOutputFormat, jsonOutputFormat))
-	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
-	flags.BoolVar(&dontRunInteractive, noInteractiveFlagName, false, "Dont run in interactive mode")
+	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", cliOutputFormat, linkOutputFormat, instructionsOutputFormat, jsonOutputFormat))
+	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
+	flags.BoolVar(&cmdFlags.dontRunInteractive, noInteractiveFlagName, false, "dont run in interactive mode")
 
 	return cmd
 }
@@ -145,6 +153,27 @@ func contains(availableCommands []string, command string) bool {
 		}
 	}
 	return false
+}
+
+func resolveShouldExecuteCommandFlag(cmd *cobra.Command, cmdFlags *accessUseCommandFlags, outputFormat string) (bool, error) {
+	if outputFormat != cliOutputFormat {
+		return false, nil
+	}
+
+	if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, runFlagName) {
+		return cmdFlags.shouldExecuteAccessCommand, nil
+	}
+
+	cliOutputOptions, err := interactive.RunSessionCliMethodOptionSelector()
+	if err != nil {
+		return false, err
+	}
+
+	if cliOutputOptions != interactive.ExecuteOption {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func getSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, error) {

@@ -40,9 +40,6 @@ func RunSessionDetailsTypeSelector(session *clientapi.AccessSessionClientModel) 
 	if err != nil {
 		return "", err
 	}
-	if len(selectedItems) == 0 {
-		return "", fmt.Errorf("no connection method selected")
-	}
 
 	return selectedItems[0].ID, nil
 }
