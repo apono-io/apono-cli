@@ -41,7 +41,7 @@ func AccessDetails() *cobra.Command {
 	cmdFlags := &accessUseCommandFlags{}
 
 	cmd := &cobra.Command{
-		Use:   "use <id>",
+		Use:   "use <session_id>",
 		Short: "Get access session details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && cmdFlags.dontRunInteractive {
