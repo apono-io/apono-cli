@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/apono-io/apono-cli/pkg/utils"
 
@@ -13,6 +15,10 @@ import (
 	"github.com/gosuri/uitable"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+)
+
+const (
+	requestWaitingForApprovalStatus = "Pending Approval"
 )
 
 func GenerateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
@@ -37,13 +43,34 @@ func GenerateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitab
 			revocationTime = "NA"
 		}
 
-		table.AddRow(request.Id, utils.DisplayTime(creationTime), revocationTime, integrations, *request.Justification.Get(), coloredStatus(request.Status.Status))
+		table.AddRow(request.Id, utils.DisplayTime(creationTime), revocationTime, integrations, *request.Justification.Get(), ColoredStatus(request))
 	}
 
 	return table
 }
 
-func GetUserLastRequest(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.AccessRequestClientModel, error) {
+func WaitForNewRequest(ctx context.Context, client *aponoapi.AponoClient, creationTime time.Time, timeout time.Duration) (*clientapi.AccessRequestClientModel, error) {
+	startTime := time.Now()
+	for {
+		lastRequest, err := getUserLastRequest(ctx, client)
+		if err != nil {
+			return nil, err
+		}
+
+		lastRequestCreationTime := utils.ConvertUnixTimeToTime(lastRequest.CreationTime)
+		if lastRequestCreationTime.After(creationTime) {
+			return lastRequest, nil
+		}
+
+		time.Sleep(1 * time.Second)
+
+		if time.Now().After(startTime.Add(timeout)) {
+			return nil, fmt.Errorf("timeout while waiting for request to be created")
+		}
+	}
+}
+
+func getUserLastRequest(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.AccessRequestClientModel, error) {
 	userLastRequests, _, err := client.ClientAPI.AccessRequestsAPI.ListAccessRequests(ctx).
 		Scope(clientapi.ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS).
 		Limit(1).
@@ -108,6 +135,22 @@ func ListAccessRequestAccessUnits(ctx context.Context, client *aponoapi.AponoCli
 	return requestAccessUnits, nil
 }
 
+func IsRequestWaitingForHumanApproval(request *clientapi.AccessRequestClientModel) bool {
+	if request.Status.Status != clientapi.ACCESSSTATUS_PENDING {
+		return false
+	}
+
+	if !request.Challenge.IsSet() {
+		return false
+	}
+
+	if len(request.Challenge.Get().Approvers) == 0 {
+		return false
+	}
+
+	return true
+}
+
 func listAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClient, accessGroupID string) ([]clientapi.AccessUnitClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessUnitClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.AccessGroupsAPI.GetAccessGroupUnits(ctx, accessGroupID).
@@ -133,9 +176,16 @@ func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID 
 	return err
 }
 
-func coloredStatus(status clientapi.AccessStatus) string {
+func ColoredStatus(request clientapi.AccessRequestClientModel) string {
+	status := request.Status.Status
+	if IsRequestWaitingForHumanApproval(&request) {
+		status = requestWaitingForApprovalStatus
+	}
+
 	statusTitle := cases.Title(language.English).String(string(status))
 	switch status {
+	case requestWaitingForApprovalStatus:
+		return color.HiYellow.Sprint(statusTitle)
 	case clientapi.ACCESSSTATUS_PENDING:
 		return color.Yellow.Sprint(statusTitle)
 	case clientapi.ACCESSSTATUS_APPROVED:
