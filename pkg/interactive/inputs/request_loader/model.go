@@ -11,16 +11,17 @@ import (
 )
 
 type model struct {
-	spinner        spinner.Model
-	ctx            context.Context
-	client         *aponoapi.AponoClient
-	request        *clientapi.AccessRequestClientModel
-	creationTime   time.Time
-	timeout        time.Duration
-	noWaitForGrant bool
-	quitting       bool
-	aborting       bool
-	err            error
+	spinner         spinner.Model
+	ctx             context.Context
+	client          *aponoapi.AponoClient
+	request         *clientapi.AccessRequestClientModel
+	creationTime    time.Time
+	timeout         time.Duration
+	lastRequestTime time.Time
+	noWaitForGrant  bool
+	quitting        bool
+	aborting        bool
+	err             error
 }
 
 type statusMsg clientapi.AccessRequestClientModel

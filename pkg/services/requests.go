@@ -135,7 +135,7 @@ func ListAccessRequestAccessUnits(ctx context.Context, client *aponoapi.AponoCli
 	return requestAccessUnits, nil
 }
 
-func IsRequestWaitingForApproval(request *clientapi.AccessRequestClientModel) bool {
+func IsRequestWaitingForHumanApproval(request *clientapi.AccessRequestClientModel) bool {
 	if request.Status.Status != clientapi.ACCESSSTATUS_PENDING {
 		return false
 	}
@@ -178,7 +178,7 @@ func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID 
 
 func ColoredStatus(request clientapi.AccessRequestClientModel) string {
 	status := request.Status.Status
-	if IsRequestWaitingForApproval(&request) {
+	if IsRequestWaitingForHumanApproval(&request) {
 		status = requestWaitingForApprovalStatus
 	}
 

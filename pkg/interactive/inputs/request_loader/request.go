@@ -32,13 +32,17 @@ func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, creationT
 	}
 }
 
+func shouldRetryLoading(lastRequestTime time.Time, interval time.Duration) bool {
+	return time.Now().After(lastRequestTime.Add(interval))
+}
+
 func shouldStopLoading(request *clientapi.AccessRequestClientModel) bool {
 	switch request.Status.Status {
-	case clientapi.ACCESSSTATUS_FAILED, clientapi.ACCESSSTATUS_GRANTED:
+	case clientapi.ACCESSSTATUS_FAILED, clientapi.ACCESSSTATUS_GRANTED, clientapi.ACCESSSTATUS_REJECTED:
 		return true
 
 	case clientapi.ACCESSSTATUS_PENDING:
-		if services.IsRequestWaitingForApproval(request) {
+		if services.IsRequestWaitingForHumanApproval(request) {
 			return true
 		}
 	}

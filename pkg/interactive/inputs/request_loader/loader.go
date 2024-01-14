@@ -17,6 +17,7 @@ import (
 
 const (
 	abortingText = "Aborting..."
+	interval     = 1 * time.Second
 )
 
 func (m model) Init() tea.Cmd {
@@ -36,6 +37,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if time.Now().After(m.creationTime.Add(m.timeout)) {
 			m.err = fmt.Errorf("timeout waiting for request to be granted")
 			return m, tea.Quit
+		}
+		if shouldRetryLoading(m.lastRequestTime, interval) {
+			m.lastRequestTime = time.Now()
+			return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
 		}
 
 		return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
@@ -82,12 +87,13 @@ func RunRequestLoader(ctx context.Context, client *aponoapi.AponoClient, creatio
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	initModel := model{
-		spinner:        s,
-		ctx:            ctx,
-		client:         client,
-		creationTime:   creationTime,
-		timeout:        timeout,
-		noWaitForGrant: noWaitForGrant,
+		spinner:         s,
+		ctx:             ctx,
+		client:          client,
+		creationTime:    creationTime,
+		timeout:         timeout,
+		lastRequestTime: time.Now(),
+		noWaitForGrant:  noWaitForGrant,
 	}
 
 	result, err := tea.NewProgram(initModel).Run()
