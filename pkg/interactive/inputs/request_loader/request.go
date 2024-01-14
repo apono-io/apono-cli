@@ -17,7 +17,7 @@ func getUpdatedRequest(ctx context.Context, client *aponoapi.AponoClient, reques
 		if err != nil {
 			return errMsg{err}
 		}
-		return statusMsg(*resp)
+		return updatedRequestMsg(*resp)
 	}
 }
 
@@ -28,7 +28,7 @@ func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, creationT
 			return errMsg{err}
 		}
 
-		return statusMsg(*newAccessRequest)
+		return updatedRequestMsg(*newAccessRequest)
 	}
 }
 

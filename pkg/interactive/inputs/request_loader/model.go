@@ -24,6 +24,6 @@ type model struct {
 	err             error
 }
 
-type statusMsg clientapi.AccessRequestClientModel
+type updatedRequestMsg clientapi.AccessRequestClientModel
 
 type errMsg struct{ err error }

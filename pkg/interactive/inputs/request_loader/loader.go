@@ -28,7 +28,7 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case statusMsg:
+	case updatedRequestMsg:
 		m.request = (*clientapi.AccessRequestClientModel)(&msg)
 		if m.noWaitForGrant || shouldStopLoading(m.request) {
 			m.quitting = true
@@ -43,7 +43,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
 		}
 
-		return m, func() tea.Msg { return statusMsg(*m.request) }
+		return m, func() tea.Msg { return updatedRequestMsg(*m.request) }
 
 	case errMsg:
 		m.err = msg
