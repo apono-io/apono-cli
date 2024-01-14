@@ -43,7 +43,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
 		}
 
-		return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
+		return m, func() tea.Msg { return statusMsg(*m.request) }
 
 	case errMsg:
 		m.err = msg
