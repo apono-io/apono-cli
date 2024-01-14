@@ -21,6 +21,7 @@ const (
 	resourceFlagName         = "resources"
 	permissionFlagName       = "permissions"
 	justificationFlagName    = "justification"
+	noInteractiveFlagName    = "no-interactive"
 	maxWaitTimeForNewRequest = 30 * time.Second
 )
 
@@ -89,7 +90,7 @@ func Create() *cobra.Command {
 	flags.StringSliceVarP(&cmdFlags.resourceIDs, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
 	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
-	flags.BoolVar(&cmdFlags.dontRunInteractive, "no-interactive", false, "Dont run in interactive mode")
+	flags.BoolVar(&cmdFlags.dontRunInteractive, noInteractiveFlagName, false, "Dont run in interactive mode")
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
