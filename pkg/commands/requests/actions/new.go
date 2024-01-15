@@ -26,7 +26,7 @@ const (
 	noInteractiveFlagName        = "no-interactive"
 	noWaitFlagName               = "no-wait"
 	timeoutFlagName              = "timeout"
-	defaultWaitTimeForNewRequest = 30 * time.Second
+	defaultWaitTimeForNewRequest = 60 * time.Second
 )
 
 type createRequestFlags struct {
