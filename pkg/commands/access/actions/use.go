@@ -54,7 +54,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			var session *clientapi.AccessSessionClientModel
-			if len(args) == 0 && !cmdFlags.dontRunInteractive {
+			if len(args) == 0 {
 				session, err = interactive.RunSessionsSelector(cmd.Context(), client)
 				if err != nil {
 					return err
@@ -67,14 +67,13 @@ func AccessDetails() *cobra.Command {
 				}
 			}
 
-			var connectionDetailsOutputFormat string
-			if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, outputFlagName) {
-				connectionDetailsOutputFormat = cmdFlags.outputFormat
-			} else {
-				connectionDetailsOutputFormat, err = interactive.RunSessionDetailsTypeSelector(session)
-				if err != nil {
-					return err
-				}
+			if len(session.ConnectionMethods) == 0 {
+				return fmt.Errorf("no available connection methods")
+			}
+
+			connectionDetailsOutputFormat, err := resolveOutputFormat(cmd, cmdFlags, session)
+			if err != nil {
+				return err
 			}
 
 			if !contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
@@ -153,6 +152,27 @@ func contains(availableCommands []string, command string) bool {
 		}
 	}
 	return false
+}
+
+func resolveOutputFormat(cmd *cobra.Command, cmdFlags *accessUseCommandFlags, session *clientapi.AccessSessionClientModel) (string, error) {
+	if cmdFlags.shouldExecuteAccessCommand {
+		return cliOutputFormat, nil
+	}
+
+	if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, outputFlagName) {
+		return cmdFlags.outputFormat, nil
+	}
+
+	if len(session.ConnectionMethods) == 1 {
+		return session.ConnectionMethods[0], nil
+	}
+
+	outputFormat, err := interactive.RunSessionDetailsTypeSelector(session)
+	if err != nil {
+		return "", err
+	}
+
+	return outputFormat, nil
 }
 
 func resolveShouldExecuteCommandFlag(cmd *cobra.Command, cmdFlags *accessUseCommandFlags, outputFormat string) (bool, error) {

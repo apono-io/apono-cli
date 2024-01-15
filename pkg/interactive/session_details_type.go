@@ -1,8 +1,6 @@
 package interactive
 
 import (
-	"fmt"
-
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -12,14 +10,6 @@ import (
 )
 
 func RunSessionDetailsTypeSelector(session *clientapi.AccessSessionClientModel) (string, error) {
-	if len(session.ConnectionMethods) == 0 {
-		return "", fmt.Errorf("no available connection methods")
-	}
-
-	if len(session.ConnectionMethods) == 1 {
-		return session.ConnectionMethods[0], nil
-	}
-
 	var options []listselect.SelectOption
 	for _, method := range session.ConnectionMethods {
 		options = append(options, listselect.SelectOption{
