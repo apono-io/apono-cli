@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apono-io/apono-cli/pkg/styles"
+
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -32,4 +34,12 @@ func multiSelectItemRender(item string, selected bool) string {
 	} else {
 		return fmt.Sprintf("[ ] %s", item)
 	}
+}
+
+func getPostTitle(selectedItems []SelectOption, text string) string {
+	var names []string
+	for _, resource := range selectedItems {
+		names = append(names, resource.Label)
+	}
+	return styles.AfterSelectingItemsTitleStyle(text, names)
 }

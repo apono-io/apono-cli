@@ -9,7 +9,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, integrationID string) (*clientapi.ResourceTypeClientModel, error) {
@@ -32,11 +31,9 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 	}
 
 	resourceTypeInput := listselect.SelectInput{
-		Title:   styles.BeforeSelectingItemsTitleStyle("Select resource type"),
-		Options: options,
-		PostMessage: func(s []listselect.SelectOption) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected resource type", []string{s[0].Label})
-		},
+		Title:         "Select resource type",
+		PostTitle:     "Selected resource type",
+		Options:       options,
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,

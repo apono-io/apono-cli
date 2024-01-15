@@ -9,9 +9,9 @@ type SelectOption struct {
 
 type SelectInput struct {
 	Title             string
+	PostTitle         string
 	Options           []SelectOption
 	MultipleSelection bool
-	PostMessage       func([]SelectOption) string
 	ShowHelp          bool
 	EnableFilter      bool
 	ShowItemCount     bool

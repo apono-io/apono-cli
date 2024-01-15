@@ -8,7 +8,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.AccessSessionClientModel, error) {
@@ -31,11 +30,9 @@ func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient) (*cl
 	}
 
 	sessionsInput := listselect.SelectInput{
-		Title:   styles.BeforeSelectingItemsTitleStyle("Select session"),
-		Options: options,
-		PostMessage: func(s []listselect.SelectOption) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected session", []string{s[0].Label})
-		},
+		Title:         "Select session",
+		PostTitle:     "Selected session",
+		Options:       options,
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,

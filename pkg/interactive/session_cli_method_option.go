@@ -2,7 +2,6 @@ package interactive
 
 import (
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 const (
@@ -23,11 +22,9 @@ func RunSessionCliMethodOptionSelector() (string, error) {
 	}
 
 	requestTypeInput := listselect.SelectInput{
-		Title:   styles.BeforeSelectingItemsTitleStyle("Select how to use access command"),
-		Options: options,
-		PostMessage: func(s []listselect.SelectOption) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected option", []string{s[0].Label})
-		},
+		Title:     "Select how to use access command",
+		PostTitle: "Selected option",
+		Options:   options,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(requestTypeInput)

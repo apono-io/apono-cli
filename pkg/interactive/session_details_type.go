@@ -6,7 +6,6 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 func RunSessionDetailsTypeSelector(session *clientapi.AccessSessionClientModel) (string, error) {
@@ -19,11 +18,9 @@ func RunSessionDetailsTypeSelector(session *clientapi.AccessSessionClientModel) 
 	}
 
 	sessionsInput := listselect.SelectInput{
-		Title:   styles.BeforeSelectingItemsTitleStyle("Select connection method"),
-		Options: options,
-		PostMessage: func(s []listselect.SelectOption) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected connection method", []string{s[0].Label})
-		},
+		Title:     "Select connection method",
+		PostTitle: "Selected connection method",
+		Options:   options,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(sessionsInput)

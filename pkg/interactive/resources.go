@@ -9,7 +9,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 //nolint:dupl // Remove duplication error
@@ -33,19 +32,13 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 	}
 
 	resourceInput := listselect.SelectInput{
-		Title:             styles.BeforeSelectingItemsTitleStyle("Select resources"),
+		Title:             "Select resources",
+		PostTitle:         "Selected resources",
 		Options:           options,
 		MultipleSelection: true,
-		PostMessage: func(s []listselect.SelectOption) string {
-			var names []string
-			for _, resource := range s {
-				names = append(names, resource.Label)
-			}
-			return styles.AfterSelectingItemsTitleStyle("Selected resources", names)
-		},
-		ShowHelp:      true,
-		EnableFilter:  true,
-		ShowItemCount: true,
+		ShowHelp:          true,
+		EnableFilter:      true,
+		ShowItemCount:     true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(resourceInput)
