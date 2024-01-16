@@ -23,7 +23,7 @@ const (
 	resourceFlagName             = "resources"
 	permissionFlagName           = "permissions"
 	justificationFlagName        = "justification"
-	noInteractiveFlagName        = "no-interactive"
+	interactiveFlagName          = "interactive"
 	noWaitFlagName               = "no-wait"
 	timeoutFlagName              = "timeout"
 	defaultWaitTimeForNewRequest = 60 * time.Second
@@ -36,7 +36,7 @@ type createRequestFlags struct {
 	resourceIDs         []string
 	permissionIDs       []string
 	justification       string
-	dontRunInteractive  bool
+	runInteractiveMode  bool
 	noWait              bool
 	timeout             time.Duration
 }
@@ -45,8 +45,9 @@ func Create() *cobra.Command {
 	cmdFlags := &createRequestFlags{}
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new access request",
+		Use:     "create",
+		Short:   "Create a new access request",
+		Aliases: []string{"new"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
@@ -81,7 +82,7 @@ func Create() *cobra.Command {
 
 			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
 
-			if !cmdFlags.dontRunInteractive {
+			if cmdFlags.runInteractiveMode {
 				fmt.Println()
 			}
 
@@ -97,7 +98,7 @@ func Create() *cobra.Command {
 	flags.StringSliceVarP(&cmdFlags.resourceIDs, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
 	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
-	flags.BoolVar(&cmdFlags.dontRunInteractive, noInteractiveFlagName, false, "Dont run interactive mode")
+	flags.BoolVar(&cmdFlags.runInteractiveMode, interactiveFlagName, false, "Dont run interactive mode")
 	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 
@@ -139,16 +140,16 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 			return nil, err
 		}
 
-		if flags.dontRunInteractive {
-			req.FilterIntegrationIds = []string{integration.Id}
-			req.FilterResourceTypeIds = []string{flags.resourceType}
-			req.FilterResourceIds = flags.resourceIDs
-			req.FilterPermissionIds = flags.permissionIDs
-		} else {
+		if flags.runInteractiveMode {
 			req, err = startIntegrationRequestInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			req.FilterIntegrationIds = []string{integration.Id}
+			req.FilterResourceTypeIds = []string{flags.resourceType}
+			req.FilterResourceIds = flags.resourceIDs
+			req.FilterPermissionIds = flags.permissionIDs
 		}
 
 	case flags.bundleIDOrName != "":
@@ -158,24 +159,24 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 			return nil, err
 		}
 
-		if flags.dontRunInteractive {
-			req.FilterBundleIds = []string{bundle.Id}
-		} else {
+		if flags.runInteractiveMode {
 			req, err = startBundleRequestInteractiveMode(cmd, client, bundle.Id, flags.justification)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			req.FilterBundleIds = []string{bundle.Id}
 		}
 
 	default:
-		if flags.dontRunInteractive {
-			return nil, fmt.Errorf("either integration or bundle must be specified")
-		} else {
+		if flags.runInteractiveMode {
 			var err error
 			req, err = startRequestInteractiveMode(cmd, client)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			return nil, fmt.Errorf("either --%s, --%s or --%s flags must be specified", integrationFlagName, bundleFlagName, interactiveFlagName)
 		}
 	}
 
