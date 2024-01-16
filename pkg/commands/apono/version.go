@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/version"
+
 	"github.com/apono-io/apono-cli/pkg/groups"
 
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -13,13 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type VersionInfo struct {
-	BuildDate string `json:"buildDate" yaml:"buildDate"`
-	Commit    string `json:"commit" yaml:"commit"`
-	Version   string `json:"version" yaml:"version"`
-}
-
-func VersionCommand(info VersionInfo) *cobra.Command {
+func VersionCommand(info version.VersionInfo) *cobra.Command {
 	format := new(utils.Format)
 	cmd := &cobra.Command{
 		Use:     "version",

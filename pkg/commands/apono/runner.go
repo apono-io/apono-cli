@@ -3,6 +3,10 @@ package apono
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/apono-io/apono-cli/pkg/analytics"
+	"github.com/apono-io/apono-cli/pkg/version"
 
 	"github.com/apono-io/apono-cli/pkg/commands/access"
 	"github.com/apono-io/apono-cli/pkg/commands/auth"
@@ -18,7 +22,7 @@ import (
 
 func NewRunner(opts *RunnerOptions) (*Runner, error) {
 	r := &Runner{
-		rootCmd: createRootCommand(),
+		rootCmd: createRootCommand(opts.VersionInfo),
 		opts:    opts,
 		configurators: []Configurator{
 			&auth.Configurator{},
@@ -36,7 +40,7 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 }
 
 type RunnerOptions struct {
-	VersionInfo
+	version.VersionInfo
 }
 
 type Runner struct {
@@ -88,7 +92,7 @@ func (r *Runner) GenManTree(dir string) error {
 	return doc.GenManTree(r.rootCmd, header, dir)
 }
 
-func createRootCommand() *cobra.Command {
+func createRootCommand(versionInfo version.VersionInfo) *cobra.Command {
 	c := &cobra.Command{
 		Use:           "apono",
 		Short:         "View, request and receive permissions to services, DBs and applications directly from your CLI",
@@ -105,8 +109,18 @@ func createRootCommand() *cobra.Command {
 			return err
 		}
 
-		cmd.SetContext(aponoapi.CreateContext(cmd.Context(), client))
+		commandStartTime := time.Now()
+		commandID := analytics.GenerateCommandID()
+
+		cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), client))
+		cmd.SetContext(version.CreateVersionContext(cmd.Context(), &versionInfo))
+		cmd.SetContext(analytics.CreateStartTimeContext(cmd.Context(), &commandStartTime))
+		cmd.SetContext(analytics.CreateCommandIDContext(cmd.Context(), commandID))
+
 		return nil
+	}
+	c.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		analytics.SendCommandAnalyticsEvent(cmd, args)
 	}
 
 	return c
