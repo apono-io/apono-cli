@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"runtime"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/version"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
