@@ -2,6 +2,7 @@ api_access_groups.go
 api_access_request_templates.go
 api_access_requests.go
 api_access_sessions.go
+api_analytics.go
 api_inventory.go
 api_user_session.go
 client.go
@@ -28,6 +29,7 @@ model_access_unit_client_model_status.go
 model_access_unit_status_client.go
 model_access_unit_status_client_model.go
 model_account_client_model.go
+model_analytic_client_type_client_model.go
 model_approval_result_client_model.go
 model_bundle_client_model.go
 model_challenge_approver_client_model.go
@@ -36,6 +38,7 @@ model_client_challenge_logical_relation.go
 model_client_challenge_status.go
 model_client_challenge_type.go
 model_create_access_request_client_model.go
+model_create_analytic_event_client_model.go
 model_create_and_update_access_request_template_client_model.go
 model_credentials_client_model.go
 model_icons_config_client_model.go

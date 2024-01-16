@@ -6,14 +6,15 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/apono-io/apono-cli/pkg/commands/apono"
+	"github.com/apono-io/apono-cli/pkg/version"
 
 	"github.com/apono-io/apono-cli/pkg/build"
+	"github.com/apono-io/apono-cli/pkg/commands/apono"
 )
 
 func main() {
 	runner, err := apono.NewRunner(&apono.RunnerOptions{
-		VersionInfo: apono.VersionInfo{
+		VersionInfo: version.VersionInfo{
 			BuildDate: build.Date,
 			Commit:    build.Commit,
 			Version:   build.Version,
@@ -27,7 +28,7 @@ func main() {
 	err = execute(runner)
 	if err != nil {
 		fmt.Println("Error:", err.Error())
-		fmt.Println("See 'apono --help' for usage.")
+		fmt.Println("Use '--help' to see usage.")
 		os.Exit(1)
 	}
 }

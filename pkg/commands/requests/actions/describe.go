@@ -2,11 +2,10 @@ package actions
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/apono-io/apono-cli/pkg/services"
 
 	"github.com/spf13/cobra"
+
+	"github.com/apono-io/apono-cli/pkg/services"
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 
@@ -20,12 +19,7 @@ func Describe() *cobra.Command {
 		Aliases: []string{"get"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				err := cmd.Help()
-				if err != nil {
-					return err
-				}
-
-				os.Exit(0)
+				return fmt.Errorf("missing request ID")
 			}
 
 			client, err := aponoapi.GetClient(cmd.Context())

@@ -29,6 +29,9 @@
       "name": "Access Sessions"
     },
     {
+      "name": "Analytics"
+    },
+    {
       "name": "Inventory"
     },
     {
@@ -886,6 +889,30 @@
         }
       }
     },
+    "/api/client/v1/analytics": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Send analytics event",
+        "operationId": "sendAnalyticsEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnalyticEventClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
     "/api/client/v1/inventory/access-units": {
       "get": {
         "tags": [
@@ -1682,6 +1709,12 @@
           }
         }
       },
+      "AnalyticClientTypeClientModel": {
+        "enum": [
+          "CLI"
+        ],
+        "type": "string"
+      },
       "ApprovalResultClientModel": {
         "type": "object",
         "properties": {
@@ -1829,6 +1862,25 @@
             "format": "int64",
             "type": "integer",
             "nullable": true
+          }
+        }
+      },
+      "CreateAnalyticEventClientModel": {
+        "required": [
+          "event_name",
+          "client_type",
+          "properties"
+        ],
+        "type": "object",
+        "properties": {
+          "event_name": {
+            "type": "string"
+          },
+          "client_type": {
+            "$ref": "#/components/schemas/AnalyticClientTypeClientModel"
+          },
+          "properties": {
+            "type": "object"
           }
         }
       },

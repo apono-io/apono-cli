@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/services"
@@ -28,12 +27,7 @@ func Revoke() *cobra.Command {
 		Short: "Revoke the specified access request",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				err := cmd.Help()
-				if err != nil {
-					return err
-				}
-
-				os.Exit(0)
+				return fmt.Errorf("missing request ID")
 			}
 
 			client, err := aponoapi.GetClient(cmd.Context())

@@ -5,21 +5,23 @@ import (
 	"errors"
 )
 
-type clientContextKey string
+type contextKey string
 
-const contextKey = clientContextKey("__apono_client")
+const (
+	clientContextKey = contextKey("__apono_client")
+)
 
 var (
 	ErrClientNotConfigured = errors.New("client is not set in context")
 	ErrIllegalContextValue = errors.New("illegal value is set in context")
 )
 
-func CreateContext(ctx context.Context, client *AponoClient) context.Context {
-	return context.WithValue(ctx, contextKey, client)
+func CreateClientContext(ctx context.Context, client *AponoClient) context.Context {
+	return context.WithValue(ctx, clientContextKey, client)
 }
 
 func GetClient(ctx context.Context) (*AponoClient, error) {
-	client := ctx.Value(contextKey)
+	client := ctx.Value(clientContextKey)
 	if client == nil {
 		return nil, ErrClientNotConfigured
 	}
