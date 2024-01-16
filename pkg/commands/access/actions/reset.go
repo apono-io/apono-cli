@@ -18,8 +18,11 @@ func AccessReset() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reset-credentials [id]",
 		Short: "Reset access session credentials",
-		Args:  cobra.ExactArgs(1), // This will enforce that exactly 1 argument must be provided
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return fmt.Errorf("missing session id")
+			}
+
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
 				return err
