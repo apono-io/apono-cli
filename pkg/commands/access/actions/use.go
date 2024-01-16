@@ -6,6 +6,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -51,7 +52,7 @@ func AccessDetails() *cobra.Command {
 				return services.ExecuteAccessDetails(cmd, client, session)
 			}
 
-			if !contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
+			if !utils.Contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
 				return fmt.Errorf("unsupported output format: %s. use one of: %s", connectionDetailsOutputFormat, strings.Join(session.ConnectionMethods, ", "))
 			}
 
@@ -71,15 +72,6 @@ func AccessDetails() *cobra.Command {
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 
 	return cmd
-}
-
-func contains(availableCommands []string, command string) bool {
-	for _, c := range availableCommands {
-		if command == c {
-			return true
-		}
-	}
-	return false
 }
 
 func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {

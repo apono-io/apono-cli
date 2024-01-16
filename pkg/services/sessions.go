@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
-	"slices"
-
-	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/utils"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -49,7 +48,7 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return errors.New("executing cli commands is not supported on windows")
 	}
 
-	if !slices.Contains(session.ConnectionMethods, CliOutputFormat) {
+	if !utils.Contains(session.ConnectionMethods, CliOutputFormat) {
 		return fmt.Errorf("session %s does not support cli access", session.Id)
 	}
 
