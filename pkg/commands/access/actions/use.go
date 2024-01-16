@@ -2,6 +2,7 @@ package actions
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/apono-io/apono-cli/pkg/utils"
+
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/interactive"
 
 	"github.com/spf13/cobra"
 
@@ -17,8 +21,9 @@ import (
 )
 
 const (
-	outputFlagName = "output"
-	runFlagName    = "run"
+	outputFlagName        = "output"
+	runFlagName           = "run"
+	noInteractiveFlagName = "no-interactive"
 
 	cliOutputFormat          = "cli"
 	linkOutputFormat         = "link"
@@ -26,70 +31,79 @@ const (
 	jsonOutputFormat         = "json"
 )
 
+type accessUseCommandFlags struct {
+	outputFormat               string
+	shouldExecuteAccessCommand bool
+	dontRunInteractive         bool
+}
+
 func AccessDetails() *cobra.Command {
-	var outputFormat string
-	var shouldExecuteAccessCommand bool
+	cmdFlags := &accessUseCommandFlags{}
 
 	cmd := &cobra.Command{
-		Use:   "use <id>",
+		Use:   "use <session_id>",
 		Short: "Get access session details",
-		Args:  cobra.MinimumNArgs(1), // This will enforce that exactly 1 argument must be provided
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && cmdFlags.dontRunInteractive {
+				return fmt.Errorf("session id is required when using --%s flag", noInteractiveFlagName)
+			}
+
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
 				return err
 			}
 
-			sessionID := args[0]
-
-			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
-			if err != nil {
-				return fmt.Errorf("access session with id %s not found", sessionID)
-			}
-
-			if shouldExecuteAccessCommand {
-				return executeAccessDetails(cmd, client, session)
-			}
-
-			if !contains(session.ConnectionMethods, outputFormat) {
-				return fmt.Errorf("unsupported output format: %s. use one of: %s", outputFormat, strings.Join(session.ConnectionMethods, ", "))
-			}
-
-			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cmd.Context(), sessionID).Execute()
-			if err != nil {
-				return err
-			}
-
-			var output string
-			switch outputFormat {
-			case cliOutputFormat:
-				output = *accessDetails.Cli.Get()
-			case linkOutputFormat:
-				link := accessDetails.GetLink()
-				output = link.GetUrl()
-			case instructionsOutputFormat:
-				output = accessDetails.Instructions.Plain
-			case jsonOutputFormat:
-				var outputBytes []byte
-				outputBytes, err = json.Marshal(accessDetails.Json)
+			var session *clientapi.AccessSessionClientModel
+			if len(args) == 0 {
+				session, err = interactive.RunSessionsSelector(cmd.Context(), client)
 				if err != nil {
 					return err
 				}
-				output = string(outputBytes)
+			} else {
+				sessionID := args[0]
+				session, _, err = client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+				if err != nil {
+					return fmt.Errorf("access session with id %s not found", sessionID)
+				}
 			}
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), output)
+			if len(session.ConnectionMethods) == 0 {
+				return fmt.Errorf("no available connection methods")
+			}
+
+			connectionDetailsOutputFormat, err := resolveOutputFormat(cmd, cmdFlags, session)
 			if err != nil {
 				return err
 			}
 
-			return nil
+			if !contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
+				return fmt.Errorf("unsupported output format: %s. use one of: %s", connectionDetailsOutputFormat, strings.Join(session.ConnectionMethods, ", "))
+			}
+
+			shouldRunCommand, err := resolveShouldExecuteCommandFlag(cmd, cmdFlags, connectionDetailsOutputFormat)
+			if err != nil {
+				return err
+			}
+
+			if shouldRunCommand {
+				return executeAccessDetails(cmd, client, session)
+			}
+
+			accessDetails, err := getSessionDetails(cmd.Context(), client, session.Id, connectionDetailsOutputFormat)
+			if err != nil {
+				return err
+			}
+
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), accessDetails)
+
+			return err
 		},
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", cliOutputFormat, linkOutputFormat, instructionsOutputFormat, jsonOutputFormat))
-	flags.BoolVarP(&shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
+	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", cliOutputFormat, linkOutputFormat, instructionsOutputFormat, jsonOutputFormat))
+	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
+	flags.BoolVar(&cmdFlags.dontRunInteractive, noInteractiveFlagName, false, "dont run in interactive mode")
 
 	return cmd
 }
@@ -138,4 +152,73 @@ func contains(availableCommands []string, command string) bool {
 		}
 	}
 	return false
+}
+
+func resolveOutputFormat(cmd *cobra.Command, cmdFlags *accessUseCommandFlags, session *clientapi.AccessSessionClientModel) (string, error) {
+	if cmdFlags.shouldExecuteAccessCommand {
+		return cliOutputFormat, nil
+	}
+
+	if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, outputFlagName) {
+		return cmdFlags.outputFormat, nil
+	}
+
+	if len(session.ConnectionMethods) == 1 {
+		return session.ConnectionMethods[0], nil
+	}
+
+	outputFormat, err := interactive.RunSessionDetailsTypeSelector(session)
+	if err != nil {
+		return "", err
+	}
+
+	return outputFormat, nil
+}
+
+func resolveShouldExecuteCommandFlag(cmd *cobra.Command, cmdFlags *accessUseCommandFlags, outputFormat string) (bool, error) {
+	if outputFormat != cliOutputFormat {
+		return false, nil
+	}
+
+	if cmdFlags.dontRunInteractive || utils.IsFlagSet(cmd, runFlagName) {
+		return cmdFlags.shouldExecuteAccessCommand, nil
+	}
+
+	cliOutputOptions, err := interactive.RunSessionCliMethodOptionSelector()
+	if err != nil {
+		return false, err
+	}
+
+	if cliOutputOptions != interactive.ExecuteOption {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func getSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, error) {
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).Execute()
+	if err != nil {
+		return "", err
+	}
+
+	var output string
+	switch outputFormat {
+	case cliOutputFormat:
+		output = *accessDetails.Cli.Get()
+	case linkOutputFormat:
+		link := accessDetails.GetLink()
+		output = link.GetUrl()
+	case instructionsOutputFormat:
+		output = accessDetails.Instructions.Plain
+	case jsonOutputFormat:
+		var outputBytes []byte
+		outputBytes, err = json.Marshal(accessDetails.Json)
+		if err != nil {
+			return "", err
+		}
+		output = string(outputBytes)
+	}
+
+	return output, nil
 }

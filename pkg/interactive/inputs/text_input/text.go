@@ -3,6 +3,8 @@ package textinput
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/styles"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -75,7 +77,7 @@ func initialModel(title string, placeholder string) model {
 
 	return model{
 		textInput: ti,
-		title:     title,
+		title:     styles.BeforeSelectingItemsTitleStyle(title),
 		err:       nil,
 	}
 }
@@ -91,10 +93,10 @@ func LaunchTextInput(input TextInput) (string, error) {
 		return "", fmt.Errorf("aborted by user")
 	}
 
-	justification := resultModel.textInput.Value()
-	if input.PostMessage != nil {
-		fmt.Println(input.PostMessage(justification))
+	resultText := resultModel.textInput.Value()
+	if input.PostTitle != "" {
+		fmt.Println(styles.AfterSelectingItemsTitleStyle(input.PostTitle, []string{resultText}))
 	}
 
-	return justification, nil
+	return resultText, nil
 }

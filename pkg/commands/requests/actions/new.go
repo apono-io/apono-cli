@@ -23,9 +23,10 @@ const (
 	resourceFlagName             = "resources"
 	permissionFlagName           = "permissions"
 	justificationFlagName        = "justification"
+	noInteractiveFlagName        = "no-interactive"
 	noWaitFlagName               = "no-wait"
 	timeoutFlagName              = "timeout"
-	defaultWaitTimeForNewRequest = 30 * time.Second
+	defaultWaitTimeForNewRequest = 60 * time.Second
 )
 
 type createRequestFlags struct {
@@ -96,7 +97,7 @@ func Create() *cobra.Command {
 	flags.StringSliceVarP(&cmdFlags.resourceIDs, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
 	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
-	flags.BoolVar(&cmdFlags.dontRunInteractive, "no-interactive", false, "Dont run interactive mode")
+	flags.BoolVar(&cmdFlags.dontRunInteractive, noInteractiveFlagName, false, "Dont run interactive mode")
 	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 

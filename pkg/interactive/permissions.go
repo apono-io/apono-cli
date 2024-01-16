@@ -9,7 +9,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 //nolint:dupl // Remove duplication error
@@ -33,19 +32,13 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 	}
 
 	permissionsInput := listselect.SelectInput{
-		Title:             styles.BeforeSelectingItemsTitleStyle("Select permissions"),
+		Title:             "Select permissions",
+		PostTitle:         "Selected permissions",
 		Options:           options,
 		MultipleSelection: multipleChoice,
-		PostMessage: func(s []listselect.SelectOption) string {
-			var names []string
-			for _, permission := range s {
-				names = append(names, permission.Label)
-			}
-			return styles.AfterSelectingItemsTitleStyle("Selected permissions", names)
-		},
-		ShowHelp:      true,
-		EnableFilter:  true,
-		ShowItemCount: true,
+		ShowHelp:          true,
+		EnableFilter:      true,
+		ShowItemCount:     true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(permissionsInput)

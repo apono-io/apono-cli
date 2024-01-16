@@ -9,7 +9,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/apono-io/apono-cli/pkg/styles"
 )
 
 func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.IntegrationClientModel, error) {
@@ -32,11 +31,9 @@ func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (
 	}
 
 	integrationInput := listselect.SelectInput{
-		Title:   styles.BeforeSelectingItemsTitleStyle("Select integration"),
-		Options: options,
-		PostMessage: func(s []listselect.SelectOption) string {
-			return styles.AfterSelectingItemsTitleStyle("Selected integration", []string{s[0].Label})
-		},
+		Title:         "Select integration",
+		PostTitle:     "Selected integration",
+		Options:       options,
 		ShowHelp:      true,
 		EnableFilter:  true,
 		ShowItemCount: true,

@@ -3,6 +3,8 @@ package listselect
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/styles"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -122,7 +124,7 @@ func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 	l.SetFilteringEnabled(inputModel.EnableFilter)
 	l.SetShowStatusBar(inputModel.ShowItemCount)
 
-	l.Title = inputModel.Title
+	l.Title = styles.BeforeSelectingItemsTitleStyle(inputModel.Title)
 	l.Styles.Title = defaultTitleStyle
 	l.Styles.PaginationStyle = defaultPaginationStyle
 	l.Styles.HelpStyle = defaultHelpStyle
@@ -149,8 +151,8 @@ func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 		return nil, fmt.Errorf("no items selected")
 	}
 
-	if inputModel.PostMessage != nil {
-		fmt.Println(inputModel.PostMessage(selectedItems))
+	if inputModel.PostTitle != "" {
+		fmt.Println(getPostTitle(selectedItems, inputModel.PostTitle))
 	}
 
 	return selectedItems, nil
