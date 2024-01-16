@@ -46,11 +46,11 @@ func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integ
 
 func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
 	if runtime.GOOS == "windows" {
-		return errors.New("--run flag is not supported on windows")
+		return errors.New("executing cli commands is not supported on windows")
 	}
 
 	if !slices.Contains(session.ConnectionMethods, CliOutputFormat) {
-		return fmt.Errorf("--run flag is not supported for session id %s", session.Id)
+		return fmt.Errorf("session %s does not support cli access", session.Id)
 	}
 
 	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).Execute()
