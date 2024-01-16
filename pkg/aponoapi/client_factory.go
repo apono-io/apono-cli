@@ -14,7 +14,11 @@ import (
 	"github.com/apono-io/apono-cli/pkg/config"
 )
 
-var ErrProfileNotExists = errors.New("profile not exists")
+var (
+	ErrProfileNotExists  = errors.New("profile not exists")
+	ErrNoProfiles        = errors.New("no profiles configured, run `apono login` to create a profile")
+	ErrorNoActiveProfile = errors.New("no active profile configured, run `apono login` to create a profile")
+)
 
 type AponoClient struct {
 	*apono.APIClient
@@ -39,9 +43,21 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		pn = config.ProfileName(profileName)
 	}
 
+	if pn == "" {
+		return nil, ErrorNoActiveProfile
+	}
+
+	if len(authConfig.Profiles) == 0 {
+		return nil, ErrNoProfiles
+	}
+
 	sessionCfg, exists := authConfig.Profiles[pn]
 	if !exists {
-		return nil, ErrProfileNotExists
+		if pn == "default" {
+			return nil, ErrNoProfiles
+		}
+
+		return nil, fmt.Errorf("%s %s", pn, ErrProfileNotExists)
 	}
 
 	token := &sessionCfg.Token
