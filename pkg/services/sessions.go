@@ -68,7 +68,7 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 
 func executeCommand(cobraCmd *cobra.Command, command string) error {
 	if command == "" {
-		return nil
+		return errors.New("cannot execute empty command")
 	}
 
 	var stderr bytes.Buffer
