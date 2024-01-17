@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/services"
 
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
@@ -10,7 +11,7 @@ import (
 )
 
 func ListResourceTypes() *cobra.Command {
-	var integrationID string
+	var integrationIDOrName string
 	cmd := &cobra.Command{
 		Use:     "resource-types",
 		Short:   "List all resource types of integration",
@@ -21,14 +22,19 @@ func ListResourceTypes() *cobra.Command {
 				return err
 			}
 
-			resp, _, err := client.AccessRequestsApi.GetSelectableResourceTypes(cmd.Context(), integrationID).Execute()
+			integration, err := services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
+			if err != nil {
+				return fmt.Errorf("failed to get integration: %w", err)
+			}
+
+			resourceTypes, err := services.ListResourceTypes(cmd.Context(), client, integration.Id)
 			if err != nil {
 				return err
 			}
 
 			table := uitable.New()
 			table.AddRow("ID", "NAME")
-			for _, resourceType := range resp.Data {
+			for _, resourceType := range resourceTypes {
 				table.AddRow(resourceType.Id, resourceType.Name)
 			}
 
@@ -38,7 +44,7 @@ func ListResourceTypes() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&integrationID, "integration", "i", "", "integration id")
+	flags.StringVarP(&integrationIDOrName, "integration", "i", "", "the integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	_ = cmd.MarkFlagRequired("integration")
 
 	return cmd
