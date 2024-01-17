@@ -46,7 +46,11 @@ func RunSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient)
 
 	if len(session.ConnectionMethods) == 1 {
 		err = printSessionInstructions(cmd, client, session)
-		return err
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	accessMethod, err := interactive.RunSessionCliMethodOptionSelector()
