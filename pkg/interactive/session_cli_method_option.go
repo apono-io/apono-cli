@@ -13,16 +13,16 @@ func RunSessionCliMethodOptionSelector() (string, error) {
 	options := []listselect.SelectOption{
 		{
 			ID:    ExecuteOption,
-			Label: "Run command",
+			Label: "Connect",
 		},
 		{
 			ID:    PrintOption,
-			Label: "Print command",
+			Label: "Instructions",
 		},
 	}
 
 	requestTypeInput := listselect.SelectInput{
-		Title:     "Select how to use access command",
+		Title:     "Select how to use access session",
 		PostTitle: "Selected option",
 		Options:   options,
 	}
