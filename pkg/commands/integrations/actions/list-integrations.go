@@ -2,8 +2,8 @@ package actions
 
 import (
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/services"
 
-	"github.com/apono-io/apono-sdk-go"
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
@@ -21,27 +21,15 @@ func ListIntegrations() *cobra.Command {
 				return err
 			}
 
-			selectableIntegrationsResp, _, err := client.AccessRequestsApi.GetSelectableIntegrations(cmd.Context()).Execute()
+			integrations, err := services.ListIntegrations(cmd.Context(), client)
 			if err != nil {
 				return err
-			}
-
-			resp, _, err := client.IntegrationsApi.ListIntegrationsV2(cmd.Context()).Execute()
-			if err != nil {
-				return err
-			}
-
-			integrations := make(map[string]apono.Integration)
-			for _, val := range resp.Data {
-				integrations[val.Id] = val
 			}
 
 			table := uitable.New()
 			table.AddRow("ID", "TYPE", "NAME")
-			for _, integrationID := range selectableIntegrationsResp.Data {
-				if integration, ok := integrations[integrationID.Id]; ok {
-					table.AddRow(integration.Id, integration.Type, integration.Name)
-				}
+			for _, integration := range integrations {
+				table.AddRow(integration.Id, integration.Type, integration.Name)
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
