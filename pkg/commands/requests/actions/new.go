@@ -98,7 +98,7 @@ func Create() *cobra.Command {
 	flags.StringSliceVarP(&cmdFlags.resourceIDs, resourceFlagName, "r", []string{}, "The resource id's")
 	flags.StringSliceVarP(&cmdFlags.permissionIDs, permissionFlagName, "p", []string{}, "The permission names")
 	flags.StringVarP(&cmdFlags.justification, justificationFlagName, "j", "", "The justification for the access request")
-	flags.BoolVar(&cmdFlags.runInteractiveMode, interactiveFlagName, false, "Dont run interactive mode")
+	flags.BoolVar(&cmdFlags.runInteractiveMode, interactiveFlagName, false, "Run interactive mode")
 	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 
