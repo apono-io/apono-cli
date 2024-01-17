@@ -13,6 +13,7 @@ import (
 
 const (
 	integrationNameSeparator = "/"
+	resourcesAPIPageSize     = 1000
 )
 
 func ListIntegrations(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.IntegrationClientModel, error) {
@@ -63,6 +64,7 @@ func ListResources(ctx context.Context, client *aponoapi.AponoClient, integratio
 			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
 			Skip(skip).
+			Limit(resourcesAPIPageSize).
 			Execute()
 		if err != nil {
 			return nil, nil, err

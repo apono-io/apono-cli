@@ -797,6 +797,7 @@ type ApiListResourcesRequest struct {
 	resourceTypeId *string
 	search         *string
 	skip           *int32
+	sourceId       *[]string
 }
 
 func (r ApiListResourcesRequest) IntegrationId(integrationId string) ApiListResourcesRequest {
@@ -821,6 +822,11 @@ func (r ApiListResourcesRequest) Search(search string) ApiListResourcesRequest {
 
 func (r ApiListResourcesRequest) Skip(skip int32) ApiListResourcesRequest {
 	r.skip = &skip
+	return r
+}
+
+func (r ApiListResourcesRequest) SourceId(sourceId []string) ApiListResourcesRequest {
+	r.sourceId = &sourceId
 	return r
 }
 
@@ -883,6 +889,17 @@ func (a *InventoryAPIService) ListResourcesExecute(r ApiListResourcesRequest) (*
 	} else {
 		var defaultValue int32 = 0
 		r.skip = &defaultValue
+	}
+	if r.sourceId != nil {
+		t := *r.sourceId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "source-id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "source-id", t, "multi")
+		}
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
