@@ -1,4 +1,4 @@
-package interactive
+package selectors
 
 import (
 	textinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/text_input"

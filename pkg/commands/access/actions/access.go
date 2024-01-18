@@ -7,7 +7,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/groups"
-	"github.com/apono-io/apono-cli/pkg/interactive"
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
 
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ func Access() *cobra.Command {
 }
 
 func RunSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	session, err := interactive.RunSessionsSelector(cmd.Context(), client)
+	session, err := selectors.RunSessionsSelector(cmd.Context(), client)
 	if err != nil {
 		return err
 	}
@@ -53,17 +53,17 @@ func RunSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient)
 		return nil
 	}
 
-	accessMethod, err := interactive.RunSessionCliMethodOptionSelector()
+	accessMethod, err := selectors.RunSessionCliMethodOptionSelector()
 	if err != nil {
 		return err
 	}
 
 	switch accessMethod {
-	case interactive.ExecuteOption:
+	case selectors.ExecuteOption:
 		err = services.ExecuteAccessDetails(cmd, client, session)
 		return err
 
-	case interactive.PrintOption:
+	case selectors.PrintOption:
 		err = printSessionInstructions(cmd, client, session)
 		return err
 

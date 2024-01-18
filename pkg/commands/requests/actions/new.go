@@ -9,7 +9,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/apono-io/apono-cli/pkg/interactive"
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
@@ -319,14 +319,14 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 }
 
 func startRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, error) {
-	requestType, err := interactive.RunRequestTypeSelector()
+	requestType, err := selectors.RunRequestTypeSelector()
 	if err != nil {
 		return nil, err
 	}
 	switch requestType {
-	case interactive.BundleRequestType:
+	case selectors.BundleRequestType:
 		return startBundleRequestInteractiveMode(cmd, client, "", "")
-	case interactive.IntegrationRequestType:
+	case selectors.IntegrationRequestType:
 		return startIntegrationRequestInteractiveMode(cmd, client, "", "", []string{}, []string{}, "")
 	default:
 		return nil, fmt.Errorf("invalid request type: %s", requestType)
@@ -337,7 +337,7 @@ func startBundleRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.Apon
 	request := getEmptyRequest()
 
 	if bundleID == "" {
-		bundle, err := interactive.RunBundleSelector(cmd.Context(), client)
+		bundle, err := selectors.RunBundleSelector(cmd.Context(), client)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +347,7 @@ func startBundleRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.Apon
 	request.FilterBundleIds = []string{bundleID}
 
 	if justification == "" {
-		newJustification, err := interactive.RunJustificationInput()
+		newJustification, err := selectors.RunJustificationInput()
 		if err != nil {
 			return nil, err
 		}
@@ -371,7 +371,7 @@ func startIntegrationRequestInteractiveMode(
 	request := getEmptyRequest()
 
 	if integrationID == "" {
-		integration, err := interactive.RunIntegrationSelector(cmd.Context(), client)
+		integration, err := selectors.RunIntegrationSelector(cmd.Context(), client)
 		if err != nil {
 			return nil, err
 		}
@@ -382,7 +382,7 @@ func startIntegrationRequestInteractiveMode(
 
 	var allowMultiplePermissions bool
 	if resourceTypeID == "" {
-		resourceType, err := interactive.RunResourceTypeSelector(cmd.Context(), client, integrationID)
+		resourceType, err := selectors.RunResourceTypeSelector(cmd.Context(), client, integrationID)
 		if err != nil {
 			return nil, err
 		}
@@ -400,7 +400,7 @@ func startIntegrationRequestInteractiveMode(
 	request.FilterResourceTypeIds = []string{resourceTypeID}
 
 	if len(resourceIDs) == 0 {
-		resources, err := interactive.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
+		resources, err := selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
 		if err != nil {
 			return nil, err
 		}
@@ -412,7 +412,7 @@ func startIntegrationRequestInteractiveMode(
 	request.FilterResourceIds = resourceIDs
 
 	if len(permissionIDs) == 0 {
-		permissions, err := interactive.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceTypeID, allowMultiplePermissions)
+		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceTypeID, allowMultiplePermissions)
 		if err != nil {
 			return nil, err
 		}
@@ -424,7 +424,7 @@ func startIntegrationRequestInteractiveMode(
 	request.FilterPermissionIds = permissionIDs
 
 	if justification == "" {
-		newJustification, err := interactive.RunJustificationInput()
+		newJustification, err := selectors.RunJustificationInput()
 		if err != nil {
 			return nil, err
 		}
