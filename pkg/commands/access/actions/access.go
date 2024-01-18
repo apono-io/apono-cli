@@ -5,6 +5,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/groups"
+
 	"github.com/spf13/cobra"
 )
 
