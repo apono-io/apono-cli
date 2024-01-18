@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
-	session, err := selectors.RunSessionsSelector(cmd.Context(), client, requestID)
+func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestIDFilter string) error {
+	session, err := selectors.RunSessionsSelector(cmd.Context(), client, requestIDFilter)
 	if err != nil {
 		return err
 	}
