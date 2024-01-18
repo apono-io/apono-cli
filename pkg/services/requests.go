@@ -200,3 +200,14 @@ func ColoredStatus(request clientapi.AccessRequestClientModel) string {
 		return statusTitle
 	}
 }
+
+func GetEmptyNewRequestAPIModel() *clientapi.CreateAccessRequestClientModel {
+	return &clientapi.CreateAccessRequestClientModel{
+		FilterBundleIds:       []string{},
+		FilterIntegrationIds:  []string{},
+		FilterResourceTypeIds: []string{},
+		FilterResourceIds:     []string{},
+		FilterPermissionIds:   []string{},
+		FilterAccessUnitIds:   []string{},
+	}
+}
