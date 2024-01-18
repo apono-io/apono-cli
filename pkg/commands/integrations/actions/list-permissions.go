@@ -3,6 +3,8 @@ package actions
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/services"
+
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
@@ -10,7 +12,7 @@ import (
 )
 
 func ListPermissions() *cobra.Command {
-	var integrationID string
+	var integrationIDOrName string
 	var resourceType string
 	cmd := &cobra.Command{
 		Use:     "permissions",
@@ -22,15 +24,20 @@ func ListPermissions() *cobra.Command {
 				return err
 			}
 
-			resp, _, err := client.AccessRequestsApi.GetSelectablePermissions(cmd.Context(), integrationID, resourceType).Execute()
+			integration, err := services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationIDOrName)
+			if err != nil {
+				return fmt.Errorf("failed to get integration: %w", err)
+			}
+
+			permissions, err := services.ListPermissions(cmd.Context(), client, integration.Id, resourceType)
 			if err != nil {
 				return err
 			}
 
 			table := uitable.New()
 			table.AddRow("ID", "NAME")
-			for _, permission := range resp.Data {
-				table.AddRow(permission, permission)
+			for _, permission := range permissions {
+				table.AddRow(permission.Id, permission.Name)
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
@@ -39,8 +46,8 @@ func ListPermissions() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVarP(&integrationID, "integration", "i", "", "integration id")
-	flags.StringVarP(&resourceType, "type", "t", "", "resource type")
+	flags.StringVarP(&integrationIDOrName, "integration", "i", "", "the integration id or type/name, for example: \"aws-account/My AWS integration\"")
+	flags.StringVarP(&resourceType, "type", "t", "", "the resource type")
 	_ = cmd.MarkFlagRequired("integration")
 	_ = cmd.MarkFlagRequired("type")
 

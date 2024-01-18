@@ -21,6 +21,7 @@ var _ MappedNullable = &ResourceClientModel{}
 // ResourceClientModel struct for ResourceClientModel
 type ResourceClientModel struct {
 	Id          string                  `json:"id"`
+	SourceId    string                  `json:"source_id"`
 	Name        string                  `json:"name"`
 	Path        string                  `json:"path"`
 	Type        ResourceTypeClientModel `json:"type"`
@@ -33,9 +34,10 @@ type _ResourceClientModel ResourceClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewResourceClientModel(id string, name string, path string, type_ ResourceTypeClientModel, integration IntegrationClientModel) *ResourceClientModel {
+func NewResourceClientModel(id string, sourceId string, name string, path string, type_ ResourceTypeClientModel, integration IntegrationClientModel) *ResourceClientModel {
 	this := ResourceClientModel{}
 	this.Id = id
+	this.SourceId = sourceId
 	this.Name = name
 	this.Path = path
 	this.Type = type_
@@ -73,6 +75,30 @@ func (o *ResourceClientModel) GetIdOk() (*string, bool) {
 // SetId sets field value
 func (o *ResourceClientModel) SetId(v string) {
 	o.Id = v
+}
+
+// GetSourceId returns the SourceId field value
+func (o *ResourceClientModel) GetSourceId() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.SourceId
+}
+
+// GetSourceIdOk returns a tuple with the SourceId field value
+// and a boolean to check if the value has been set.
+func (o *ResourceClientModel) GetSourceIdOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.SourceId, true
+}
+
+// SetSourceId sets field value
+func (o *ResourceClientModel) SetSourceId(v string) {
+	o.SourceId = v
 }
 
 // GetName returns the Name field value
@@ -182,6 +208,7 @@ func (o ResourceClientModel) MarshalJSON() ([]byte, error) {
 func (o ResourceClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
+	toSerialize["source_id"] = o.SourceId
 	toSerialize["name"] = o.Name
 	toSerialize["path"] = o.Path
 	toSerialize["type"] = o.Type
@@ -195,6 +222,7 @@ func (o *ResourceClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"id",
+		"source_id",
 		"name",
 		"path",
 		"type",

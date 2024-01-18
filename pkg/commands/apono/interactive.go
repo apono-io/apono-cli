@@ -2,11 +2,11 @@ package apono
 
 import (
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/apono-io/apono-cli/pkg/interactive"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	requestloader "github.com/apono-io/apono-cli/pkg/interactive/inputs/request_loader"
 	"github.com/apono-io/apono-cli/pkg/services"
@@ -21,16 +21,16 @@ const (
 )
 
 func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	mainAction, err := interactive.RunMainActionSelector()
+	mainAction, err := selectors.RunMainActionSelector()
 	if err != nil {
 		return err
 	}
 
 	switch mainAction {
-	case interactive.RequestAccessOption:
+	case selectors.RequestAccessOption:
 		return RunFullRequestInteractiveFlow(cmd, client)
-	case interactive.ConnectOption:
-		return flows.RunSessionInteractiveFlow(cmd, client, "")
+	case selectors.ConnectOption:
+		return flows.RunUseSessionInteractiveFlow(cmd, client, "")
 
 	default:
 		return fmt.Errorf("unknown main action: %s", mainAction)
@@ -72,7 +72,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return err
 	}
 
-	return flows.RunSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
+	return flows.RunUseSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
 }
 
 func printAccessRequestDetails(cmd *cobra.Command, request *clientapi.AccessRequestClientModel) error {

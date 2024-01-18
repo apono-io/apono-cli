@@ -58,7 +58,6 @@ func Login() *cobra.Command {
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
-						"integrations:read",
 						"end_user:access_sessions:read",
 						"end_user:access_sessions:write",
 						"end_user:access_requests:read",

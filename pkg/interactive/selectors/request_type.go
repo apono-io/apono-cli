@@ -1,4 +1,4 @@
-package interactive
+package selectors
 
 import (
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"

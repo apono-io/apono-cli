@@ -20,7 +20,7 @@ func Access() *cobra.Command {
 				return err
 			}
 
-			err = flows.RunSessionInteractiveFlow(cmd, client, "")
+			err = flows.RunUseSessionInteractiveFlow(cmd, client, "")
 
 			return err
 		},

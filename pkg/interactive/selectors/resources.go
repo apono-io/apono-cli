@@ -1,4 +1,4 @@
-package interactive
+package selectors
 
 import (
 	"context"
@@ -11,9 +11,8 @@ import (
 	"github.com/apono-io/apono-cli/pkg/services"
 )
 
-//nolint:dupl // Remove duplication error
 func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceTypeID string) ([]clientapi.ResourceClientModel, error) {
-	resources, err := services.ListResources(ctx, client, integrationID, resourceTypeID)
+	resources, err := services.ListResources(ctx, client, integrationID, resourceTypeID, nil)
 	if err != nil {
 		return nil, err
 	}

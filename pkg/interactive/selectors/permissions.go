@@ -1,4 +1,4 @@
-package interactive
+package selectors
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/services"
 )
 
-//nolint:dupl // Remove duplication error
 func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, multipleChoice bool) ([]clientapi.PermissionClientModel, error) {
 	permissions, err := services.ListPermissions(ctx, client, integrationID, resourceTypeID)
 	if err != nil {
