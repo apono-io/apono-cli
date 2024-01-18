@@ -10,8 +10,13 @@ import (
 	"github.com/apono-io/apono-cli/pkg/services"
 )
 
-func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.AccessSessionClientModel, error) {
-	sessions, err := services.ListAccessSessions(ctx, client, nil, nil)
+func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient, requestID string) (*clientapi.AccessSessionClientModel, error) {
+	var requestIdsFilter []string
+	if requestID != "" {
+		requestIdsFilter = []string{requestID}
+	}
+
+	sessions, err := services.ListAccessSessions(ctx, client, nil, nil, requestIdsFilter)
 	if err != nil {
 		return nil, err
 	}

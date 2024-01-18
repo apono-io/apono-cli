@@ -16,11 +16,13 @@ import (
 const (
 	integrationFilterFlagName = "integration"
 	bundleFilterFlagName      = "bundle"
+	requestIDFlagName         = "request"
 )
 
 func AccessList() *cobra.Command {
 	var integrationFilter string
 	var bundleFilter string
+	var requestFilter string
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -33,8 +35,9 @@ func AccessList() *cobra.Command {
 
 			integrationIDs := resolveIntegrationNameOrIDFlag(cmd.Context(), client, integrationFilter)
 			bundleIDsFilter := resolveBundleNameOrIDFlag(cmd.Context(), client, bundleFilter)
+			requestIDsFilter := resolveRequestIDFlag(requestFilter)
 
-			accessSessions, err := services.ListAccessSessions(cmd.Context(), client, integrationIDs, bundleIDsFilter)
+			accessSessions, err := services.ListAccessSessions(cmd.Context(), client, integrationIDs, bundleIDsFilter, requestIDsFilter)
 			if err != nil {
 				return err
 			}
@@ -57,6 +60,7 @@ func AccessList() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&integrationFilter, integrationFilterFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&bundleFilter, bundleFilterFlagName, "b", "", "filter by bundle name or id")
+	flags.StringVarP(&requestFilter, requestIDFlagName, "r", "", "filter by request id")
 
 	return cmd
 }
@@ -95,4 +99,12 @@ func resolveIntegrationNameOrIDFlag(ctx context.Context, client *aponoapi.AponoC
 	}
 
 	return []string{integration.Id}
+}
+
+func resolveRequestIDFlag(requestID string) []string {
+	if requestID == "" {
+		return nil
+	}
+
+	return []string{requestID}
 }

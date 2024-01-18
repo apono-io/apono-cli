@@ -24,7 +24,7 @@ const (
 	newCredentialsStatus     = "NEW"
 )
 
-func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integrationIds []string, bundleIds []string) ([]clientapi.AccessSessionClientModel, error) {
+func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integrationIds []string, bundleIds []string, requestIds []string) ([]clientapi.AccessSessionClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessSessionClientModel, *clientapi.PaginationClientInfoModel, error) {
 		listSessionsRequest := client.ClientAPI.AccessSessionsAPI.ListAccessSessions(ctx).Skip(skip)
 		if integrationIds != nil {
@@ -32,6 +32,9 @@ func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integ
 		}
 		if bundleIds != nil {
 			listSessionsRequest = listSessionsRequest.BundleId(bundleIds)
+		}
+		if requestIds != nil {
+			listSessionsRequest = listSessionsRequest.RequestId(requestIds)
 		}
 
 		resp, _, err := listSessionsRequest.Execute()
