@@ -38,17 +38,18 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	}
 
 	authConfig := cfg.Auth
-	pn := authConfig.ActiveProfile
-	if profileName != "" {
-		pn = config.ProfileName(profileName)
-	}
-
-	if pn == "" {
-		return nil, ErrorNoActiveProfile
-	}
-
 	if len(authConfig.Profiles) == 0 {
 		return nil, ErrNoProfiles
+	}
+
+	var pn config.ProfileName
+	if profileName != "" {
+		pn = config.ProfileName(profileName)
+	} else {
+		pn = authConfig.ActiveProfile
+		if pn == "" {
+			return nil, ErrorNoActiveProfile
+		}
 	}
 
 	sessionCfg, exists := authConfig.Profiles[pn]
