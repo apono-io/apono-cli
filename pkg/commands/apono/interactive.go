@@ -2,8 +2,9 @@ package apono
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"time"
+
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
