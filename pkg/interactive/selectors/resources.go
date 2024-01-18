@@ -1,4 +1,4 @@
-package interactive
+package selectors
 
 import (
 	"context"
