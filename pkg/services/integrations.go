@@ -139,7 +139,7 @@ func findIntegrationByID(integrations []clientapi.IntegrationClientModel, integr
 	return nil
 }
 
-func GetResourcesBySourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, sourceIDs []string) ([]clientapi.ResourceClientModel, error) {
+func ListResourcesBySourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, sourceIDs []string) ([]clientapi.ResourceClientModel, error) {
 	resources, err := ListResources(ctx, client, integrationID, resourceType, sourceIDs)
 	if err != nil {
 		return nil, err

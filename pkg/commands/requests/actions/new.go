@@ -147,7 +147,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 				return nil, err
 			}
 		} else {
-			resourceIds, err := getResourcesIDsFromSourceIDs(cmd.Context(), client, integration.Id, flags.resourceType, flags.resourceIDs)
+			resourceIds, err := listResourcesIDsFromSourceIDs(cmd.Context(), client, integration.Id, flags.resourceType, flags.resourceIDs)
 			if err != nil {
 				return nil, err
 			}
@@ -322,8 +322,8 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 	return options
 }
 
-func getResourcesIDsFromSourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, resourceIDs []string) ([]string, error) {
-	resources, err := services.GetResourcesBySourceIDs(ctx, client, integrationID, resourceType, resourceIDs)
+func listResourcesIDsFromSourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, resourceIDs []string) ([]string, error) {
+	resources, err := services.ListResourcesBySourceIDs(ctx, client, integrationID, resourceType, resourceIDs)
 	if err != nil {
 		return nil, err
 	}
