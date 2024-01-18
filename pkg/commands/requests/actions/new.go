@@ -129,7 +129,7 @@ func Create() *cobra.Command {
 }
 
 func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags) (*clientapi.CreateAccessRequestClientModel, error) {
-	req := getEmptyRequest()
+	req := services.GetEmptyNewRequestAPIModel()
 	req.Justification = flags.justification
 
 	switch {
@@ -334,7 +334,7 @@ func startRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClien
 }
 
 func startBundleRequestInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient, bundleID string, justification string) (*clientapi.CreateAccessRequestClientModel, error) {
-	request := getEmptyRequest()
+	request := services.GetEmptyNewRequestAPIModel()
 
 	if bundleID == "" {
 		bundle, err := selectors.RunBundleSelector(cmd.Context(), client)
@@ -368,7 +368,7 @@ func startIntegrationRequestInteractiveMode(
 	permissionIDs []string,
 	justification string,
 ) (*clientapi.CreateAccessRequestClientModel, error) {
-	request := getEmptyRequest()
+	request := services.GetEmptyNewRequestAPIModel()
 
 	if integrationID == "" {
 		integration, err := selectors.RunIntegrationSelector(cmd.Context(), client)
@@ -434,15 +434,4 @@ func startIntegrationRequestInteractiveMode(
 	request.Justification = justification
 
 	return request, nil
-}
-
-func getEmptyRequest() *clientapi.CreateAccessRequestClientModel {
-	return &clientapi.CreateAccessRequestClientModel{
-		FilterBundleIds:       []string{},
-		FilterIntegrationIds:  []string{},
-		FilterResourceTypeIds: []string{},
-		FilterResourceIds:     []string{},
-		FilterPermissionIds:   []string{},
-		FilterAccessUnitIds:   []string{},
-	}
 }
