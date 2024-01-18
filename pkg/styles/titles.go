@@ -15,6 +15,7 @@ const (
 var (
 	beforeSelectIcon = prefixIconColor.Sprint("?")
 	afterSelectIcon  = prefixIconColor.Sprint("✓")
+	NoticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf("notice") + color.Bold.Sprintf("]")
 )
 
 func BeforeSelectingItemsTitleStyle(name string) string {

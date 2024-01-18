@@ -3,9 +3,10 @@ package flows
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
 
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.Apo
 	if err != nil {
 		return nil, err
 	}
+
 	switch requestType {
 	case selectors.BundleRequestType:
 		return StartBundleRequestBuilderInteractiveMode(cmd, client, "", "")

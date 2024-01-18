@@ -1,10 +1,9 @@
 package actions
 
 import (
-	"github.com/apono-io/apono-cli/pkg/interactive/flows"
-
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/groups"
+	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +20,7 @@ func Access() *cobra.Command {
 				return err
 			}
 
-			err = flows.RunUseSessionInteractiveFlow(cmd, client)
+			err = flows.RunUseSessionInteractiveFlow(cmd, client, "")
 
 			return err
 		},

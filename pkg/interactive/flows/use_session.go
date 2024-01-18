@@ -7,12 +7,14 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/styles"
 
+	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 )
 
-func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	session, err := selectors.RunSessionsSelector(cmd.Context(), client)
+func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestIDFilter string) error {
+	session, err := selectors.RunSessionsSelector(cmd.Context(), client, requestIDFilter)
 	if err != nil {
 		return err
 	}
@@ -55,7 +57,7 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 		return err
 	}
 
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), accessDetails)
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), "\n"+accessDetails)
 	if err != nil {
 		return err
 	}
@@ -71,6 +73,7 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 }
 
 func suggestResetCredentialsCommand(cmd *cobra.Command, sessionID string) error {
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\nTo get new set of credentials, run:\n\n\tapono access reset-credentials %s\n", sessionID)
+	resetCommand := "apono access reset-credentials " + sessionID
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
 	return err
 }
