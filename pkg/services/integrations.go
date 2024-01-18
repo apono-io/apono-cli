@@ -58,14 +58,19 @@ func GetResourceTypeByID(ctx context.Context, client *aponoapi.AponoClient, inte
 	return nil, fmt.Errorf("resource type %s not found", resourceTypeID)
 }
 
-func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string) ([]clientapi.ResourceClientModel, error) {
+func ListResources(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, sourceIDs []string) ([]clientapi.ResourceClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
-		resp, _, err := client.ClientAPI.InventoryAPI.ListResources(ctx).
+		resourcesRequest := client.ClientAPI.InventoryAPI.ListResources(ctx).
 			IntegrationId(integrationID).
 			ResourceTypeId(resourceType).
 			Skip(skip).
-			Limit(resourcesAPIPageSize).
-			Execute()
+			Limit(resourcesAPIPageSize)
+
+		if sourceIDs != nil {
+			resourcesRequest = resourcesRequest.SourceId(sourceIDs)
+		}
+
+		resp, _, err := resourcesRequest.Execute()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -132,4 +137,27 @@ func findIntegrationByID(integrations []clientapi.IntegrationClientModel, integr
 	}
 
 	return nil
+}
+
+func ListResourcesBySourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, sourceIDs []string) ([]clientapi.ResourceClientModel, error) {
+	resources, err := ListResources(ctx, client, integrationID, resourceType, sourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceBySourceID := make(map[string]clientapi.ResourceClientModel)
+	for _, resource := range resources {
+		resourceBySourceID[resource.SourceId] = resource
+	}
+
+	var resourcesInOrder []clientapi.ResourceClientModel
+	for _, sourceID := range sourceIDs {
+		resource, ok := resourceBySourceID[sourceID]
+		if !ok {
+			return nil, fmt.Errorf("resource %s not found", sourceID)
+		}
+		resourcesInOrder = append(resourcesInOrder, resource)
+	}
+
+	return resourcesInOrder, nil
 }

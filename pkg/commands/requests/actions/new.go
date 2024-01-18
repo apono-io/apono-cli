@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -146,9 +147,14 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 				return nil, err
 			}
 		} else {
+			resourceIds, err := listResourcesIDsFromSourceIDs(cmd.Context(), client, integration.Id, flags.resourceType, flags.resourceIDs)
+			if err != nil {
+				return nil, err
+			}
+
 			req.FilterIntegrationIds = []string{integration.Id}
 			req.FilterResourceTypeIds = []string{flags.resourceType}
-			req.FilterResourceIds = flags.resourceIDs
+			req.FilterResourceIds = resourceIds
 			req.FilterPermissionIds = flags.permissionIDs
 		}
 
@@ -226,7 +232,6 @@ func resourceTypeAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string
 	})
 }
 
-//nolint:dupl // Remove duplication error
 func resourcesAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationIDOrName == "" {
 		return nil, cobra.ShellCompDirectiveError
@@ -243,7 +248,7 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, r
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		resp, err := services.ListResources(cmd.Context(), client, integration.Id, resourceType)
+		resp, err := services.ListResources(cmd.Context(), client, integration.Id, resourceType, nil)
 		if err != nil {
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "failed to fetch available resources:", err)
 			return nil, cobra.ShellCompDirectiveError
@@ -253,7 +258,6 @@ func resourcesAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, r
 	})
 }
 
-//nolint:dupl // Remove duplication error
 func permissionsAutocompleteFunc(cmd *cobra.Command, integrationIDOrName string, resourceType string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if integrationIDOrName == "" {
 		return nil, cobra.ShellCompDirectiveError
@@ -316,4 +320,18 @@ func filterOptions[T any](allOptions []T, optionValueExtractor func(T) string, t
 	}
 
 	return options
+}
+
+func listResourcesIDsFromSourceIDs(ctx context.Context, client *aponoapi.AponoClient, integrationID string, resourceType string, resourceIDs []string) ([]string, error) {
+	resources, err := services.ListResourcesBySourceIDs(ctx, client, integrationID, resourceType, resourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var resourceIDsToReturn []string
+	for _, resource := range resources {
+		resourceIDsToReturn = append(resourceIDsToReturn, resource.Id)
+	}
+
+	return resourceIDsToReturn, nil
 }
