@@ -99,6 +99,19 @@ func createRootCommand(versionInfo version.VersionInfo) *cobra.Command {
 		Long:          "Apono Permission Management Automation keeps businesses and their customers moving fast and secure, with simple and precise just in time (JiT) permissions across the RnD stack. You can use this CLI tool to view, request and receive permissions to services, DBs and applications directly",
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := aponoapi.GetClient(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			err = startMainInteractiveFlow(cmd, client)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 	}
 
 	c.PersistentFlags().String("profile", "", "profile name")
