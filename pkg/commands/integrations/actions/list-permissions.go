@@ -1,4 +1,3 @@
-//nolint:dupl // Remove duplication error
 package actions
 
 import (

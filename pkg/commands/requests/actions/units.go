@@ -44,7 +44,7 @@ func showRequestAccessUnits(cmd *cobra.Command, client *aponoapi.AponoClient, re
 	table.AddRow("RESOURCE ID", "RESOURCE TYPE", "RESOURCE NAME", "PERMISSION", "INTEGRATION NAME", "INTEGRATION TYPE")
 	for _, requestAccessUnit := range requestAccessUnits {
 		table.AddRow(
-			requestAccessUnit.Resource.Id,
+			requestAccessUnit.Resource.SourceId,
 			requestAccessUnit.Resource.Type.Id,
 			requestAccessUnit.Resource.Name,
 			requestAccessUnit.Permission.Id,

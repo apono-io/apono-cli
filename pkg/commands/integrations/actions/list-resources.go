@@ -1,4 +1,3 @@
-//nolint:dupl // Remove duplication error
 package actions
 
 import (
@@ -29,7 +28,7 @@ func ListResources() *cobra.Command {
 				return fmt.Errorf("failed to get integration: %w", err)
 			}
 
-			resources, err := services.ListResources(cmd.Context(), client, integration.Id, resourceType)
+			resources, err := services.ListResources(cmd.Context(), client, integration.Id, resourceType, nil)
 			if err != nil {
 				return err
 			}
