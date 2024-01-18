@@ -34,7 +34,7 @@ func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) 
 		return flows.RunUseSessionInteractiveFlow(cmd, client, "")
 
 	default:
-		return fmt.Errorf("unknown main action: %s", mainAction)
+		return fmt.Errorf("unknown option selected: %s", mainAction)
 	}
 }
 
