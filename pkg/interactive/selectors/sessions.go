@@ -3,6 +3,7 @@ package selectors
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -21,7 +22,7 @@ func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient, requ
 		return nil, err
 	}
 	if len(sessions) == 0 {
-		return nil, fmt.Errorf("no sessions found")
+		return nil, fmt.Errorf("no active access found, create a new request by running this command: apono request create")
 	}
 
 	sessionByID := make(map[string]clientapi.AccessSessionClientModel)
@@ -33,6 +34,10 @@ func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient, requ
 		})
 		sessionByID[session.Id] = session
 	}
+
+	sort.Slice(options, func(i, j int) bool {
+		return options[i].Label < options[j].Label
+	})
 
 	sessionsInput := listselect.SelectInput{
 		Title:         "Select session",

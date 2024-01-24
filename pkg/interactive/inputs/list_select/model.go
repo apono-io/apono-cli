@@ -8,13 +8,14 @@ type SelectOption struct {
 }
 
 type SelectInput struct {
-	Title             string
-	PostTitle         string
-	Options           []SelectOption
-	MultipleSelection bool
-	ShowHelp          bool
-	EnableFilter      bool
-	ShowItemCount     bool
+	Title                string
+	PostTitle            string
+	Options              []SelectOption
+	MultipleSelection    bool
+	ShowHelp             bool
+	EnableFilter         bool
+	ShowItemCount        bool
+	AutoSelectSingleItem bool
 }
 
 type selectItem struct {
