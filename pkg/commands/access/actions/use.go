@@ -50,7 +50,7 @@ func AccessDetails() *cobra.Command {
 			connectionDetailsOutputFormat := resolveOutputFormat(cmdFlags)
 
 			if cmdFlags.shouldExecuteAccessCommand && connectionDetailsOutputFormat == services.CliOutputFormat {
-				err = flows.SuggestProblemResetCredentialsCommand(cmd, session.Id)
+				err = flows.PrintErrorConnectingSuggestion(cmd, session.Id)
 				if err != nil {
 					return err
 				}
