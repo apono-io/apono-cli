@@ -190,7 +190,7 @@ func ColoredStatus(request clientapi.AccessRequestClientModel) string {
 		status = AccessRequestWaitingForApprovalStatus
 	}
 
-	statusTitle := cases.Title(language.English).String(string(status))
+	statusTitle := cases.Title(language.English).String(status)
 	switch status {
 	case AccessRequestWaitingForApprovalStatus:
 		return color.HiYellow.Sprint(statusTitle)
