@@ -20,7 +20,7 @@ var _ MappedNullable = &RequestStatusClientModel{}
 
 // RequestStatusClientModel struct for RequestStatusClientModel
 type RequestStatusClientModel struct {
-	Status      AccessStatus      `json:"status"`
+	Status      string            `json:"status"`
 	Description NullableString    `json:"description,omitempty"`
 	Metadata    map[string]string `json:"metadata"`
 }
@@ -31,7 +31,7 @@ type _RequestStatusClientModel RequestStatusClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewRequestStatusClientModel(status AccessStatus, metadata map[string]string) *RequestStatusClientModel {
+func NewRequestStatusClientModel(status string, metadata map[string]string) *RequestStatusClientModel {
 	this := RequestStatusClientModel{}
 	this.Status = status
 	this.Metadata = metadata
@@ -47,9 +47,9 @@ func NewRequestStatusClientModelWithDefaults() *RequestStatusClientModel {
 }
 
 // GetStatus returns the Status field value
-func (o *RequestStatusClientModel) GetStatus() AccessStatus {
+func (o *RequestStatusClientModel) GetStatus() string {
 	if o == nil {
-		var ret AccessStatus
+		var ret string
 		return ret
 	}
 
@@ -58,7 +58,7 @@ func (o *RequestStatusClientModel) GetStatus() AccessStatus {
 
 // GetStatusOk returns a tuple with the Status field value
 // and a boolean to check if the value has been set.
-func (o *RequestStatusClientModel) GetStatusOk() (*AccessStatus, bool) {
+func (o *RequestStatusClientModel) GetStatusOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -66,7 +66,7 @@ func (o *RequestStatusClientModel) GetStatusOk() (*AccessStatus, bool) {
 }
 
 // SetStatus sets field value
-func (o *RequestStatusClientModel) SetStatus(v AccessStatus) {
+func (o *RequestStatusClientModel) SetStatus(v string) {
 	o.Status = v
 }
 

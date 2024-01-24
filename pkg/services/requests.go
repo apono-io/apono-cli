@@ -18,7 +18,15 @@ import (
 )
 
 const (
-	requestWaitingForApprovalStatus = "Pending Approval"
+	AccessRequestInitStatus               = "Initializing"
+	AccessRequestPendingStatus            = "Pending"
+	AccessRequestGrantingStatus           = "Granting"
+	AccessRequestRejectedStatus           = "Rejected"
+	AccessRequestActiveStatus             = "Active"
+	AccessRequestRevokingStatus           = "Revoking"
+	AccessRequestRevokedStatus            = "Revoked"
+	AccessRequestFailedStatus             = "Failed"
+	AccessRequestWaitingForApprovalStatus = "Pending Approval"
 )
 
 func GenerateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
@@ -136,7 +144,7 @@ func ListAccessRequestAccessUnits(ctx context.Context, client *aponoapi.AponoCli
 }
 
 func IsRequestWaitingForHumanApproval(request *clientapi.AccessRequestClientModel) bool {
-	if request.Status.Status != clientapi.ACCESSSTATUS_PENDING {
+	if request.Status.Status != AccessRequestPendingStatus {
 		return false
 	}
 
@@ -179,22 +187,22 @@ func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID 
 func ColoredStatus(request clientapi.AccessRequestClientModel) string {
 	status := request.Status.Status
 	if IsRequestWaitingForHumanApproval(&request) {
-		status = requestWaitingForApprovalStatus
+		status = AccessRequestWaitingForApprovalStatus
 	}
 
-	statusTitle := cases.Title(language.English).String(string(status))
+	statusTitle := cases.Title(language.English).String(status)
 	switch status {
-	case requestWaitingForApprovalStatus:
+	case AccessRequestWaitingForApprovalStatus:
 		return color.HiYellow.Sprint(statusTitle)
-	case clientapi.ACCESSSTATUS_PENDING:
+	case AccessRequestInitStatus, AccessRequestPendingStatus:
 		return color.Yellow.Sprint(statusTitle)
-	case clientapi.ACCESSSTATUS_APPROVED:
+	case AccessRequestGrantingStatus:
 		return color.HiYellow.Sprint(statusTitle)
-	case clientapi.ACCESSSTATUS_GRANTED:
+	case AccessRequestActiveStatus:
 		return color.Green.Sprint(statusTitle)
-	case clientapi.ACCESSSTATUS_REJECTED, clientapi.ACCESSSTATUS_REVOKING, clientapi.ACCESSSTATUS_EXPIRED:
+	case AccessRequestRevokingStatus, AccessRequestRevokedStatus, AccessRequestRejectedStatus:
 		return color.Gray.Sprint(statusTitle)
-	case clientapi.ACCESSSTATUS_FAILED:
+	case AccessRequestFailedStatus:
 		return color.Red.Sprint(statusTitle)
 	default:
 		return statusTitle

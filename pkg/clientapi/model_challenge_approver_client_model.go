@@ -21,7 +21,7 @@ var _ MappedNullable = &ChallengeApproverClientModel{}
 // ChallengeApproverClientModel struct for ChallengeApproverClientModel
 type ChallengeApproverClientModel struct {
 	Name     string                `json:"name"`
-	Type     ClientChallengeType   `json:"type"`
+	Type     string                `json:"type"`
 	Status   ClientChallengeStatus `json:"status"`
 	Metadata map[string]string     `json:"metadata"`
 }
@@ -32,7 +32,7 @@ type _ChallengeApproverClientModel ChallengeApproverClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewChallengeApproverClientModel(name string, type_ ClientChallengeType, status ClientChallengeStatus, metadata map[string]string) *ChallengeApproverClientModel {
+func NewChallengeApproverClientModel(name string, type_ string, status ClientChallengeStatus, metadata map[string]string) *ChallengeApproverClientModel {
 	this := ChallengeApproverClientModel{}
 	this.Name = name
 	this.Type = type_
@@ -74,9 +74,9 @@ func (o *ChallengeApproverClientModel) SetName(v string) {
 }
 
 // GetType returns the Type field value
-func (o *ChallengeApproverClientModel) GetType() ClientChallengeType {
+func (o *ChallengeApproverClientModel) GetType() string {
 	if o == nil {
-		var ret ClientChallengeType
+		var ret string
 		return ret
 	}
 
@@ -85,7 +85,7 @@ func (o *ChallengeApproverClientModel) GetType() ClientChallengeType {
 
 // GetTypeOk returns a tuple with the Type field value
 // and a boolean to check if the value has been set.
-func (o *ChallengeApproverClientModel) GetTypeOk() (*ClientChallengeType, bool) {
+func (o *ChallengeApproverClientModel) GetTypeOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -93,7 +93,7 @@ func (o *ChallengeApproverClientModel) GetTypeOk() (*ClientChallengeType, bool) 
 }
 
 // SetType sets field value
-func (o *ChallengeApproverClientModel) SetType(v ClientChallengeType) {
+func (o *ChallengeApproverClientModel) SetType(v string) {
 	o.Type = v
 }
 

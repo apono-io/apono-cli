@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
 const (
@@ -77,10 +76,10 @@ func waitForRequestToBeRevoked(cmd *cobra.Command, client *aponoapi.AponoClient,
 			return err
 		}
 
-		if accessRequest.Status.Status == clientapi.ACCESSSTATUS_EXPIRED {
+		if accessRequest.Status.Status == services.AccessRequestRevokedStatus {
 			return nil
 		}
-		if accessRequest.Status.Status == clientapi.ACCESSSTATUS_FAILED {
+		if accessRequest.Status.Status == services.AccessRequestFailedStatus {
 			return fmt.Errorf("request failed to revoke")
 		}
 

@@ -38,10 +38,10 @@ func shouldRetryLoading(lastRequestTime time.Time, interval time.Duration) bool 
 
 func shouldStopLoading(request *clientapi.AccessRequestClientModel) bool {
 	switch request.Status.Status {
-	case clientapi.ACCESSSTATUS_FAILED, clientapi.ACCESSSTATUS_GRANTED, clientapi.ACCESSSTATUS_REJECTED:
+	case services.AccessRequestActiveStatus, services.AccessRequestFailedStatus, services.AccessRequestRejectedStatus:
 		return true
 
-	case clientapi.ACCESSSTATUS_PENDING:
+	case services.AccessRequestPendingStatus:
 		if services.IsRequestWaitingForHumanApproval(request) {
 			return true
 		}

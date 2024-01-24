@@ -403,7 +403,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/AccessStatus"
+                "type": "string"
               },
               "nullable": true
             }
@@ -1637,18 +1637,6 @@
           }
         }
       },
-      "AccessStatus": {
-        "enum": [
-          "PENDING",
-          "APPROVED",
-          "REJECTED",
-          "GRANTED",
-          "REVOKING",
-          "EXPIRED",
-          "FAILED"
-        ],
-        "type": "string"
-      },
       "AccessUnitClientModel": {
         "required": [
           "id",
@@ -1677,15 +1665,6 @@
           }
         }
       },
-      "AccessUnitStatusClient": {
-        "enum": [
-          "Granted",
-          "Failure",
-          "Pending",
-          "Revoked"
-        ],
-        "type": "string"
-      },
       "AccessUnitStatusClientModel": {
         "required": [
           "status"
@@ -1693,7 +1672,7 @@
         "type": "object",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/AccessUnitStatusClient"
+            "type": "string"
           },
           "message": {
             "type": "string",
@@ -1763,7 +1742,7 @@
             "type": "string"
           },
           "type": {
-            "$ref": "#/components/schemas/ClientChallengeType"
+            "type": "string"
           },
           "status": {
             "$ref": "#/components/schemas/ClientChallengeStatus"
@@ -1806,15 +1785,6 @@
           "Approved",
           "Rejected",
           "Pending"
-        ],
-        "type": "string"
-      },
-      "ClientChallengeType": {
-        "enum": [
-          "User",
-          "Group",
-          "Shift",
-          "Manager"
         ],
         "type": "string"
       },
@@ -2281,7 +2251,7 @@
         "type": "object",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/AccessStatus"
+            "type": "string"
           },
           "description": {
             "type": "string",
