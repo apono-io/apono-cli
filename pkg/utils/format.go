@@ -19,7 +19,7 @@ const (
 )
 
 func AddFormatFlag(flags *pflag.FlagSet, formatPtr *Format) {
-	enumValue := enumflag.New(formatPtr, "output", formatIds, enumflag.EnumCaseSensitive)
+	enumValue := enumflag.New(formatPtr, "format", formatIds, enumflag.EnumCaseSensitive)
 	flags.VarP(enumValue, "output", "o", "Output format. Valid values are 'table', 'yaml', or 'json'")
 }
 
