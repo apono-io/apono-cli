@@ -43,7 +43,7 @@ func ListBundles() *cobra.Command {
 
 				return nil
 			case utils.JSONFormat:
-				return utils.PrintObjectsAsJson(cmd.OutOrStdout(), bundles)
+				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), bundles)
 			case utils.YamlFormat:
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), bundles)
 			default:

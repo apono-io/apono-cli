@@ -23,7 +23,7 @@ func AddFormatFlag(flags *pflag.FlagSet, formatPtr *Format) {
 	flags.VarP(enumValue, "output", "o", "Output format. Valid values are 'table', 'yaml', or 'json'")
 }
 
-func PrintObjectsAsJson(writer io.Writer, objects any) error {
+func PrintObjectsAsJSON(writer io.Writer, objects any) error {
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(objects)

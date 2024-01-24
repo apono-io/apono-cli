@@ -46,7 +46,7 @@ func ListPermissions() *cobra.Command {
 				_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
 				return err
 			case utils.JSONFormat:
-				return utils.PrintObjectsAsJson(cmd.OutOrStdout(), permissions)
+				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), permissions)
 			case utils.YamlFormat:
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), permissions)
 			default:

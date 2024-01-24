@@ -33,7 +33,7 @@ func PrintAccessSessionDetails(cmd *cobra.Command, sessions []clientapi.AccessSe
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), table)
 		return err
 	case utils.JSONFormat:
-		return utils.PrintObjectsAsJson(cmd.OutOrStdout(), sessions)
+		return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), sessions)
 	case utils.YamlFormat:
 		return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), sessions)
 	default:

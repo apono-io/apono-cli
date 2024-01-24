@@ -39,9 +39,9 @@ func PrintAccessRequestDetails(cmd *cobra.Command, requests []clientapi.AccessRe
 		return err
 	case utils.JSONFormat:
 		if printAsArray {
-			return utils.PrintObjectsAsJson(cmd.OutOrStdout(), requests)
+			return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), requests)
 		} else {
-			return utils.PrintObjectsAsJson(cmd.OutOrStdout(), requests[0])
+			return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), requests[0])
 		}
 	case utils.YamlFormat:
 		if printAsArray {

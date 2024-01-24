@@ -43,7 +43,7 @@ func ListIntegrations() *cobra.Command {
 
 				return nil
 			case utils.JSONFormat:
-				return utils.PrintObjectsAsJson(cmd.OutOrStdout(), integrations)
+				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), integrations)
 			case utils.YamlFormat:
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), integrations)
 			default:

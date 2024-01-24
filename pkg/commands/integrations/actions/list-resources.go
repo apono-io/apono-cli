@@ -46,7 +46,7 @@ func ListResources() *cobra.Command {
 				_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
 				return err
 			case utils.JSONFormat:
-				return utils.PrintObjectsAsJson(cmd.OutOrStdout(), resources)
+				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), resources)
 			case utils.YamlFormat:
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), resources)
 			default:
