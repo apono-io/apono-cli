@@ -13,6 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	resetCredentialsCommand = "apono access reset-credentials "
+)
+
 func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestIDFilter string) error {
 	session, err := selectors.RunSessionsSelector(cmd.Context(), client, requestIDFilter)
 	if err != nil {
@@ -39,6 +43,11 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 
 	switch accessMethod {
 	case selectors.ExecuteOption:
+		err = PrintErrorConnectingSuggestion(cmd, session.Id)
+		if err != nil {
+			return err
+		}
+
 		err = services.ExecuteAccessDetails(cmd, client, session)
 		return err
 
@@ -63,7 +72,7 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 	}
 
 	if !services.IsSessionHaveNewCredentials(session) {
-		err = suggestResetCredentialsCommand(cmd, session.Id)
+		err = printResetCredentialsSuggestion(cmd, session.Id)
 		if err != nil {
 			return err
 		}
@@ -72,8 +81,14 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 	return nil
 }
 
-func suggestResetCredentialsCommand(cmd *cobra.Command, sessionID string) error {
-	resetCommand := "apono access reset-credentials " + sessionID
+func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error {
+	resetCommand := resetCredentialsCommand + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	return err
+}
+
+func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error {
+	resetCommand := resetCredentialsCommand + sessionID
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
 	return err
 }

@@ -31,13 +31,14 @@ func RunResourcesSelector(ctx context.Context, client *aponoapi.AponoClient, int
 	}
 
 	resourceInput := listselect.SelectInput{
-		Title:             "Select resources",
-		PostTitle:         "Selected resources",
-		Options:           options,
-		MultipleSelection: true,
-		ShowHelp:          true,
-		EnableFilter:      true,
-		ShowItemCount:     true,
+		Title:                fmt.Sprintf("Select %s", resources[0].Type.Name),
+		PostTitle:            fmt.Sprintf("Selected %s", resources[0].Type.Name),
+		Options:              options,
+		MultipleSelection:    true,
+		ShowHelp:             true,
+		EnableFilter:         true,
+		ShowItemCount:        true,
+		AutoSelectSingleItem: true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(resourceInput)

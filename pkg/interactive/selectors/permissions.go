@@ -31,13 +31,14 @@ func RunPermissionsSelector(ctx context.Context, client *aponoapi.AponoClient, i
 	}
 
 	permissionsInput := listselect.SelectInput{
-		Title:             "Select permissions",
-		PostTitle:         "Selected permissions",
-		Options:           options,
-		MultipleSelection: multipleChoice,
-		ShowHelp:          true,
-		EnableFilter:      true,
-		ShowItemCount:     true,
+		Title:                "Select permissions",
+		PostTitle:            "Selected permissions",
+		Options:              options,
+		MultipleSelection:    multipleChoice,
+		ShowHelp:             true,
+		EnableFilter:         true,
+		ShowItemCount:        true,
+		AutoSelectSingleItem: true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(permissionsInput)

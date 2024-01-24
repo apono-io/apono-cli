@@ -3,6 +3,7 @@ package selectors
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_select"
 
@@ -30,13 +31,18 @@ func RunIntegrationSelector(ctx context.Context, client *aponoapi.AponoClient) (
 		integrationByID[integration.Id] = integration
 	}
 
+	sort.Slice(options, func(i, j int) bool {
+		return options[i].Label < options[j].Label
+	})
+
 	integrationInput := listselect.SelectInput{
-		Title:         "Select integration",
-		PostTitle:     "Selected integration",
-		Options:       options,
-		ShowHelp:      true,
-		EnableFilter:  true,
-		ShowItemCount: true,
+		Title:                "Select integration",
+		PostTitle:            "Selected integration",
+		Options:              options,
+		ShowHelp:             true,
+		EnableFilter:         true,
+		ShowItemCount:        true,
+		AutoSelectSingleItem: true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(integrationInput)

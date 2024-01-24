@@ -110,6 +110,15 @@ func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 		items = append(items, selectItem{data: option, input: inputModel})
 	}
 
+	if len(items) == 1 && inputModel.AutoSelectSingleItem {
+		selectedItems := []SelectOption{items[0].(selectItem).data}
+		if inputModel.PostTitle != "" {
+			fmt.Println(getPostTitle(selectedItems, inputModel.PostTitle))
+		}
+
+		return selectedItems, nil
+	}
+
 	l := list.New(items, selectItemDelegate{}, defaultListWidth, defaultListHeight)
 
 	if inputModel.MultipleSelection {

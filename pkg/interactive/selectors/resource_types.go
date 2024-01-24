@@ -31,12 +31,13 @@ func RunResourceTypeSelector(ctx context.Context, client *aponoapi.AponoClient, 
 	}
 
 	resourceTypeInput := listselect.SelectInput{
-		Title:         "Select resource type",
-		PostTitle:     "Selected resource type",
-		Options:       options,
-		ShowHelp:      true,
-		EnableFilter:  true,
-		ShowItemCount: true,
+		Title:                "Select resource type",
+		PostTitle:            "Selected resource type",
+		Options:              options,
+		ShowHelp:             true,
+		EnableFilter:         true,
+		ShowItemCount:        true,
+		AutoSelectSingleItem: true,
 	}
 
 	selectedItems, err := listselect.LaunchSelector(resourceTypeInput)
