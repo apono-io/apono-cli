@@ -86,7 +86,7 @@ func Create() *cobra.Command {
 				fmt.Println()
 			}
 
-			err = services.PrintAccessRequestDetails(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, cmdFlags.output, false)
+			err = services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, cmdFlags.output, false)
 			if err != nil {
 				return err
 			}

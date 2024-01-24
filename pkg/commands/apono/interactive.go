@@ -66,7 +66,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	if newAccessRequest.Status.Status != services.AccessRequestActiveStatus {
 		fmt.Println()
 
-		return services.PrintAccessRequestDetails(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, utils.TableFormat, false)
+		return services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, utils.TableFormat, false)
 	}
 
 	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf(newAccessRequest.Id))

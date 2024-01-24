@@ -37,7 +37,7 @@ func Describe() *cobra.Command {
 				return err
 			}
 
-			err = services.PrintAccessRequestDetails(cmd, []clientapi.AccessRequestClientModel{*resp}, *format, false)
+			err = services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*resp}, *format, false)
 			if err != nil {
 				return err
 			}

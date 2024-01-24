@@ -30,7 +30,7 @@ const (
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
 )
 
-func PrintAccessRequestDetails(cmd *cobra.Command, requests []clientapi.AccessRequestClientModel, format utils.Format, printAsArray bool) error {
+func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestClientModel, format utils.Format, printAsArray bool) error {
 	switch format {
 	case utils.TableFormat:
 		table := generateRequestsTable(requests)

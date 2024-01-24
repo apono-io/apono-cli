@@ -46,7 +46,7 @@ func AccessList() *cobra.Command {
 				return fmt.Errorf("no active access found, create a new request by running this command: apono request create")
 			}
 
-			err = services.PrintAccessSessionDetails(cmd, accessSessions, format)
+			err = services.PrintAccessSessions(cmd, accessSessions, format)
 			if err != nil {
 				return err
 			}

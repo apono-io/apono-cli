@@ -25,7 +25,7 @@ const (
 	newCredentialsStatus     = "NEW"
 )
 
-func PrintAccessSessionDetails(cmd *cobra.Command, sessions []clientapi.AccessSessionClientModel, format *utils.Format) error {
+func PrintAccessSessions(cmd *cobra.Command, sessions []clientapi.AccessSessionClientModel, format *utils.Format) error {
 	switch *format {
 	case utils.TableFormat:
 		table := generateSessionsTable(sessions)

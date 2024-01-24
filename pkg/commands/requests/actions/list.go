@@ -26,7 +26,7 @@ func List() *cobra.Command {
 				return err
 			}
 
-			err = services.PrintAccessRequestDetails(cmd, requests, *format, true)
+			err = services.PrintAccessRequests(cmd, requests, *format, true)
 			if err != nil {
 				return err
 			}

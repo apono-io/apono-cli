@@ -37,11 +37,7 @@ func ListIntegrations() *cobra.Command {
 				}
 
 				_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return err
 			case utils.JSONFormat:
 				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), integrations)
 			case utils.YamlFormat:
