@@ -20,8 +20,8 @@ var _ MappedNullable = &AccessUnitClientModelStatus{}
 
 // AccessUnitClientModelStatus struct for AccessUnitClientModelStatus
 type AccessUnitClientModelStatus struct {
-	Status  AccessUnitStatusClient `json:"status"`
-	Message NullableString         `json:"message,omitempty"`
+	Status  string         `json:"status"`
+	Message NullableString `json:"message,omitempty"`
 }
 
 type _AccessUnitClientModelStatus AccessUnitClientModelStatus
@@ -30,7 +30,7 @@ type _AccessUnitClientModelStatus AccessUnitClientModelStatus
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessUnitClientModelStatus(status AccessUnitStatusClient) *AccessUnitClientModelStatus {
+func NewAccessUnitClientModelStatus(status string) *AccessUnitClientModelStatus {
 	this := AccessUnitClientModelStatus{}
 	this.Status = status
 	return &this
@@ -45,9 +45,9 @@ func NewAccessUnitClientModelStatusWithDefaults() *AccessUnitClientModelStatus {
 }
 
 // GetStatus returns the Status field value
-func (o *AccessUnitClientModelStatus) GetStatus() AccessUnitStatusClient {
+func (o *AccessUnitClientModelStatus) GetStatus() string {
 	if o == nil {
-		var ret AccessUnitStatusClient
+		var ret string
 		return ret
 	}
 
@@ -56,7 +56,7 @@ func (o *AccessUnitClientModelStatus) GetStatus() AccessUnitStatusClient {
 
 // GetStatusOk returns a tuple with the Status field value
 // and a boolean to check if the value has been set.
-func (o *AccessUnitClientModelStatus) GetStatusOk() (*AccessUnitStatusClient, bool) {
+func (o *AccessUnitClientModelStatus) GetStatusOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -64,7 +64,7 @@ func (o *AccessUnitClientModelStatus) GetStatusOk() (*AccessUnitStatusClient, bo
 }
 
 // SetStatus sets field value
-func (o *AccessUnitClientModelStatus) SetStatus(v AccessUnitStatusClient) {
+func (o *AccessUnitClientModelStatus) SetStatus(v string) {
 	o.Status = v
 }
 

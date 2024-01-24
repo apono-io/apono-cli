@@ -353,7 +353,7 @@ type ApiListAccessRequestsRequest struct {
 	scope      *AccessRequestsScopeModel
 	limit      *int32
 	skip       *int32
-	statuses   *[]AccessStatus
+	statuses   *[]string
 }
 
 func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiListAccessRequestsRequest {
@@ -371,7 +371,7 @@ func (r ApiListAccessRequestsRequest) Skip(skip int32) ApiListAccessRequestsRequ
 	return r
 }
 
-func (r ApiListAccessRequestsRequest) Statuses(statuses []AccessStatus) ApiListAccessRequestsRequest {
+func (r ApiListAccessRequestsRequest) Statuses(statuses []string) ApiListAccessRequestsRequest {
 	r.statuses = &statuses
 	return r
 }

@@ -63,7 +63,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return err
 	}
 
-	if newAccessRequest.Status.Status != clientapi.ACCESSSTATUS_GRANTED {
+	if newAccessRequest.Status.Status != services.AccessRequestActiveStatus {
 		return printAccessRequestDetails(cmd, newAccessRequest)
 	}
 

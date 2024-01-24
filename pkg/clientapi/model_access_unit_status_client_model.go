@@ -20,8 +20,8 @@ var _ MappedNullable = &AccessUnitStatusClientModel{}
 
 // AccessUnitStatusClientModel struct for AccessUnitStatusClientModel
 type AccessUnitStatusClientModel struct {
-	Status  AccessUnitStatusClient `json:"status"`
-	Message NullableString         `json:"message,omitempty"`
+	Status  string         `json:"status"`
+	Message NullableString `json:"message,omitempty"`
 }
 
 type _AccessUnitStatusClientModel AccessUnitStatusClientModel
@@ -30,7 +30,7 @@ type _AccessUnitStatusClientModel AccessUnitStatusClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessUnitStatusClientModel(status AccessUnitStatusClient) *AccessUnitStatusClientModel {
+func NewAccessUnitStatusClientModel(status string) *AccessUnitStatusClientModel {
 	this := AccessUnitStatusClientModel{}
 	this.Status = status
 	return &this
@@ -45,9 +45,9 @@ func NewAccessUnitStatusClientModelWithDefaults() *AccessUnitStatusClientModel {
 }
 
 // GetStatus returns the Status field value
-func (o *AccessUnitStatusClientModel) GetStatus() AccessUnitStatusClient {
+func (o *AccessUnitStatusClientModel) GetStatus() string {
 	if o == nil {
-		var ret AccessUnitStatusClient
+		var ret string
 		return ret
 	}
 
@@ -56,7 +56,7 @@ func (o *AccessUnitStatusClientModel) GetStatus() AccessUnitStatusClient {
 
 // GetStatusOk returns a tuple with the Status field value
 // and a boolean to check if the value has been set.
-func (o *AccessUnitStatusClientModel) GetStatusOk() (*AccessUnitStatusClient, bool) {
+func (o *AccessUnitStatusClientModel) GetStatusOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -64,7 +64,7 @@ func (o *AccessUnitStatusClientModel) GetStatusOk() (*AccessUnitStatusClient, bo
 }
 
 // SetStatus sets field value
-func (o *AccessUnitStatusClientModel) SetStatus(v AccessUnitStatusClient) {
+func (o *AccessUnitStatusClientModel) SetStatus(v string) {
 	o.Status = v
 }
 
