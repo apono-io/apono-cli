@@ -42,6 +42,10 @@ func AccessList() *cobra.Command {
 				return err
 			}
 
+			if len(accessSessions) == 0 {
+				return fmt.Errorf("no active access found, create a new request by running this command: apono request create")
+			}
+
 			table := uitable.New()
 			table.AddRow("ID", "NAME", "INTEGRATION NAME", "INTEGRATION TYPE", "TYPE")
 			for _, session := range accessSessions {
