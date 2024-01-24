@@ -40,6 +40,7 @@ type createRequestFlags struct {
 	runInteractiveMode  bool
 	noWait              bool
 	timeout             time.Duration
+	output              utils.Format
 }
 
 func Create() *cobra.Command {
@@ -81,18 +82,21 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*newAccessRequest})
-
 			if cmdFlags.runInteractiveMode {
 				fmt.Println()
 			}
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-			return err
+			err = services.PrintAccessRequestDetails(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, cmdFlags.output, false)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
 	flags := cmd.Flags()
+	utils.AddFormatFlag(flags, &cmdFlags.output)
 	flags.StringVarP(&cmdFlags.bundleIDOrName, bundleFlagName, "b", "", "The bundle id or name")
 	flags.StringVarP(&cmdFlags.integrationIDOrName, integrationFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&cmdFlags.resourceType, resourceTypeFlagName, "t", "", "The resource type")

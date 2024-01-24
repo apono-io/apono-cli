@@ -64,7 +64,9 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	if newAccessRequest.Status.Status != services.AccessRequestActiveStatus {
-		return printAccessRequestDetails(cmd, newAccessRequest)
+		fmt.Println()
+
+		return services.PrintAccessRequestDetails(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, utils.TableFormat, false)
 	}
 
 	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf(newAccessRequest.Id))
@@ -74,17 +76,4 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	return flows.RunUseSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
-}
-
-func printAccessRequestDetails(cmd *cobra.Command, request *clientapi.AccessRequestClientModel) error {
-	table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*request})
-
-	fmt.Println()
-
-	_, err := fmt.Fprintln(cmd.OutOrStdout(), table)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

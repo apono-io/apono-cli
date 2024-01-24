@@ -23,7 +23,7 @@ func VersionCommand(info version.VersionInfo) *cobra.Command {
 		GroupID: groups.OtherCommandsGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch *format {
-			case utils.Plain:
+			case utils.TableFormat:
 				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Version: %s\n", info.Version)
 				return err
 			case utils.JSONFormat:
