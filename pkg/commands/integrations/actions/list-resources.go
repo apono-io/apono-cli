@@ -8,9 +8,11 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 func ListResources() *cobra.Command {
+	format := new(utils.Format)
 	var integrationIDOrName string
 	var resourceType string
 	cmd := &cobra.Command{
@@ -33,18 +35,28 @@ func ListResources() *cobra.Command {
 				return err
 			}
 
-			table := uitable.New()
-			table.AddRow("ID", "NAME")
-			for _, resource := range resources {
-				table.AddRow(resource.SourceId, resource.Name)
-			}
+			switch *format {
+			case utils.TableFormat:
+				table := uitable.New()
+				table.AddRow("ID", "NAME")
+				for _, resource := range resources {
+					table.AddRow(resource.SourceId, resource.Name)
+				}
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-			return err
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+				return err
+			case utils.JSONFormat:
+				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), resources)
+			case utils.YamlFormat:
+				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), resources)
+			default:
+				return fmt.Errorf("unsupported output format")
+			}
 		},
 	}
 
 	flags := cmd.Flags()
+	utils.AddFormatFlag(flags, format)
 	flags.StringVarP(&integrationIDOrName, "integration", "i", "", "the integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&resourceType, "type", "t", "", "the resource type")
 	_ = cmd.MarkFlagRequired("integration")

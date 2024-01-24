@@ -13,6 +13,7 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/gosuri/uitable"
+	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -29,7 +30,31 @@ const (
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
 )
 
-func GenerateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
+func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestClientModel, format utils.Format, printAsArray bool) error {
+	switch format {
+	case utils.TableFormat:
+		table := generateRequestsTable(requests)
+
+		_, err := fmt.Fprintln(cmd.OutOrStdout(), table)
+		return err
+	case utils.JSONFormat:
+		if printAsArray {
+			return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), requests)
+		} else {
+			return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), requests[0])
+		}
+	case utils.YamlFormat:
+		if printAsArray {
+			return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), requests)
+		} else {
+			return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), requests[0])
+		}
+	default:
+		return fmt.Errorf("unsupported output format")
+	}
+}
+
+func generateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
 	table := uitable.New()
 	table.AddRow("REQUEST ID", "CREATED", "REVOKED", "INTEGRATIONS", "JUSTIFICATION", "STATUS")
 	for _, request := range requests {

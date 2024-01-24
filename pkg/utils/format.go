@@ -1,24 +1,45 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+
 	"github.com/spf13/pflag"
 	"github.com/thediveo/enumflag"
+	"gopkg.in/yaml.v3"
 )
 
 type Format enumflag.Flag
 
 const (
-	Plain Format = iota
+	TableFormat Format = iota
 	JSONFormat
 	YamlFormat
 )
 
 func AddFormatFlag(flags *pflag.FlagSet, formatPtr *Format) {
-	enumValue := enumflag.New(formatPtr, "output", formatIds, enumflag.EnumCaseSensitive)
-	flags.VarP(enumValue, "output", "o", "One of 'yaml' or 'json'")
+	enumValue := enumflag.New(formatPtr, "format", formatIds, enumflag.EnumCaseSensitive)
+	flags.VarP(enumValue, "output", "o", "Output format. Valid values are 'table', 'yaml', or 'json'")
+}
+
+func PrintObjectsAsJSON(writer io.Writer, objects any) error {
+	encoder := json.NewEncoder(writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(objects)
+}
+
+func PrintObjectsAsYaml(writer io.Writer, objects any) error {
+	bytes, err := yaml.Marshal(objects)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprint(writer, string(bytes))
+	return err
 }
 
 var formatIds = map[Format][]string{
-	JSONFormat: {"json"},
-	YamlFormat: {"yaml"},
+	TableFormat: {"table"},
+	JSONFormat:  {"json"},
+	YamlFormat:  {"yaml"},
 }

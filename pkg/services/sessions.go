@@ -13,6 +13,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
+	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,32 @@ const (
 	JSONOutputFormat         = "json"
 	newCredentialsStatus     = "NEW"
 )
+
+func PrintAccessSessions(cmd *cobra.Command, sessions []clientapi.AccessSessionClientModel, format *utils.Format) error {
+	switch *format {
+	case utils.TableFormat:
+		table := generateSessionsTable(sessions)
+
+		_, err := fmt.Fprintln(cmd.OutOrStdout(), table)
+		return err
+	case utils.JSONFormat:
+		return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), sessions)
+	case utils.YamlFormat:
+		return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), sessions)
+	default:
+		return fmt.Errorf("unsupported output format")
+	}
+}
+
+func generateSessionsTable(sessions []clientapi.AccessSessionClientModel) *uitable.Table {
+	table := uitable.New()
+	table.AddRow("ID", "NAME", "INTEGRATION NAME", "INTEGRATION TYPE", "TYPE")
+	for _, session := range sessions {
+		table.AddRow(session.Id, session.Name, session.Integration.Name, session.Integration.Type, session.Type.Name)
+	}
+
+	return table
+}
 
 func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integrationIds []string, bundleIds []string, requestIds []string) ([]clientapi.AccessSessionClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessSessionClientModel, *clientapi.PaginationClientInfoModel, error) {

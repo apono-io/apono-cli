@@ -1,16 +1,15 @@
 package actions
 
 import (
-	"fmt"
-
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/spf13/cobra"
-
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
 )
 
 func List() *cobra.Command {
+	format := new(utils.Format)
 	var daysOffset int64
 
 	cmd := &cobra.Command{
@@ -22,24 +21,23 @@ func List() *cobra.Command {
 				return err
 			}
 
-			return listRequestsOutput(cmd, client, daysOffset)
+			requests, err := services.ListRequests(cmd.Context(), client, daysOffset)
+			if err != nil {
+				return err
+			}
+
+			err = services.PrintAccessRequests(cmd, requests, *format, true)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.Int64VarP(&daysOffset, "days", "d", 7, "number of days to list")
+	utils.AddFormatFlag(flags, format)
 
 	return cmd
-}
-
-func listRequestsOutput(cmd *cobra.Command, client *aponoapi.AponoClient, daysOffset int64) error {
-	requests, err := services.ListRequests(cmd.Context(), client, daysOffset)
-	if err != nil {
-		return err
-	}
-
-	table := services.GenerateRequestsTable(requests)
-
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-	return err
 }

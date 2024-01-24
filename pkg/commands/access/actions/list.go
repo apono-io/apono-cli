@@ -7,7 +7,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
-	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -20,6 +19,7 @@ const (
 )
 
 func AccessList() *cobra.Command {
+	format := new(utils.Format)
 	var integrationFilter string
 	var bundleFilter string
 	var requestFilter string
@@ -46,13 +46,7 @@ func AccessList() *cobra.Command {
 				return fmt.Errorf("no active access found, create a new request by running this command: apono request create")
 			}
 
-			table := uitable.New()
-			table.AddRow("ID", "NAME", "INTEGRATION NAME", "INTEGRATION TYPE", "TYPE")
-			for _, session := range accessSessions {
-				table.AddRow(session.Id, session.Name, session.Integration.Name, session.Integration.Type, session.Type.Name)
-			}
-
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
+			err = services.PrintAccessSessions(cmd, accessSessions, format)
 			if err != nil {
 				return err
 			}
@@ -62,6 +56,7 @@ func AccessList() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
+	utils.AddFormatFlag(flags, format)
 	flags.StringVarP(&integrationFilter, integrationFilterFlagName, "i", "", "The integration id or type/name, for example: \"aws-account/My AWS integration\"")
 	flags.StringVarP(&bundleFilter, bundleFilterFlagName, "b", "", "filter by bundle name or id")
 	flags.StringVarP(&requestFilter, requestIDFlagName, "r", "", "filter by request id")

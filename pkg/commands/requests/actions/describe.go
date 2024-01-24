@@ -3,6 +3,8 @@ package actions
 import (
 	"fmt"
 
+	"github.com/apono-io/apono-cli/pkg/utils"
+
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/services"
@@ -13,6 +15,8 @@ import (
 )
 
 func Describe() *cobra.Command {
+	format := new(utils.Format)
+
 	cmd := &cobra.Command{
 		Use:     "describe <request_id>",
 		Short:   "Return the details for the specified access request",
@@ -28,21 +32,21 @@ func Describe() *cobra.Command {
 			}
 
 			requestID := args[0]
-			return getRequestOutput(cmd, client, requestID)
+			resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(cmd.Context(), requestID).Execute()
+			if err != nil {
+				return err
+			}
+
+			err = services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*resp}, *format, false)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
+	flags := cmd.Flags()
+	utils.AddFormatFlag(flags, format)
 
 	return cmd
-}
-
-func getRequestOutput(cmd *cobra.Command, client *aponoapi.AponoClient, requestID string) error {
-	resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(cmd.Context(), requestID).Execute()
-	if err != nil {
-		return err
-	}
-
-	table := services.GenerateRequestsTable([]clientapi.AccessRequestClientModel{*resp})
-
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), table)
-	return err
 }
