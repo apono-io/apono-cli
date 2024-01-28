@@ -135,6 +135,10 @@ func Create() *cobra.Command {
 
 func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags) (*clientapi.CreateAccessRequestClientModel, error) {
 	req := services.GetEmptyNewRequestAPIModel()
+
+	if flags.justification == "" && !flags.runInteractiveMode {
+		return nil, fmt.Errorf("either --%s or --%s flag must be specified", justificationFlagName, interactiveFlagName)
+	}
 	req.Justification = flags.justification
 
 	switch {
