@@ -40,8 +40,8 @@ func RunSessionsSelector(ctx context.Context, client *aponoapi.AponoClient, requ
 	})
 
 	sessionsInput := listselect.SelectInput{
-		Title:         "Select session",
-		PostTitle:     "Selected session",
+		Title:         "Select access",
+		PostTitle:     "Selected access",
 		Options:       options,
 		ShowHelp:      true,
 		EnableFilter:  true,
