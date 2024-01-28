@@ -164,46 +164,46 @@ func StartIntegrationRequestBuilderInteractiveMode(
 
 func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi.CreateAccessRequestClientModel, models *CreateAccessRequestWithFullModels) error {
 	if len(request.FilterBundleIds) != 0 {
-		var bundleID string
+		var bundleFlagValue string
 		if models.Bundles != nil && len(models.Bundles) == 1 {
-			bundleID = models.Bundles[0].Name
+			bundleFlagValue = models.Bundles[0].Name
 		} else {
-			bundleID = request.FilterBundleIds[0]
+			bundleFlagValue = request.FilterBundleIds[0]
 		}
 
-		return printCreateBundleRequestCommand(cmd, bundleID, request.Justification)
-	} else {
-		var integration string
-		if models.Integrations != nil && len(models.Integrations) == 1 {
-			integration = fmt.Sprintf("%s/%s", models.Integrations[0].Type, models.Integrations[0].Name)
-		} else {
-			integration = request.FilterIntegrationIds[0]
-		}
-
-		var resources []string
-		if models.Resources != nil {
-			for _, resource := range models.Resources {
-				resources = append(resources, resource.SourceId)
-			}
-		} else {
-			resources = request.FilterResourceIds
-		}
-		return printCreateIntegrationRequestCommand(cmd, integration, request.FilterResourceTypeIds[0], resources, request.FilterPermissionIds, request.Justification)
+		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification)
 	}
+
+	var integrationFlagValue string
+	if models.Integrations != nil && len(models.Integrations) == 1 {
+		integrationFlagValue = fmt.Sprintf("%s/%s", models.Integrations[0].Type, models.Integrations[0].Name)
+	} else {
+		integrationFlagValue = request.FilterIntegrationIds[0]
+	}
+
+	var resourcesFlagValues []string
+	if models.Resources != nil {
+		for _, resource := range models.Resources {
+			resourcesFlagValues = append(resourcesFlagValues, resource.SourceId)
+		}
+	} else {
+		resourcesFlagValues = request.FilterResourceIds
+	}
+	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification)
 }
 
 func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification string) error {
-	createCommand := fmt.Sprintf("apono requests create --integration \"%s\" --resource-type %s", integration, resourceType)
+	createCommand := fmt.Sprintf("apono requests create --integration \"%s\" --resource-type \"%s\"", integration, resourceType)
 
 	var permissionFlags []string
 	for _, permissionID := range permissionIDs {
-		permissionFlags = append(permissionFlags, fmt.Sprintf("--permissions %s", permissionID))
+		permissionFlags = append(permissionFlags, fmt.Sprintf("--permissions \"%s\"", permissionID))
 	}
 	createCommand += " " + strings.Join(permissionFlags, " ")
 
 	var resourceFlags []string
 	for _, resourceID := range resourceIDs {
-		resourceFlags = append(resourceFlags, fmt.Sprintf("--resources %s", resourceID))
+		resourceFlags = append(resourceFlags, fmt.Sprintf("--resources \"%s\"", resourceID))
 	}
 	createCommand += " " + strings.Join(resourceFlags, " ")
 
