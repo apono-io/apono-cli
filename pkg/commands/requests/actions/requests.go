@@ -9,7 +9,7 @@ import (
 func Requests() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "requests",
-		Short:   "Manage your access requests",
+		Short:   "Create and manage your access requests",
 		GroupID: groups.ManagementCommandsGroup.ID,
 		Aliases: []string{"request"},
 	}

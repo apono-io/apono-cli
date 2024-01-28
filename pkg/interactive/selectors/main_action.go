@@ -15,7 +15,7 @@ func RunMainActionSelector() (string, error) {
 		},
 		{
 			ID:    ConnectOption,
-			Label: "Connect to existing session",
+			Label: "Connect to a resource",
 		},
 	}
 
