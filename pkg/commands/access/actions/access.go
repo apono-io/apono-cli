@@ -11,7 +11,7 @@ import (
 func Access() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "access",
-		Short:   "Manage access to resources",
+		Short:   "Manage and use access to resources",
 		GroupID: groups.ManagementCommandsGroup.ID,
 		Aliases: []string{"sessions", "session"},
 		RunE: func(cmd *cobra.Command, args []string) error {

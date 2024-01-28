@@ -9,7 +9,7 @@ import (
 func Inventory() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "inventory",
-		Short:   "Manage requestable objects such as resources, permissions, and integrations",
+		Short:   "List resources you can request access to: bundles, integrations, resource types, resources, and permissions",
 		GroupID: groups.ManagementCommandsGroup.ID,
 	}
 

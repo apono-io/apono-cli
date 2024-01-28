@@ -22,7 +22,7 @@ func RunSessionCliMethodOptionSelector() (string, error) {
 	}
 
 	requestTypeInput := listselect.SelectInput{
-		Title:     "Select how to use access session",
+		Title:     "Select how to use access",
 		PostTitle: "Selected option",
 		Options:   options,
 	}
