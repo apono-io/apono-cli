@@ -20,14 +20,15 @@ var _ MappedNullable = &CreateAccessRequestClientModel{}
 
 // CreateAccessRequestClientModel struct for CreateAccessRequestClientModel
 type CreateAccessRequestClientModel struct {
-	FilterIntegrationIds  []string      `json:"filter_integration_ids"`
-	FilterBundleIds       []string      `json:"filter_bundle_ids"`
-	FilterResourceTypeIds []string      `json:"filter_resource_type_ids"`
-	FilterResourceIds     []string      `json:"filter_resource_ids"`
-	FilterPermissionIds   []string      `json:"filter_permission_ids"`
-	FilterAccessUnitIds   []string      `json:"filter_access_unit_ids"`
-	Justification         string        `json:"justification"`
-	Duration              NullableInt64 `json:"duration,omitempty"`
+	FilterIntegrationIds  []string         `json:"filter_integration_ids"`
+	FilterBundleIds       []string         `json:"filter_bundle_ids"`
+	FilterResourceTypeIds []string         `json:"filter_resource_type_ids"`
+	FilterResourceIds     []string         `json:"filter_resource_ids"`
+	FilterResources       []ResourceFilter `json:"filter_resources"`
+	FilterPermissionIds   []string         `json:"filter_permission_ids"`
+	FilterAccessUnitIds   []string         `json:"filter_access_unit_ids"`
+	Justification         string           `json:"justification"`
+	Duration              NullableInt64    `json:"duration,omitempty"`
 }
 
 type _CreateAccessRequestClientModel CreateAccessRequestClientModel
@@ -36,12 +37,13 @@ type _CreateAccessRequestClientModel CreateAccessRequestClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateAccessRequestClientModel(filterIntegrationIds []string, filterBundleIds []string, filterResourceTypeIds []string, filterResourceIds []string, filterPermissionIds []string, filterAccessUnitIds []string, justification string) *CreateAccessRequestClientModel {
+func NewCreateAccessRequestClientModel(filterIntegrationIds []string, filterBundleIds []string, filterResourceTypeIds []string, filterResourceIds []string, filterResources []ResourceFilter, filterPermissionIds []string, filterAccessUnitIds []string, justification string) *CreateAccessRequestClientModel {
 	this := CreateAccessRequestClientModel{}
 	this.FilterIntegrationIds = filterIntegrationIds
 	this.FilterBundleIds = filterBundleIds
 	this.FilterResourceTypeIds = filterResourceTypeIds
 	this.FilterResourceIds = filterResourceIds
+	this.FilterResources = filterResources
 	this.FilterPermissionIds = filterPermissionIds
 	this.FilterAccessUnitIds = filterAccessUnitIds
 	this.Justification = justification
@@ -150,6 +152,30 @@ func (o *CreateAccessRequestClientModel) GetFilterResourceIdsOk() ([]string, boo
 // SetFilterResourceIds sets field value
 func (o *CreateAccessRequestClientModel) SetFilterResourceIds(v []string) {
 	o.FilterResourceIds = v
+}
+
+// GetFilterResources returns the FilterResources field value
+func (o *CreateAccessRequestClientModel) GetFilterResources() []ResourceFilter {
+	if o == nil {
+		var ret []ResourceFilter
+		return ret
+	}
+
+	return o.FilterResources
+}
+
+// GetFilterResourcesOk returns a tuple with the FilterResources field value
+// and a boolean to check if the value has been set.
+func (o *CreateAccessRequestClientModel) GetFilterResourcesOk() ([]ResourceFilter, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.FilterResources, true
+}
+
+// SetFilterResources sets field value
+func (o *CreateAccessRequestClientModel) SetFilterResources(v []ResourceFilter) {
+	o.FilterResources = v
 }
 
 // GetFilterPermissionIds returns the FilterPermissionIds field value
@@ -281,6 +307,7 @@ func (o CreateAccessRequestClientModel) ToMap() (map[string]interface{}, error) 
 	toSerialize["filter_bundle_ids"] = o.FilterBundleIds
 	toSerialize["filter_resource_type_ids"] = o.FilterResourceTypeIds
 	toSerialize["filter_resource_ids"] = o.FilterResourceIds
+	toSerialize["filter_resources"] = o.FilterResources
 	toSerialize["filter_permission_ids"] = o.FilterPermissionIds
 	toSerialize["filter_access_unit_ids"] = o.FilterAccessUnitIds
 	toSerialize["justification"] = o.Justification
@@ -299,6 +326,7 @@ func (o *CreateAccessRequestClientModel) UnmarshalJSON(bytes []byte) (err error)
 		"filter_bundle_ids",
 		"filter_resource_type_ids",
 		"filter_resource_ids",
+		"filter_resources",
 		"filter_permission_ids",
 		"filter_access_unit_ids",
 		"justification",
