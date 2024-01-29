@@ -130,7 +130,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 		}
 		requestModels.Resources = resources
 	}
-	request.FilterResourceIds = resourceIDs
+	request.FilterResources = services.ListResourceFiltersFromResourcesIDs(resourceIDs)
 
 	if len(permissionIDs) == 0 {
 		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceType.Id, allowMultiplePermissions)
@@ -187,7 +187,9 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			resourcesFlagValues = append(resourcesFlagValues, resource.SourceId)
 		}
 	} else {
-		resourcesFlagValues = request.FilterResourceIds
+		for _, resourceFilter := range request.FilterResources {
+			resourcesFlagValues = append(resourcesFlagValues, resourceFilter.Value)
+		}
 	}
 	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification)
 }

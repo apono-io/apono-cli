@@ -1794,6 +1794,7 @@
           "filter_bundle_ids",
           "filter_resource_type_ids",
           "filter_resource_ids",
+          "filter_resources",
           "filter_permission_ids",
           "filter_access_unit_ids",
           "justification"
@@ -1822,6 +1823,12 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "filter_resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceFilter"
             }
           },
           "filter_permission_ids": {
@@ -2295,6 +2302,28 @@
             "$ref": "#/components/schemas/IntegrationClientModel"
           }
         }
+      },
+      "ResourceFilter": {
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ResourceFilterType"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "ResourceFilterType": {
+        "enum": [
+          "id",
+          "search_term"
+        ],
+        "type": "string"
       },
       "ResourceTypeClientModel": {
         "required": [

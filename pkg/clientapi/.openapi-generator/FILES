@@ -58,6 +58,8 @@ model_permission_client_model.go
 model_request_again_client_model.go
 model_request_status_client_model.go
 model_resource_client_model.go
+model_resource_filter.go
+model_resource_filter_type.go
 model_resource_type_client_model.go
 model_session_type_client_model.go
 model_user_client_model.go

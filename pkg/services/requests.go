@@ -240,7 +240,20 @@ func GetEmptyNewRequestAPIModel() *clientapi.CreateAccessRequestClientModel {
 		FilterIntegrationIds:  []string{},
 		FilterResourceTypeIds: []string{},
 		FilterResourceIds:     []string{},
+		FilterResources:       []clientapi.ResourceFilter{},
 		FilterPermissionIds:   []string{},
 		FilterAccessUnitIds:   []string{},
 	}
+}
+
+func ListResourceFiltersFromResourcesIDs(resourcesIDs []string) []clientapi.ResourceFilter {
+	var resourceFilters []clientapi.ResourceFilter
+	for _, resourceID := range resourcesIDs {
+		resourceFilters = append(resourceFilters, clientapi.ResourceFilter{
+			Type:  clientapi.RESOURCEFILTERTYPE_ID,
+			Value: resourceID,
+		})
+	}
+
+	return resourceFilters
 }
