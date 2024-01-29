@@ -77,7 +77,7 @@ func Create() *cobra.Command {
 
 			var newAccessRequest *clientapi.AccessRequestClientModel
 
-			newAccessRequest, err = requestloader.RunRequestLoader(cmd.Context(), client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
+			newAccessRequest, err = waitForRequest(cmd.Context(), client, cmdFlags, creationTime)
 			if err != nil {
 				return err
 			}
@@ -342,4 +342,44 @@ func listResourcesIDsFromSourceIDs(ctx context.Context, client *aponoapi.AponoCl
 	}
 
 	return resourceIDsToReturn, nil
+}
+
+func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags *createRequestFlags, creationTime time.Time) (*clientapi.AccessRequestClientModel, error) {
+	var newAccessRequest *clientapi.AccessRequestClientModel
+	var err error
+	if cmdFlags.runInteractiveMode {
+		newAccessRequest, err = requestloader.RunRequestLoader(ctx, client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
+		if err != nil {
+			return nil, err
+		}
+
+		return newAccessRequest, nil
+	}
+
+	newAccessRequest, err = services.WaitForNewRequest(ctx, client, creationTime, cmdFlags.timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	if cmdFlags.noWait {
+		return newAccessRequest, nil
+	}
+
+	requestID := newAccessRequest.Id
+	for {
+		if requestloader.ShouldStopLoading(newAccessRequest) {
+			return newAccessRequest, nil
+		}
+
+		if time.Now().After(creationTime.Add(cmdFlags.timeout)) {
+			return newAccessRequest, fmt.Errorf("timeout waiting for request to be granted")
+		}
+
+		time.Sleep(1 * time.Second)
+
+		newAccessRequest, _, err = client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
+		if err != nil {
+			return nil, err
+		}
+	}
 }
