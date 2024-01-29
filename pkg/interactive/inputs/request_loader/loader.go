@@ -30,7 +30,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case updatedRequestMsg:
 		m.request = (*clientapi.AccessRequestClientModel)(&msg)
-		if m.noWaitForGrant || shouldStopLoading(m.request) {
+		if m.noWaitForGrant || ShouldStopLoading(m.request) {
 			m.quitting = true
 			return m, tea.Quit
 		}
