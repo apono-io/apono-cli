@@ -155,14 +155,14 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 				return nil, err
 			}
 		} else {
-			resourceIds, err := listResourcesIDsFromSourceIDs(cmd.Context(), client, integration.Id, flags.resourceType, flags.resourceIDs)
+			resourceIDs, err := listResourcesIDsFromSourceIDs(cmd.Context(), client, integration.Id, flags.resourceType, flags.resourceIDs)
 			if err != nil {
 				return nil, err
 			}
 
 			req.FilterIntegrationIds = []string{integration.Id}
 			req.FilterResourceTypeIds = []string{flags.resourceType}
-			req.FilterResourceIds = resourceIds
+			req.FilterResources = services.ListResourceFiltersFromResourcesIDs(resourceIDs)
 			req.FilterPermissionIds = flags.permissionIDs
 		}
 
