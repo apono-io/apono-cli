@@ -119,6 +119,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	allowMultiplePermissions = resourceType.AllowMultiplePermissions
 	request.FilterResourceTypeIds = []string{resourceType.Id}
 
+	var resolvedResourceIDs []string
 	if len(resourceIDs) == 0 {
 		resources, err := selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceType.Id)
 		if err != nil {
@@ -126,11 +127,21 @@ func StartIntegrationRequestBuilderInteractiveMode(
 		}
 
 		for _, resource := range resources {
-			resourceIDs = append(resourceIDs, resource.Id)
+			resolvedResourceIDs = append(resolvedResourceIDs, resource.Id)
+		}
+		requestModels.Resources = resources
+	} else {
+		resources, err := services.ListResourcesBySourceIDs(cmd.Context(), client, integrationID, resourceType.Id, resourceIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, resource := range resources {
+			resolvedResourceIDs = append(resolvedResourceIDs, resource.Id)
 		}
 		requestModels.Resources = resources
 	}
-	request.FilterResources = services.ListResourceFiltersFromResourcesIDs(resourceIDs)
+	request.FilterResources = services.ListResourceFiltersFromResourcesIDs(resolvedResourceIDs)
 
 	if len(permissionIDs) == 0 {
 		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceType.Id, allowMultiplePermissions)
