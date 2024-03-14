@@ -2,14 +2,13 @@ package actions
 
 import (
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/utils"
 
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
-
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
 )
 
 func AccessUnits() *cobra.Command {
