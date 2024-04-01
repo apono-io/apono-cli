@@ -62,14 +62,24 @@ func AccessDetails() *cobra.Command {
 				return fmt.Errorf("unsupported output format: %s. use one of: %s", connectionDetailsOutputFormat, strings.Join(session.ConnectionMethods, ", "))
 			}
 
-			accessDetails, err := services.GetSessionDetails(cmd.Context(), client, session.Id, connectionDetailsOutputFormat)
+			accessDetails, customInstructionMessage, err := services.GetSessionDetails(cmd.Context(), client, session.Id, connectionDetailsOutputFormat)
 			if err != nil {
 				return err
 			}
 
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), accessDetails)
+			if err != nil {
+				return err
+			}
 
-			return err
+			if customInstructionMessage != "" {
+				err = services.PrintCustomInstructionMessage(cmd, customInstructionMessage)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 	}
 

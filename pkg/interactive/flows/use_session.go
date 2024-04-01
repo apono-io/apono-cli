@@ -61,7 +61,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 }
 
 func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
-	accessDetails, err := services.GetSessionDetails(cmd.Context(), client, session.Id, services.InstructionsOutputFormat)
+	accessDetails, customInstructionMessage, err := services.GetSessionDetails(cmd.Context(), client, session.Id, services.InstructionsOutputFormat)
 	if err != nil {
 		return err
 	}
@@ -69,6 +69,13 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), "\n"+accessDetails)
 	if err != nil {
 		return err
+	}
+
+	if customInstructionMessage != "" {
+		err = services.PrintCustomInstructionMessage(cmd, customInstructionMessage)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !services.IsSessionHaveNewCredentials(session) {

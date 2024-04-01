@@ -68,7 +68,7 @@ func StartBundleRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoa
 
 		justification = newJustification
 	}
-	request.Justification = justification
+	request.Justification = *clientapi.NewNullableString(&justification)
 
 	err := GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
@@ -163,7 +163,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 
 		justification = newJustification
 	}
-	request.Justification = justification
+	request.Justification = *clientapi.NewNullableString(&justification)
 
 	err := GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
@@ -182,7 +182,7 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			bundleFlagValue = request.FilterBundleIds[0]
 		}
 
-		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification)
+		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification.Get())
 	}
 
 	var integrationFlagValue string
@@ -202,10 +202,10 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			resourcesFlagValues = append(resourcesFlagValues, resourceFilter.Value)
 		}
 	}
-	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification)
+	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get())
 }
 
-func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification string) error {
+func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string) error {
 	createCommand := fmt.Sprintf("apono requests create --integration \"%s\" --resource-type \"%s\"", integration, resourceType)
 
 	var permissionFlags []string
@@ -220,7 +220,9 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 	}
 	createCommand += " " + strings.Join(resourceFlags, " ")
 
-	createCommand += fmt.Sprintf(" --justification \"%s\"", justification)
+	if justification != nil {
+		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
+	}
 
 	err := printCreateCommand(cmd, createCommand)
 	if err != nil {
@@ -230,8 +232,11 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 	return nil
 }
 
-func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification string) error {
-	createCommand := fmt.Sprintf("apono requests create --bundle \"%s\" --justification \"%s\"", bundle, justification)
+func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification *string) error {
+	createCommand := fmt.Sprintf("apono requests create --bundle \"%s\"", bundle)
+	if justification != nil {
+		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
+	}
 
 	err := printCreateCommand(cmd, createCommand)
 	if err != nil {
