@@ -147,7 +147,7 @@ func (r ApiCreateUserAccessRequestRequest) CreateAccessRequestClientModel(create
 	return r
 }
 
-func (r ApiCreateUserAccessRequestRequest) Execute() (*MessageResponse, *http.Response, error) {
+func (r ApiCreateUserAccessRequestRequest) Execute() (*AccessRequestSubmittedClientResponse, *http.Response, error) {
 	return r.ApiService.CreateUserAccessRequestExecute(r)
 }
 
@@ -166,13 +166,13 @@ func (a *AccessRequestsAPIService) CreateUserAccessRequest(ctx context.Context) 
 
 // Execute executes the request
 //
-//	@return MessageResponse
-func (a *AccessRequestsAPIService) CreateUserAccessRequestExecute(r ApiCreateUserAccessRequestRequest) (*MessageResponse, *http.Response, error) {
+//	@return AccessRequestSubmittedClientResponse
+func (a *AccessRequestsAPIService) CreateUserAccessRequestExecute(r ApiCreateUserAccessRequestRequest) (*AccessRequestSubmittedClientResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *MessageResponse
+		localVarReturnValue *AccessRequestSubmittedClientResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.CreateUserAccessRequest")
@@ -181,6 +181,115 @@ func (a *AccessRequestsAPIService) CreateUserAccessRequestExecute(r ApiCreateUse
 	}
 
 	localVarPath := localBasePath + "/api/client/v1/access-requests"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.createAccessRequestClientModel == nil {
+		return localVarReturnValue, nil, reportError("createAccessRequestClientModel is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.createAccessRequestClientModel
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiDryRunCreateUserAccessRequestRequest struct {
+	ctx                            context.Context
+	ApiService                     *AccessRequestsAPIService
+	createAccessRequestClientModel *CreateAccessRequestClientModel
+}
+
+func (r ApiDryRunCreateUserAccessRequestRequest) CreateAccessRequestClientModel(createAccessRequestClientModel CreateAccessRequestClientModel) ApiDryRunCreateUserAccessRequestRequest {
+	r.createAccessRequestClientModel = &createAccessRequestClientModel
+	return r
+}
+
+func (r ApiDryRunCreateUserAccessRequestRequest) Execute() (*DryRunClientResponse, *http.Response, error) {
+	return r.ApiService.DryRunCreateUserAccessRequestExecute(r)
+}
+
+/*
+DryRunCreateUserAccessRequest Create user access request - dry run
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiDryRunCreateUserAccessRequestRequest
+*/
+func (a *AccessRequestsAPIService) DryRunCreateUserAccessRequest(ctx context.Context) ApiDryRunCreateUserAccessRequestRequest {
+	return ApiDryRunCreateUserAccessRequestRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return DryRunClientResponse
+func (a *AccessRequestsAPIService) DryRunCreateUserAccessRequestExecute(r ApiDryRunCreateUserAccessRequestRequest) (*DryRunClientResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *DryRunClientResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.DryRunCreateUserAccessRequest")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-requests/dry-run"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -352,6 +461,7 @@ type ApiListAccessRequestsRequest struct {
 	ApiService *AccessRequestsAPIService
 	scope      *AccessRequestsScopeModel
 	limit      *int32
+	requestIds *[]string
 	skip       *int32
 	statuses   *[]string
 }
@@ -363,6 +473,11 @@ func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiL
 
 func (r ApiListAccessRequestsRequest) Limit(limit int32) ApiListAccessRequestsRequest {
 	r.limit = &limit
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) RequestIds(requestIds []string) ApiListAccessRequestsRequest {
+	r.requestIds = &requestIds
 	return r
 }
 
@@ -423,6 +538,17 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 	} else {
 		var defaultValue int32 = 100
 		r.limit = &defaultValue
+	}
+	if r.requestIds != nil {
+		t := *r.requestIds
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "request_ids", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "request_ids", t, "multi")
+		}
 	}
 	parameterAddToHeaderOrQuery(localVarQueryParams, "scope", r.scope, "")
 	if r.skip != nil {
@@ -621,7 +747,7 @@ func (r ApiRequestAgainAccessRequestRequest) RequestAgainClientModel(requestAgai
 	return r
 }
 
-func (r ApiRequestAgainAccessRequestRequest) Execute() (*MessageResponse, *http.Response, error) {
+func (r ApiRequestAgainAccessRequestRequest) Execute() (*AccessRequestSubmittedClientResponse, *http.Response, error) {
 	return r.ApiService.RequestAgainAccessRequestExecute(r)
 }
 
@@ -642,13 +768,13 @@ func (a *AccessRequestsAPIService) RequestAgainAccessRequest(ctx context.Context
 
 // Execute executes the request
 //
-//	@return MessageResponse
-func (a *AccessRequestsAPIService) RequestAgainAccessRequestExecute(r ApiRequestAgainAccessRequestRequest) (*MessageResponse, *http.Response, error) {
+//	@return AccessRequestSubmittedClientResponse
+func (a *AccessRequestsAPIService) RequestAgainAccessRequestExecute(r ApiRequestAgainAccessRequestRequest) (*AccessRequestSubmittedClientResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *MessageResponse
+		localVarReturnValue *AccessRequestSubmittedClientResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.RequestAgainAccessRequest")

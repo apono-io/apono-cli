@@ -20,8 +20,9 @@ var _ MappedNullable = &InstructionClientModel{}
 
 // InstructionClientModel struct for InstructionClientModel
 type InstructionClientModel struct {
-	Plain    string `json:"plain"`
-	Markdown string `json:"markdown"`
+	Plain         string         `json:"plain"`
+	Markdown      string         `json:"markdown"`
+	CustomMessage NullableString `json:"custom_message,omitempty"`
 }
 
 type _InstructionClientModel InstructionClientModel
@@ -93,6 +94,49 @@ func (o *InstructionClientModel) SetMarkdown(v string) {
 	o.Markdown = v
 }
 
+// GetCustomMessage returns the CustomMessage field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *InstructionClientModel) GetCustomMessage() string {
+	if o == nil || IsNil(o.CustomMessage.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.CustomMessage.Get()
+}
+
+// GetCustomMessageOk returns a tuple with the CustomMessage field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *InstructionClientModel) GetCustomMessageOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.CustomMessage.Get(), o.CustomMessage.IsSet()
+}
+
+// HasCustomMessage returns a boolean if a field has been set.
+func (o *InstructionClientModel) HasCustomMessage() bool {
+	if o != nil && o.CustomMessage.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCustomMessage gets a reference to the given NullableString and assigns it to the CustomMessage field.
+func (o *InstructionClientModel) SetCustomMessage(v string) {
+	o.CustomMessage.Set(&v)
+}
+
+// SetCustomMessageNil sets the value for CustomMessage to be an explicit nil
+func (o *InstructionClientModel) SetCustomMessageNil() {
+	o.CustomMessage.Set(nil)
+}
+
+// UnsetCustomMessage ensures that no value is present for CustomMessage, not even an explicit nil
+func (o *InstructionClientModel) UnsetCustomMessage() {
+	o.CustomMessage.Unset()
+}
+
 func (o InstructionClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -105,6 +149,9 @@ func (o InstructionClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["plain"] = o.Plain
 	toSerialize["markdown"] = o.Markdown
+	if o.CustomMessage.IsSet() {
+		toSerialize["custom_message"] = o.CustomMessage.Get()
+	}
 	return toSerialize, nil
 }
 

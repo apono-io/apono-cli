@@ -233,16 +233,122 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGet
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiGetAccessSessionRequestTemplateRequest struct {
+	ctx        context.Context
+	ApiService *AccessSessionsAPIService
+	id         string
+}
+
+func (r ApiGetAccessSessionRequestTemplateRequest) Execute() (*AccessSessionRequestTemplateClientModel, *http.Response, error) {
+	return r.ApiService.GetAccessSessionRequestTemplateExecute(r)
+}
+
+/*
+GetAccessSessionRequestTemplate Get access session request template
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param id
+	@return ApiGetAccessSessionRequestTemplateRequest
+*/
+func (a *AccessSessionsAPIService) GetAccessSessionRequestTemplate(ctx context.Context, id string) ApiGetAccessSessionRequestTemplateRequest {
+	return ApiGetAccessSessionRequestTemplateRequest{
+		ApiService: a,
+		ctx:        ctx,
+		id:         id,
+	}
+}
+
+// Execute executes the request
+//
+//	@return AccessSessionRequestTemplateClientModel
+func (a *AccessSessionsAPIService) GetAccessSessionRequestTemplateExecute(r ApiGetAccessSessionRequestTemplateRequest) (*AccessSessionRequestTemplateClientModel, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *AccessSessionRequestTemplateClientModel
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessSessionsAPIService.GetAccessSessionRequestTemplate")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-sessions/{id}/request-template"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiListAccessSessionsRequest struct {
-	ctx           context.Context
-	ApiService    *AccessSessionsAPIService
-	bundleId      *[]string
-	credentialsId *[]string
-	integrationId *[]string
-	limit         *int32
-	requestId     *[]string
-	search        *string
-	skip          *int32
+	ctx                 context.Context
+	ApiService          *AccessSessionsAPIService
+	bundleId            *[]string
+	credentialsId       *[]string
+	includeDisconnected *bool
+	integrationId       *[]string
+	integrationTypes    *[]string
+	limit               *int32
+	requestId           *[]string
+	search              *string
+	sessionTypes        *[]string
+	skip                *int32
+	status              *[]string
 }
 
 func (r ApiListAccessSessionsRequest) BundleId(bundleId []string) ApiListAccessSessionsRequest {
@@ -255,8 +361,18 @@ func (r ApiListAccessSessionsRequest) CredentialsId(credentialsId []string) ApiL
 	return r
 }
 
+func (r ApiListAccessSessionsRequest) IncludeDisconnected(includeDisconnected bool) ApiListAccessSessionsRequest {
+	r.includeDisconnected = &includeDisconnected
+	return r
+}
+
 func (r ApiListAccessSessionsRequest) IntegrationId(integrationId []string) ApiListAccessSessionsRequest {
 	r.integrationId = &integrationId
+	return r
+}
+
+func (r ApiListAccessSessionsRequest) IntegrationTypes(integrationTypes []string) ApiListAccessSessionsRequest {
+	r.integrationTypes = &integrationTypes
 	return r
 }
 
@@ -275,8 +391,18 @@ func (r ApiListAccessSessionsRequest) Search(search string) ApiListAccessSession
 	return r
 }
 
+func (r ApiListAccessSessionsRequest) SessionTypes(sessionTypes []string) ApiListAccessSessionsRequest {
+	r.sessionTypes = &sessionTypes
+	return r
+}
+
 func (r ApiListAccessSessionsRequest) Skip(skip int32) ApiListAccessSessionsRequest {
 	r.skip = &skip
+	return r
+}
+
+func (r ApiListAccessSessionsRequest) Status(status []string) ApiListAccessSessionsRequest {
+	r.status = &status
 	return r
 }
 
@@ -341,6 +467,12 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 			parameterAddToHeaderOrQuery(localVarQueryParams, "credentials_id", t, "multi")
 		}
 	}
+	if r.includeDisconnected != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "include_disconnected", r.includeDisconnected, "")
+	} else {
+		var defaultValue bool = false
+		r.includeDisconnected = &defaultValue
+	}
 	if r.integrationId != nil {
 		t := *r.integrationId
 		if reflect.TypeOf(t).Kind() == reflect.Slice {
@@ -350,6 +482,17 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 			}
 		} else {
 			parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", t, "multi")
+		}
+	}
+	if r.integrationTypes != nil {
+		t := *r.integrationTypes
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "integration_types", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "integration_types", t, "multi")
 		}
 	}
 	if r.limit != nil {
@@ -372,11 +515,33 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
 	}
+	if r.sessionTypes != nil {
+		t := *r.sessionTypes
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "session_types", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "session_types", t, "multi")
+		}
+	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
 	} else {
 		var defaultValue int32 = 0
 		r.skip = &defaultValue
+	}
+	if r.status != nil {
+		t := *r.status
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "status", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "status", t, "multi")
+		}
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -433,12 +598,32 @@ func (a *AccessSessionsAPIService) ListAccessSessionsExecute(r ApiListAccessSess
 }
 
 type ApiListAccessSessionsGroupsRequest struct {
-	ctx              context.Context
-	ApiService       *AccessSessionsAPIService
-	limit            *int32
-	search           *string
-	sessionsPageSize *int32
-	skip             *int32
+	ctx                 context.Context
+	ApiService          *AccessSessionsAPIService
+	includeDisconnected *bool
+	integrationId       *[]string
+	integrationTypes    *[]string
+	limit               *int32
+	search              *string
+	sessionTypes        *[]string
+	sessionsPageSize    *int32
+	skip                *int32
+	status              *[]string
+}
+
+func (r ApiListAccessSessionsGroupsRequest) IncludeDisconnected(includeDisconnected bool) ApiListAccessSessionsGroupsRequest {
+	r.includeDisconnected = &includeDisconnected
+	return r
+}
+
+func (r ApiListAccessSessionsGroupsRequest) IntegrationId(integrationId []string) ApiListAccessSessionsGroupsRequest {
+	r.integrationId = &integrationId
+	return r
+}
+
+func (r ApiListAccessSessionsGroupsRequest) IntegrationTypes(integrationTypes []string) ApiListAccessSessionsGroupsRequest {
+	r.integrationTypes = &integrationTypes
+	return r
 }
 
 func (r ApiListAccessSessionsGroupsRequest) Limit(limit int32) ApiListAccessSessionsGroupsRequest {
@@ -451,6 +636,11 @@ func (r ApiListAccessSessionsGroupsRequest) Search(search string) ApiListAccessS
 	return r
 }
 
+func (r ApiListAccessSessionsGroupsRequest) SessionTypes(sessionTypes []string) ApiListAccessSessionsGroupsRequest {
+	r.sessionTypes = &sessionTypes
+	return r
+}
+
 func (r ApiListAccessSessionsGroupsRequest) SessionsPageSize(sessionsPageSize int32) ApiListAccessSessionsGroupsRequest {
 	r.sessionsPageSize = &sessionsPageSize
 	return r
@@ -458,6 +648,11 @@ func (r ApiListAccessSessionsGroupsRequest) SessionsPageSize(sessionsPageSize in
 
 func (r ApiListAccessSessionsGroupsRequest) Skip(skip int32) ApiListAccessSessionsGroupsRequest {
 	r.skip = &skip
+	return r
+}
+
+func (r ApiListAccessSessionsGroupsRequest) Status(status []string) ApiListAccessSessionsGroupsRequest {
+	r.status = &status
 	return r
 }
 
@@ -500,6 +695,34 @@ func (a *AccessSessionsAPIService) ListAccessSessionsGroupsExecute(r ApiListAcce
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.includeDisconnected != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "include_disconnected", r.includeDisconnected, "")
+	} else {
+		var defaultValue bool = false
+		r.includeDisconnected = &defaultValue
+	}
+	if r.integrationId != nil {
+		t := *r.integrationId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "integration_id", t, "multi")
+		}
+	}
+	if r.integrationTypes != nil {
+		t := *r.integrationTypes
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "integration_types", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "integration_types", t, "multi")
+		}
+	}
 	if r.limit != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "")
 	} else {
@@ -508,6 +731,17 @@ func (a *AccessSessionsAPIService) ListAccessSessionsGroupsExecute(r ApiListAcce
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionTypes != nil {
+		t := *r.sessionTypes
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "session_types", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "session_types", t, "multi")
+		}
 	}
 	if r.sessionsPageSize != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "sessions-page-size", r.sessionsPageSize, "")
@@ -520,6 +754,17 @@ func (a *AccessSessionsAPIService) ListAccessSessionsGroupsExecute(r ApiListAcce
 	} else {
 		var defaultValue int32 = 0
 		r.skip = &defaultValue
+	}
+	if r.status != nil {
+		t := *r.status
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "status", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "status", t, "multi")
+		}
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -618,6 +863,104 @@ func (a *AccessSessionsAPIService) ResetAccessSessionCredentialsExecute(r ApiRes
 
 	localVarPath := localBasePath + "/api/client/v1/access-sessions/{id}/reset-credentials"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiSyncAvailableSessionsRequest struct {
+	ctx        context.Context
+	ApiService *AccessSessionsAPIService
+}
+
+func (r ApiSyncAvailableSessionsRequest) Execute() (*MessageResponse, *http.Response, error) {
+	return r.ApiService.SyncAvailableSessionsExecute(r)
+}
+
+/*
+SyncAvailableSessions Sync available sessions
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiSyncAvailableSessionsRequest
+*/
+func (a *AccessSessionsAPIService) SyncAvailableSessions(ctx context.Context) ApiSyncAvailableSessionsRequest {
+	return ApiSyncAvailableSessionsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return MessageResponse
+func (a *AccessSessionsAPIService) SyncAvailableSessionsExecute(r ApiSyncAvailableSessionsRequest) (*MessageResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *MessageResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessSessionsAPIService.SyncAvailableSessions")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-session-sync"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}

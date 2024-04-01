@@ -3,6 +3,7 @@ api_access_request_templates.go
 api_access_requests.go
 api_access_sessions.go
 api_analytics.go
+api_filters.go
 api_inventory.go
 api_user_session.go
 client.go
@@ -14,6 +15,7 @@ model_access_group_status_client_model.go
 model_access_request_client_model.go
 model_access_request_client_model_bundle.go
 model_access_request_client_model_challenge.go
+model_access_request_submitted_client_response.go
 model_access_request_template_client_model.go
 model_access_request_template_type_client_model.go
 model_access_requests_scope_model.go
@@ -21,6 +23,7 @@ model_access_session_client_model.go
 model_access_session_client_model_credentials.go
 model_access_session_details_client_model.go
 model_access_session_details_client_model_link.go
+model_access_session_request_template_client_model.go
 model_access_sessions_group_client_model.go
 model_access_sessions_group_client_model_integration.go
 model_access_unit_client_model.go
@@ -38,6 +41,8 @@ model_create_access_request_client_model.go
 model_create_analytic_event_client_model.go
 model_create_and_update_access_request_template_client_model.go
 model_credentials_client_model.go
+model_dry_run_access_request_error.go
+model_dry_run_client_response.go
 model_icons_config_client_model.go
 model_instruction_client_model.go
 model_integration_client_model.go

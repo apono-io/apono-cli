@@ -32,6 +32,9 @@
       "name": "Analytics"
     },
     {
+      "name": "Filters"
+    },
+    {
       "name": "Inventory"
     },
     {
@@ -374,6 +377,17 @@
             }
           },
           {
+            "name": "request_ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "required": true,
@@ -444,7 +458,38 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
+                  "$ref": "#/components/schemas/AccessRequestSubmittedClientResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/dry-run": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Create user access request - dry run",
+        "operationId": "dryRunCreateUserAccessRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessRequestClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DryRunClientResponse"
                 }
               }
             }
@@ -598,7 +643,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
+                  "$ref": "#/components/schemas/AccessRequestSubmittedClientResponse"
                 }
               }
             }
@@ -646,6 +691,36 @@
         "operationId": "listAccessSessionsGroups",
         "parameters": [
           {
+            "name": "include_disconnected",
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "integration_types",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "schema": {
@@ -659,6 +734,17 @@
             "in": "query",
             "schema": {
               "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "session_types",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
               "nullable": true
             }
           },
@@ -679,6 +765,17 @@
               "default": 0,
               "type": "integer"
             }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -688,6 +785,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginatedClientResponseModelAccessSessionsGroupClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-session-sync": {
+      "post": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "Sync available sessions",
+        "operationId": "syncAvailableSessions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
                 }
               }
             }
@@ -726,7 +844,26 @@
             }
           },
           {
+            "name": "include_disconnected",
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
             "name": "integration_id",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "integration_types",
             "in": "query",
             "schema": {
               "type": "array",
@@ -765,12 +902,34 @@
             }
           },
           {
+            "name": "session_types",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
             "name": "skip",
             "in": "query",
             "schema": {
               "format": "int32",
               "default": 0,
               "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
             }
           }
         ],
@@ -858,6 +1017,37 @@
         }
       }
     },
+    "/api/client/v1/access-sessions/{id}/request-template": {
+      "get": {
+        "tags": [
+          "Access Sessions"
+        ],
+        "summary": "Get access session request template",
+        "operationId": "getAccessSessionRequestTemplate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSessionRequestTemplateClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/access-sessions/{id}/reset-credentials": {
       "post": {
         "tags": [
@@ -909,6 +1099,55 @@
         "responses": {
           "201": {
             "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/client/v1/filters/integrations": {
+      "get": {
+        "tags": [
+          "Filters"
+        ],
+        "summary": "List integration filters",
+        "operationId": "listIntegrationFilterOptions",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelIntegrationClientModel"
+                }
+              }
+            }
           }
         }
       }
@@ -1092,6 +1331,14 @@
             }
           },
           {
+            "name": "session_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
             "name": "skip",
             "in": "query",
             "schema": {
@@ -1157,6 +1404,14 @@
             }
           },
           {
+            "name": "session_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
             "name": "skip",
             "in": "query",
             "schema": {
@@ -1207,6 +1462,14 @@
           },
           {
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "session_id",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1272,6 +1535,14 @@
           },
           {
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "session_id",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1469,6 +1740,24 @@
           }
         }
       },
+      "AccessRequestSubmittedClientResponse": {
+        "required": [
+          "request_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "request_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "AccessRequestTemplateClientModel": {
         "required": [
           "id",
@@ -1539,7 +1828,9 @@
           "name",
           "type",
           "integration",
-          "connection_methods"
+          "connection_methods",
+          "status",
+          "has_more_access_units"
         ],
         "type": "object",
         "properties": {
@@ -1569,6 +1860,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "status": {
+            "type": "string"
+          },
+          "has_more_access_units": {
+            "type": "boolean"
           }
         }
       },
@@ -1606,6 +1903,41 @@
               }
             ],
             "nullable": true
+          }
+        }
+      },
+      "AccessSessionRequestTemplateClientModel": {
+        "required": [
+          "integrations",
+          "resource_types",
+          "resources",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationClientModel"
+            }
+          },
+          "resource_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeClientModel"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceClientModel"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionClientModel"
+            }
           }
         }
       },
@@ -1796,8 +2128,7 @@
           "filter_resource_ids",
           "filter_resources",
           "filter_permission_ids",
-          "filter_access_unit_ids",
-          "justification"
+          "filter_access_unit_ids"
         ],
         "type": "object",
         "properties": {
@@ -1844,7 +2175,8 @@
             }
           },
           "justification": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "duration": {
             "format": "int64",
@@ -1934,6 +2266,43 @@
           }
         }
       },
+      "DryRunAccessRequestError": {
+        "required": [
+          "code",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DryRunClientResponse": {
+        "required": [
+          "status",
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DryRunAccessRequestError"
+            }
+          }
+        }
+      },
       "IconsConfigClientModel": {
         "required": [
           "png",
@@ -1966,6 +2335,10 @@
           },
           "markdown": {
             "type": "string"
+          },
+          "custom_message": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
