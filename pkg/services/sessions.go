@@ -6,15 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/styles"
-	"github.com/gookit/color"
 	"os/exec"
 	"runtime"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
+	"github.com/gookit/color"
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 )
