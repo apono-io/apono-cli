@@ -11,8 +11,10 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
+	"github.com/gookit/color"
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +26,8 @@ const (
 	JSONOutputFormat         = "json"
 	newCredentialsStatus     = "NEW"
 )
+
+type CustomInstructionMessage = string
 
 func PrintAccessSessions(cmd *cobra.Command, sessions []clientapi.AccessSessionClientModel, format *utils.Format) error {
 	switch *format {
@@ -114,13 +118,14 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 	return nil
 }
 
-func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, error) {
+func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, CustomInstructionMessage, error) {
 	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).Execute()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	var output string
+	var customInstructionMessage CustomInstructionMessage
 	switch outputFormat {
 	case CliOutputFormat:
 		output = *accessDetails.Cli.Get()
@@ -129,16 +134,19 @@ func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessio
 		output = link.GetUrl()
 	case InstructionsOutputFormat:
 		output = accessDetails.Instructions.Plain
+		if accessDetails.Instructions.HasCustomMessage() {
+			customInstructionMessage = accessDetails.Instructions.GetCustomMessage()
+		}
 	case JSONOutputFormat:
 		var outputBytes []byte
 		outputBytes, err = json.Marshal(accessDetails.Json)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		output = string(outputBytes)
 	}
 
-	return output, nil
+	return output, customInstructionMessage, nil
 }
 
 func IsSessionHaveNewCredentials(session *clientapi.AccessSessionClientModel) bool {
@@ -150,4 +158,13 @@ func IsSessionHaveNewCredentials(session *clientapi.AccessSessionClientModel) bo
 	}
 
 	return false
+}
+
+func PrintCustomInstructionMessage(cmd *cobra.Command, customInstructionMessage CustomInstructionMessage) error {
+	if customInstructionMessage == "" {
+		return nil
+	}
+
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Message from your admin: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(customInstructionMessage))
+	return err
 }

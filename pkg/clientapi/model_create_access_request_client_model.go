@@ -27,7 +27,7 @@ type CreateAccessRequestClientModel struct {
 	FilterResources       []ResourceFilter `json:"filter_resources"`
 	FilterPermissionIds   []string         `json:"filter_permission_ids"`
 	FilterAccessUnitIds   []string         `json:"filter_access_unit_ids"`
-	Justification         string           `json:"justification"`
+	Justification         NullableString   `json:"justification,omitempty"`
 	Duration              NullableInt64    `json:"duration,omitempty"`
 }
 
@@ -37,7 +37,7 @@ type _CreateAccessRequestClientModel CreateAccessRequestClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateAccessRequestClientModel(filterIntegrationIds []string, filterBundleIds []string, filterResourceTypeIds []string, filterResourceIds []string, filterResources []ResourceFilter, filterPermissionIds []string, filterAccessUnitIds []string, justification string) *CreateAccessRequestClientModel {
+func NewCreateAccessRequestClientModel(filterIntegrationIds []string, filterBundleIds []string, filterResourceTypeIds []string, filterResourceIds []string, filterResources []ResourceFilter, filterPermissionIds []string, filterAccessUnitIds []string) *CreateAccessRequestClientModel {
 	this := CreateAccessRequestClientModel{}
 	this.FilterIntegrationIds = filterIntegrationIds
 	this.FilterBundleIds = filterBundleIds
@@ -46,7 +46,6 @@ func NewCreateAccessRequestClientModel(filterIntegrationIds []string, filterBund
 	this.FilterResources = filterResources
 	this.FilterPermissionIds = filterPermissionIds
 	this.FilterAccessUnitIds = filterAccessUnitIds
-	this.Justification = justification
 	return &this
 }
 
@@ -226,28 +225,47 @@ func (o *CreateAccessRequestClientModel) SetFilterAccessUnitIds(v []string) {
 	o.FilterAccessUnitIds = v
 }
 
-// GetJustification returns the Justification field value
+// GetJustification returns the Justification field value if set, zero value otherwise (both if not set or set to explicit null).
 func (o *CreateAccessRequestClientModel) GetJustification() string {
-	if o == nil {
+	if o == nil || IsNil(o.Justification.Get()) {
 		var ret string
 		return ret
 	}
-
-	return o.Justification
+	return *o.Justification.Get()
 }
 
-// GetJustificationOk returns a tuple with the Justification field value
+// GetJustificationOk returns a tuple with the Justification field value if set, nil otherwise
 // and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
 func (o *CreateAccessRequestClientModel) GetJustificationOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Justification, true
+	return o.Justification.Get(), o.Justification.IsSet()
 }
 
-// SetJustification sets field value
+// HasJustification returns a boolean if a field has been set.
+func (o *CreateAccessRequestClientModel) HasJustification() bool {
+	if o != nil && o.Justification.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetJustification gets a reference to the given NullableString and assigns it to the Justification field.
 func (o *CreateAccessRequestClientModel) SetJustification(v string) {
-	o.Justification = v
+	o.Justification.Set(&v)
+}
+
+// SetJustificationNil sets the value for Justification to be an explicit nil
+func (o *CreateAccessRequestClientModel) SetJustificationNil() {
+	o.Justification.Set(nil)
+}
+
+// UnsetJustification ensures that no value is present for Justification, not even an explicit nil
+func (o *CreateAccessRequestClientModel) UnsetJustification() {
+	o.Justification.Unset()
 }
 
 // GetDuration returns the Duration field value if set, zero value otherwise (both if not set or set to explicit null).
@@ -310,7 +328,9 @@ func (o CreateAccessRequestClientModel) ToMap() (map[string]interface{}, error) 
 	toSerialize["filter_resources"] = o.FilterResources
 	toSerialize["filter_permission_ids"] = o.FilterPermissionIds
 	toSerialize["filter_access_unit_ids"] = o.FilterAccessUnitIds
-	toSerialize["justification"] = o.Justification
+	if o.Justification.IsSet() {
+		toSerialize["justification"] = o.Justification.Get()
+	}
 	if o.Duration.IsSet() {
 		toSerialize["duration"] = o.Duration.Get()
 	}
@@ -329,7 +349,6 @@ func (o *CreateAccessRequestClientModel) UnmarshalJSON(bytes []byte) (err error)
 		"filter_resources",
 		"filter_permission_ids",
 		"filter_access_unit_ids",
-		"justification",
 	}
 
 	allProperties := make(map[string]interface{})

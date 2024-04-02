@@ -20,12 +20,14 @@ var _ MappedNullable = &AccessSessionClientModel{}
 
 // AccessSessionClientModel struct for AccessSessionClientModel
 type AccessSessionClientModel struct {
-	Id                string                                      `json:"id"`
-	Name              string                                      `json:"name"`
-	Type              SessionTypeClientModel                      `json:"type"`
-	Integration       IntegrationClientModel                      `json:"integration"`
-	Credentials       NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
-	ConnectionMethods []string                                    `json:"connection_methods"`
+	Id                 string                                      `json:"id"`
+	Name               string                                      `json:"name"`
+	Type               SessionTypeClientModel                      `json:"type"`
+	Integration        IntegrationClientModel                      `json:"integration"`
+	Credentials        NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
+	ConnectionMethods  []string                                    `json:"connection_methods"`
+	Status             string                                      `json:"status"`
+	HasMoreAccessUnits bool                                        `json:"has_more_access_units"`
 }
 
 type _AccessSessionClientModel AccessSessionClientModel
@@ -34,13 +36,15 @@ type _AccessSessionClientModel AccessSessionClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessSessionClientModel(id string, name string, type_ SessionTypeClientModel, integration IntegrationClientModel, connectionMethods []string) *AccessSessionClientModel {
+func NewAccessSessionClientModel(id string, name string, type_ SessionTypeClientModel, integration IntegrationClientModel, connectionMethods []string, status string, hasMoreAccessUnits bool) *AccessSessionClientModel {
 	this := AccessSessionClientModel{}
 	this.Id = id
 	this.Name = name
 	this.Type = type_
 	this.Integration = integration
 	this.ConnectionMethods = connectionMethods
+	this.Status = status
+	this.HasMoreAccessUnits = hasMoreAccessUnits
 	return &this
 }
 
@@ -215,6 +219,54 @@ func (o *AccessSessionClientModel) SetConnectionMethods(v []string) {
 	o.ConnectionMethods = v
 }
 
+// GetStatus returns the Status field value
+func (o *AccessSessionClientModel) GetStatus() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.Status
+}
+
+// GetStatusOk returns a tuple with the Status field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionClientModel) GetStatusOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Status, true
+}
+
+// SetStatus sets field value
+func (o *AccessSessionClientModel) SetStatus(v string) {
+	o.Status = v
+}
+
+// GetHasMoreAccessUnits returns the HasMoreAccessUnits field value
+func (o *AccessSessionClientModel) GetHasMoreAccessUnits() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.HasMoreAccessUnits
+}
+
+// GetHasMoreAccessUnitsOk returns a tuple with the HasMoreAccessUnits field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionClientModel) GetHasMoreAccessUnitsOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.HasMoreAccessUnits, true
+}
+
+// SetHasMoreAccessUnits sets field value
+func (o *AccessSessionClientModel) SetHasMoreAccessUnits(v bool) {
+	o.HasMoreAccessUnits = v
+}
+
 func (o AccessSessionClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -233,6 +285,8 @@ func (o AccessSessionClientModel) ToMap() (map[string]interface{}, error) {
 		toSerialize["credentials"] = o.Credentials.Get()
 	}
 	toSerialize["connection_methods"] = o.ConnectionMethods
+	toSerialize["status"] = o.Status
+	toSerialize["has_more_access_units"] = o.HasMoreAccessUnits
 	return toSerialize, nil
 }
 
@@ -246,6 +300,8 @@ func (o *AccessSessionClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		"type",
 		"integration",
 		"connection_methods",
+		"status",
+		"has_more_access_units",
 	}
 
 	allProperties := make(map[string]interface{})

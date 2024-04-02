@@ -374,6 +374,7 @@ type ApiListIntegrationRequest struct {
 	ApiService *InventoryAPIService
 	limit      *int32
 	search     *string
+	sessionId  *string
 	skip       *int32
 }
 
@@ -384,6 +385,11 @@ func (r ApiListIntegrationRequest) Limit(limit int32) ApiListIntegrationRequest 
 
 func (r ApiListIntegrationRequest) Search(search string) ApiListIntegrationRequest {
 	r.search = &search
+	return r
+}
+
+func (r ApiListIntegrationRequest) SessionId(sessionId string) ApiListIntegrationRequest {
+	r.sessionId = &sessionId
 	return r
 }
 
@@ -439,6 +445,9 @@ func (a *InventoryAPIService) ListIntegrationExecute(r ApiListIntegrationRequest
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionId != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "session_id", r.sessionId, "")
 	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
@@ -507,6 +516,7 @@ type ApiListPermissionsRequest struct {
 	limit          *int32
 	resourceTypeId *string
 	search         *string
+	sessionId      *string
 	skip           *int32
 }
 
@@ -527,6 +537,11 @@ func (r ApiListPermissionsRequest) ResourceTypeId(resourceTypeId string) ApiList
 
 func (r ApiListPermissionsRequest) Search(search string) ApiListPermissionsRequest {
 	r.search = &search
+	return r
+}
+
+func (r ApiListPermissionsRequest) SessionId(sessionId string) ApiListPermissionsRequest {
+	r.sessionId = &sessionId
 	return r
 }
 
@@ -588,6 +603,9 @@ func (a *InventoryAPIService) ListPermissionsExecute(r ApiListPermissionsRequest
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionId != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "session_id", r.sessionId, "")
 	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
@@ -655,6 +673,7 @@ type ApiListResourceTypesRequest struct {
 	integrationId *string
 	limit         *int32
 	search        *string
+	sessionId     *string
 	skip          *int32
 }
 
@@ -670,6 +689,11 @@ func (r ApiListResourceTypesRequest) Limit(limit int32) ApiListResourceTypesRequ
 
 func (r ApiListResourceTypesRequest) Search(search string) ApiListResourceTypesRequest {
 	r.search = &search
+	return r
+}
+
+func (r ApiListResourceTypesRequest) SessionId(sessionId string) ApiListResourceTypesRequest {
+	r.sessionId = &sessionId
 	return r
 }
 
@@ -728,6 +752,9 @@ func (a *InventoryAPIService) ListResourceTypesExecute(r ApiListResourceTypesReq
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionId != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "session_id", r.sessionId, "")
 	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
@@ -796,6 +823,7 @@ type ApiListResourcesRequest struct {
 	limit          *int32
 	resourceTypeId *string
 	search         *string
+	sessionId      *string
 	skip           *int32
 	sourceId       *[]string
 }
@@ -817,6 +845,11 @@ func (r ApiListResourcesRequest) ResourceTypeId(resourceTypeId string) ApiListRe
 
 func (r ApiListResourcesRequest) Search(search string) ApiListResourcesRequest {
 	r.search = &search
+	return r
+}
+
+func (r ApiListResourcesRequest) SessionId(sessionId string) ApiListResourcesRequest {
+	r.sessionId = &sessionId
 	return r
 }
 
@@ -883,6 +916,9 @@ func (a *InventoryAPIService) ListResourcesExecute(r ApiListResourcesRequest) (*
 	}
 	if r.search != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "search", r.search, "")
+	}
+	if r.sessionId != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "session_id", r.sessionId, "")
 	}
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")

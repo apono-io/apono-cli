@@ -139,7 +139,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 	if flags.justification == "" && !flags.runInteractiveMode {
 		return nil, fmt.Errorf("either --%s or --%s flag must be specified", justificationFlagName, interactiveFlagName)
 	}
-	req.Justification = flags.justification
+	req.Justification = *clientapi.NewNullableString(&flags.justification)
 
 	switch {
 	case flags.integrationIDOrName != "":
