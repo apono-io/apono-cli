@@ -54,19 +54,28 @@ func SendCommandAnalyticsEvent(cmd *cobra.Command, args []string) {
 
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		if flag.Changed {
+			fmt.Printf("flag: %s, value: %v type: %s\n", flag.Name, flag.Value, flag.Value.Type())
 			properties[flagFieldPrefix+flag.Name] = flag.Value
 		}
 	})
 
 	eventName := fmt.Sprintf("Command %s Ran", cmd.CommandPath())
-
 	req := clientapi.CreateAnalyticEventClientModel{
 		EventName:  eventName,
 		ClientType: clientapi.ANALYTICCLIENTTYPECLIENTMODEL_CLI,
 		Properties: properties,
 	}
 
-	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(cmd.Context()).CreateAnalyticEventClientModel(req).Execute()
+	for key, value := range properties {
+		fmt.Printf("%s: %v\n", key, value)
+	}
+
+	_, err = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(cmd.Context()).CreateAnalyticEventClientModel(req).Execute()
+	if err != nil {
+		if apiError, ok := err.(*clientapi.GenericOpenAPIError); ok {
+			fmt.Printf("body: %s\n", string(apiError.Body()))
+		}
+	}
 }
 
 func GenerateCommandID() string {

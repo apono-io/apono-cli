@@ -20,8 +20,9 @@ var _ MappedNullable = &UserSessionClientModel{}
 
 // UserSessionClientModel struct for UserSessionClientModel
 type UserSessionClientModel struct {
-	User    UserClientModel    `json:"user"`
-	Account AccountClientModel `json:"account"`
+	User     UserClientModel         `json:"user"`
+	Account  AccountClientModel      `json:"account"`
+	Settings UserSettingsClientModel `json:"settings"`
 }
 
 type _UserSessionClientModel UserSessionClientModel
@@ -30,10 +31,11 @@ type _UserSessionClientModel UserSessionClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewUserSessionClientModel(user UserClientModel, account AccountClientModel) *UserSessionClientModel {
+func NewUserSessionClientModel(user UserClientModel, account AccountClientModel, settings UserSettingsClientModel) *UserSessionClientModel {
 	this := UserSessionClientModel{}
 	this.User = user
 	this.Account = account
+	this.Settings = settings
 	return &this
 }
 
@@ -93,6 +95,30 @@ func (o *UserSessionClientModel) SetAccount(v AccountClientModel) {
 	o.Account = v
 }
 
+// GetSettings returns the Settings field value
+func (o *UserSessionClientModel) GetSettings() UserSettingsClientModel {
+	if o == nil {
+		var ret UserSettingsClientModel
+		return ret
+	}
+
+	return o.Settings
+}
+
+// GetSettingsOk returns a tuple with the Settings field value
+// and a boolean to check if the value has been set.
+func (o *UserSessionClientModel) GetSettingsOk() (*UserSettingsClientModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Settings, true
+}
+
+// SetSettings sets field value
+func (o *UserSessionClientModel) SetSettings(v UserSettingsClientModel) {
+	o.Settings = v
+}
+
 func (o UserSessionClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -105,6 +131,7 @@ func (o UserSessionClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["user"] = o.User
 	toSerialize["account"] = o.Account
+	toSerialize["settings"] = o.Settings
 	return toSerialize, nil
 }
 
@@ -115,6 +142,7 @@ func (o *UserSessionClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	requiredProperties := []string{
 		"user",
 		"account",
+		"settings",
 	}
 
 	allProperties := make(map[string]interface{})

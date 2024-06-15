@@ -457,17 +457,23 @@ func (a *AccessRequestsAPIService) GetAccessRequestExecute(r ApiGetAccessRequest
 }
 
 type ApiListAccessRequestsRequest struct {
-	ctx        context.Context
-	ApiService *AccessRequestsAPIService
-	scope      *AccessRequestsScopeModel
-	limit      *int32
-	requestIds *[]string
-	skip       *int32
-	statuses   *[]string
+	ctx              context.Context
+	ApiService       *AccessRequestsAPIService
+	scope            *AccessRequestsScopeModel
+	includeAutogrant *bool
+	limit            *int32
+	requestIds       *[]string
+	skip             *int32
+	statuses         *[]string
 }
 
 func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiListAccessRequestsRequest {
 	r.scope = &scope
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) IncludeAutogrant(includeAutogrant bool) ApiListAccessRequestsRequest {
+	r.includeAutogrant = &includeAutogrant
 	return r
 }
 
@@ -533,6 +539,12 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 		return localVarReturnValue, nil, reportError("scope is required and must be specified")
 	}
 
+	if r.includeAutogrant != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "include_autogrant", r.includeAutogrant, "")
+	} else {
+		var defaultValue bool = false
+		r.includeAutogrant = &defaultValue
+	}
 	if r.limit != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "limit", r.limit, "")
 	} else {

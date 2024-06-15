@@ -28,7 +28,7 @@ type CreateAccessRequestClientModel struct {
 	FilterPermissionIds   []string         `json:"filter_permission_ids"`
 	FilterAccessUnitIds   []string         `json:"filter_access_unit_ids"`
 	Justification         NullableString   `json:"justification,omitempty"`
-	Duration              NullableInt64    `json:"duration,omitempty"`
+	DurationInSec         NullableInt32    `json:"duration_in_sec,omitempty"`
 }
 
 type _CreateAccessRequestClientModel CreateAccessRequestClientModel
@@ -268,47 +268,47 @@ func (o *CreateAccessRequestClientModel) UnsetJustification() {
 	o.Justification.Unset()
 }
 
-// GetDuration returns the Duration field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *CreateAccessRequestClientModel) GetDuration() int64 {
-	if o == nil || IsNil(o.Duration.Get()) {
-		var ret int64
+// GetDurationInSec returns the DurationInSec field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CreateAccessRequestClientModel) GetDurationInSec() int32 {
+	if o == nil || IsNil(o.DurationInSec.Get()) {
+		var ret int32
 		return ret
 	}
-	return *o.Duration.Get()
+	return *o.DurationInSec.Get()
 }
 
-// GetDurationOk returns a tuple with the Duration field value if set, nil otherwise
+// GetDurationInSecOk returns a tuple with the DurationInSec field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 // NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *CreateAccessRequestClientModel) GetDurationOk() (*int64, bool) {
+func (o *CreateAccessRequestClientModel) GetDurationInSecOk() (*int32, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return o.Duration.Get(), o.Duration.IsSet()
+	return o.DurationInSec.Get(), o.DurationInSec.IsSet()
 }
 
-// HasDuration returns a boolean if a field has been set.
-func (o *CreateAccessRequestClientModel) HasDuration() bool {
-	if o != nil && o.Duration.IsSet() {
+// HasDurationInSec returns a boolean if a field has been set.
+func (o *CreateAccessRequestClientModel) HasDurationInSec() bool {
+	if o != nil && o.DurationInSec.IsSet() {
 		return true
 	}
 
 	return false
 }
 
-// SetDuration gets a reference to the given NullableInt64 and assigns it to the Duration field.
-func (o *CreateAccessRequestClientModel) SetDuration(v int64) {
-	o.Duration.Set(&v)
+// SetDurationInSec gets a reference to the given NullableInt32 and assigns it to the DurationInSec field.
+func (o *CreateAccessRequestClientModel) SetDurationInSec(v int32) {
+	o.DurationInSec.Set(&v)
 }
 
-// SetDurationNil sets the value for Duration to be an explicit nil
-func (o *CreateAccessRequestClientModel) SetDurationNil() {
-	o.Duration.Set(nil)
+// SetDurationInSecNil sets the value for DurationInSec to be an explicit nil
+func (o *CreateAccessRequestClientModel) SetDurationInSecNil() {
+	o.DurationInSec.Set(nil)
 }
 
-// UnsetDuration ensures that no value is present for Duration, not even an explicit nil
-func (o *CreateAccessRequestClientModel) UnsetDuration() {
-	o.Duration.Unset()
+// UnsetDurationInSec ensures that no value is present for DurationInSec, not even an explicit nil
+func (o *CreateAccessRequestClientModel) UnsetDurationInSec() {
+	o.DurationInSec.Unset()
 }
 
 func (o CreateAccessRequestClientModel) MarshalJSON() ([]byte, error) {
@@ -331,8 +331,8 @@ func (o CreateAccessRequestClientModel) ToMap() (map[string]interface{}, error) 
 	if o.Justification.IsSet() {
 		toSerialize["justification"] = o.Justification.Get()
 	}
-	if o.Duration.IsSet() {
-		toSerialize["duration"] = o.Duration.Get()
+	if o.DurationInSec.IsSet() {
+		toSerialize["duration_in_sec"] = o.DurationInSec.Get()
 	}
 	return toSerialize, nil
 }

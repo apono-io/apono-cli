@@ -20,9 +20,10 @@ var _ MappedNullable = &DryRunAccessRequestError{}
 
 // DryRunAccessRequestError struct for DryRunAccessRequestError
 type DryRunAccessRequestError struct {
-	Code    string         `json:"code"`
-	Field   string         `json:"field"`
-	Message NullableString `json:"message,omitempty"`
+	Code    string                 `json:"code"`
+	Field   string                 `json:"field"`
+	Message NullableString         `json:"message,omitempty"`
+	Details map[string]interface{} `json:"details"`
 }
 
 type _DryRunAccessRequestError DryRunAccessRequestError
@@ -31,10 +32,11 @@ type _DryRunAccessRequestError DryRunAccessRequestError
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewDryRunAccessRequestError(code string, field string) *DryRunAccessRequestError {
+func NewDryRunAccessRequestError(code string, field string, details map[string]interface{}) *DryRunAccessRequestError {
 	this := DryRunAccessRequestError{}
 	this.Code = code
 	this.Field = field
+	this.Details = details
 	return &this
 }
 
@@ -137,6 +139,30 @@ func (o *DryRunAccessRequestError) UnsetMessage() {
 	o.Message.Unset()
 }
 
+// GetDetails returns the Details field value
+func (o *DryRunAccessRequestError) GetDetails() map[string]interface{} {
+	if o == nil {
+		var ret map[string]interface{}
+		return ret
+	}
+
+	return o.Details
+}
+
+// GetDetailsOk returns a tuple with the Details field value
+// and a boolean to check if the value has been set.
+func (o *DryRunAccessRequestError) GetDetailsOk() (map[string]interface{}, bool) {
+	if o == nil {
+		return map[string]interface{}{}, false
+	}
+	return o.Details, true
+}
+
+// SetDetails sets field value
+func (o *DryRunAccessRequestError) SetDetails(v map[string]interface{}) {
+	o.Details = v
+}
+
 func (o DryRunAccessRequestError) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -152,6 +178,7 @@ func (o DryRunAccessRequestError) ToMap() (map[string]interface{}, error) {
 	if o.Message.IsSet() {
 		toSerialize["message"] = o.Message.Get()
 	}
+	toSerialize["details"] = o.Details
 	return toSerialize, nil
 }
 
@@ -162,6 +189,7 @@ func (o *DryRunAccessRequestError) UnmarshalJSON(bytes []byte) (err error) {
 	requiredProperties := []string{
 		"code",
 		"field",
+		"details",
 	}
 
 	allProperties := make(map[string]interface{})
