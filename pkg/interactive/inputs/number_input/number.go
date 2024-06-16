@@ -118,7 +118,7 @@ func initialModel(title string, placeholder string, optional bool, maxValue *flo
 
 func validateValueInRange(value float64, maxValue *float64, minValue *float64) error {
 	if maxValue != nil && value > *maxValue {
-		return fmt.Errorf("value should be less than %.2f", *maxValue)
+		return fmt.Errorf("maximum allowed value is %.2f", *maxValue)
 	}
 
 	if minValue != nil && value <= *minValue {

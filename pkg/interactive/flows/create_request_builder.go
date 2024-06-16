@@ -78,7 +78,7 @@ func StartBundleRequestBuilderInteractiveMode(
 		maxRequestDuration = services.GetMaximumRequestDuration(dryRunResp)
 	}
 
-	if accessDuration == nil {
+	if accessDuration == nil && durationRequired {
 		var newDuration *time.Duration
 		newDuration, err = selectors.RunDurationInput(!durationRequired, maxRequestDuration.Hours(), 0)
 		if err != nil {
@@ -200,7 +200,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 		maxRequestDuration = services.GetMaximumRequestDuration(dryRunResp)
 	}
 
-	if accessDuration == nil {
+	if accessDuration == nil && durationRequired {
 		var newDuration *time.Duration
 		newDuration, err = selectors.RunDurationInput(!durationRequired, maxRequestDuration.Hours(), 0)
 		if err != nil {
