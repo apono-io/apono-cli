@@ -6,14 +6,14 @@ import (
 	numberinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/number_input"
 )
 
-func RunDurationInput(optional bool, maxValueInHours float64, minValueInHours float64) (*time.Duration, error) {
+func RunDurationInput(optional bool, minValueInHours float64, maxValueInHours float64) (*time.Duration, error) {
 	durationInput := numberinput.NumberInput{
 		Title:       "Enter duration in hours",
 		PostTitle:   "Duration",
 		Placeholder: "Duration",
 		Optional:    optional,
-		MaxValue:    &maxValueInHours,
 		MinValue:    &minValueInHours,
+		MaxValue:    &maxValueInHours,
 	}
 
 	durationInHours, err := numberinput.LaunchNumberInput(durationInput)

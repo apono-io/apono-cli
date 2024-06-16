@@ -30,8 +30,8 @@ type model struct {
 	aborting   bool
 	optional   bool
 	statusMsg  string
-	maxValue   *float64
 	minValue   *float64
+	maxValue   *float64
 }
 
 func (m model) Init() tea.Cmd {
@@ -64,7 +64,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			default:
 				value, _ := convertToFloat(m.textInput.Value())
-				validationErr := validateValueInRange(value, m.maxValue, m.minValue)
+				validationErr := validateValueInRange(value, m.minValue, m.maxValue)
 				if validationErr != nil {
 					m.statusMsg = defaultNoInputStyle.Render(validationErr.Error())
 					return m, nil
@@ -100,7 +100,7 @@ func (m model) View() string {
 	)
 }
 
-func initialModel(title string, placeholder string, optional bool, maxValue *float64, minValue *float64) model {
+func initialModel(title string, placeholder string, optional bool, minValue *float64, maxValue *float64) model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Placeholder = placeholder
@@ -111,12 +111,12 @@ func initialModel(title string, placeholder string, optional bool, maxValue *flo
 		title:     styles.BeforeSelectingItemsTitleStyle(title, optional),
 		err:       nil,
 		optional:  optional,
-		maxValue:  maxValue,
 		minValue:  minValue,
+		maxValue:  maxValue,
 	}
 }
 
-func validateValueInRange(value float64, maxValue *float64, minValue *float64) error {
+func validateValueInRange(value float64, minValue *float64, maxValue *float64) error {
 	if maxValue != nil && value > *maxValue {
 		return fmt.Errorf("maximum allowed value is %.2f", *maxValue)
 	}
@@ -142,7 +142,7 @@ func LaunchNumberInput(input NumberInput) (*float64, error) {
 		return nil, fmt.Errorf("max value is less than min value")
 	}
 
-	result, err := tea.NewProgram(initialModel(input.Title, input.Placeholder, input.Optional, input.MaxValue, input.MinValue)).Run()
+	result, err := tea.NewProgram(initialModel(input.Title, input.Placeholder, input.Optional, input.MinValue, input.MaxValue)).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func LaunchNumberInput(input NumberInput) (*float64, error) {
 			return nil, fmt.Errorf("failed to convert input to number")
 		}
 
-		validationErr := validateValueInRange(convertNumber, input.MaxValue, input.MinValue)
+		validationErr := validateValueInRange(convertNumber, input.MinValue, input.MaxValue)
 		if validationErr != nil {
 			return nil, validationErr
 		}

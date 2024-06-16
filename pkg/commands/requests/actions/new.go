@@ -39,10 +39,10 @@ type createRequestFlags struct {
 	resourceIDs         []string
 	permissionIDs       []string
 	justification       string
+	accessDuration      time.Duration
 	runInteractiveMode  bool
 	noWait              bool
 	timeout             time.Duration
-	accessDuration      time.Duration
 	output              utils.Format
 }
 

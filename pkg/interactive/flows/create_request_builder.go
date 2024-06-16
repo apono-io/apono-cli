@@ -80,7 +80,7 @@ func StartBundleRequestBuilderInteractiveMode(
 
 	if accessDuration == nil && durationRequired {
 		var newDuration *time.Duration
-		newDuration, err = selectors.RunDurationInput(!durationRequired, maxRequestDuration.Hours(), 0)
+		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +202,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 
 	if accessDuration == nil && durationRequired {
 		var newDuration *time.Duration
-		newDuration, err = selectors.RunDurationInput(!durationRequired, maxRequestDuration.Hours(), 0)
+		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
 		if err != nil {
 			return nil, err
 		}
