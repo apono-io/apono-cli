@@ -238,12 +238,12 @@ func DryRunRequest(ctx context.Context, client *aponoapi.AponoClient, request *c
 	return dryRunResponse, err
 }
 
-func IsJustificationOptionalForRequest(request *clientapi.DryRunClientResponse) bool {
-	if request == nil {
+func IsJustificationOptionalForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
+	if dryRunResponse == nil {
 		return false
 	}
 
-	for _, requestError := range request.Errors {
+	for _, requestError := range dryRunResponse.Errors {
 		if requestError.Code == dryRunFieldMissionCode && requestError.Field == dryRunJustificationFieldName {
 			return false
 		}
