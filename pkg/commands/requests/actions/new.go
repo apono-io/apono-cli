@@ -27,7 +27,9 @@ const (
 	interactiveFlagName          = "interactive"
 	noWaitFlagName               = "no-wait"
 	timeoutFlagName              = "timeout"
+	durationFlagName             = "duration"
 	defaultWaitTimeForNewRequest = 60 * time.Second
+	defaultAccessDuration        = 0
 )
 
 type createRequestFlags struct {
@@ -40,6 +42,7 @@ type createRequestFlags struct {
 	runInteractiveMode  bool
 	noWait              bool
 	timeout             time.Duration
+	accessDuration      time.Duration
 	output              utils.Format
 }
 
@@ -106,6 +109,7 @@ func Create() *cobra.Command {
 	flags.BoolVar(&cmdFlags.runInteractiveMode, interactiveFlagName, false, "Run interactive mode")
 	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
+	flags.DurationVarP(&cmdFlags.accessDuration, durationFlagName, "d", defaultAccessDuration, "The duration of the access request")
 
 	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
@@ -136,10 +140,18 @@ func Create() *cobra.Command {
 func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags) (*clientapi.CreateAccessRequestClientModel, error) {
 	req := services.GetEmptyNewRequestAPIModel()
 
-	if flags.justification == "" {
-		req.Justification = *clientapi.NewNullableString(nil)
-	} else {
+	if flags.justification != "" {
 		req.Justification = *clientapi.NewNullableString(&flags.justification)
+	}
+
+	durationFlag := cmd.Flag(durationFlagName)
+	if durationFlag.Changed {
+		if flags.accessDuration <= 0 {
+			return nil, fmt.Errorf("duration must be greater than 0")
+		}
+
+		durationInSec := int32(flags.accessDuration.Seconds())
+		req.DurationInSec = *clientapi.NewNullableInt32(&durationInSec)
 	}
 
 	switch {
@@ -192,6 +204,13 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 			}
 		} else {
 			return nil, fmt.Errorf("either --%s, --%s or --%s flags must be specified", integrationFlagName, bundleFlagName, interactiveFlagName)
+		}
+	}
+
+	if !flags.runInteractiveMode {
+		dryRunValidationErr := dryRunValidation(cmd, client, flags, req)
+		if dryRunValidationErr != nil {
+			return nil, dryRunValidationErr
 		}
 	}
 
@@ -383,4 +402,30 @@ func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags 
 			return nil, err
 		}
 	}
+}
+
+func dryRunValidation(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags, req *clientapi.CreateAccessRequestClientModel) error {
+	dryRunResp, err := services.DryRunRequest(cmd.Context(), client, req)
+	if err != nil {
+		return nil
+	}
+
+	isJustificationOptional := services.IsJustificationOptionalForRequest(dryRunResp)
+	if !isJustificationOptional && !req.Justification.IsSet() {
+		return fmt.Errorf("justification is required for this request, please use the --%s flag", justificationFlagName)
+	}
+
+	isDurationRequired := services.IsDurationRequiredForRequest(dryRunResp)
+	if isDurationRequired {
+		if !req.DurationInSec.IsSet() {
+			return fmt.Errorf("duration is required for this request, please use the --%s flag", durationFlagName)
+		}
+
+		requestMaximumDuration := services.GetMaximumRequestDuration(dryRunResp)
+		if flags.accessDuration > requestMaximumDuration {
+			return fmt.Errorf("duration is too long, maximum duration is %.2f hours", requestMaximumDuration.Hours())
+		}
+	}
+
+	return nil
 }
