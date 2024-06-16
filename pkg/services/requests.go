@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -29,8 +30,13 @@ const (
 	AccessRequestFailedStatus             = "Failed"
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
 
-	dryRunFieldMissionCode       = "FIELD_MISSING"
-	dryRunJustificationFieldName = "justification"
+	dryRunFieldMissionCode               = "FIELD_MISSING"
+	dryRunJustificationFieldName         = "justification"
+	dryRunInvalidDurationCode            = "INVALID_DURATION"
+	dryRunDurationInSecFieldName         = "duration_in_sec"
+	dryRunMaxDurationInSecondsDetailsKey = "max_duration"
+
+	maxRequestDuration = math.MaxInt32 * time.Second
 )
 
 func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestClientModel, format utils.Format, printAsArray bool) error {
@@ -250,6 +256,40 @@ func IsJustificationOptionalForRequest(dryRunResponse *clientapi.DryRunClientRes
 	}
 
 	return true
+}
+
+func IsDurationRequiredForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
+	if dryRunResponse == nil {
+		return false
+	}
+
+	for _, requestError := range dryRunResponse.Errors {
+		if requestError.Code == dryRunInvalidDurationCode && requestError.Field == dryRunDurationInSecFieldName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetMaximumRequestDuration(dryRunResponse *clientapi.DryRunClientResponse) time.Duration {
+	if dryRunResponse == nil {
+		return maxRequestDuration
+	}
+
+	for _, requestError := range dryRunResponse.Errors {
+		if requestError.Code == dryRunInvalidDurationCode && requestError.Field == dryRunDurationInSecFieldName {
+			if maxDurationInSecondsDetails, ok := requestError.Details[dryRunMaxDurationInSecondsDetailsKey]; ok {
+				var maxDurationInSecondsResp float64
+				maxDurationInSecondsResp, ok = maxDurationInSecondsDetails.(float64)
+				if ok {
+					return time.Duration(maxDurationInSecondsResp) * time.Second
+				}
+			}
+		}
+	}
+
+	return maxRequestDuration
 }
 
 func ColoredStatus(request clientapi.AccessRequestClientModel) string {

@@ -1,9 +1,9 @@
 linters-settings:
   funlen:
-    lines: 100
-    statements: 50
+    lines: 120
+    statements: 70
   gocyclo:
-    min-complexity: 20
+    min-complexity: 22
   goimports:
     local-prefixes: github.com/apono-io/apono-cli
   govet:

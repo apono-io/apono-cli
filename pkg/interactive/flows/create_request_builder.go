@@ -3,6 +3,7 @@ package flows
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -18,6 +19,7 @@ type CreateAccessRequestWithFullModels struct {
 	Bundles      []clientapi.BundleClientModel
 	Integrations []clientapi.IntegrationClientModel
 	Resources    []clientapi.ResourceClientModel
+	Duration     *time.Duration
 }
 
 func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, error) {
@@ -29,12 +31,12 @@ func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.Apo
 	var request *clientapi.CreateAccessRequestClientModel
 	switch requestType {
 	case selectors.BundleRequestType:
-		request, err = StartBundleRequestBuilderInteractiveMode(cmd, client, "", "")
+		request, err = StartBundleRequestBuilderInteractiveMode(cmd, client, "", "", nil)
 		if err != nil {
 			return nil, err
 		}
 	case selectors.IntegrationRequestType:
-		request, err = StartIntegrationRequestBuilderInteractiveMode(cmd, client, "", "", []string{}, []string{}, "")
+		request, err = StartIntegrationRequestBuilderInteractiveMode(cmd, client, "", "", []string{}, []string{}, "", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +47,13 @@ func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.Apo
 	return request, nil
 }
 
-func StartBundleRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient, bundleID string, justification string) (*clientapi.CreateAccessRequestClientModel, error) {
+func StartBundleRequestBuilderInteractiveMode(
+	cmd *cobra.Command,
+	client *aponoapi.AponoClient,
+	bundleID string,
+	justification string,
+	accessDuration *time.Duration,
+) (*clientapi.CreateAccessRequestClientModel, error) {
 	request := services.GetEmptyNewRequestAPIModel()
 	requestModels := &CreateAccessRequestWithFullModels{}
 
@@ -61,9 +69,28 @@ func StartBundleRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoa
 	request.FilterBundleIds = []string{bundleID}
 
 	var justificationOptional bool
+	var durationRequired bool
+	var maxRequestDuration time.Duration
 	dryRunResp, err := services.DryRunRequest(cmd.Context(), client, request)
 	if err == nil {
 		justificationOptional = services.IsJustificationOptionalForRequest(dryRunResp)
+		durationRequired = services.IsDurationRequiredForRequest(dryRunResp)
+		maxRequestDuration = services.GetMaximumRequestDuration(dryRunResp)
+	}
+
+	if accessDuration == nil && durationRequired {
+		var newDuration *time.Duration
+		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
+		if err != nil {
+			return nil, err
+		}
+
+		accessDuration = newDuration
+	}
+	if accessDuration != nil {
+		requestModels.Duration = accessDuration
+		accessDurationInSec := int32(accessDuration.Seconds())
+		request.DurationInSec = *clientapi.NewNullableInt32(&accessDurationInSec)
 	}
 
 	if justification == "" {
@@ -93,6 +120,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	resourceIDs []string,
 	permissionIDs []string,
 	justification string,
+	accessDuration *time.Duration,
 ) (*clientapi.CreateAccessRequestClientModel, error) {
 	request := services.GetEmptyNewRequestAPIModel()
 	requestModels := &CreateAccessRequestWithFullModels{}
@@ -163,9 +191,28 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	request.FilterPermissionIds = permissionIDs
 
 	var justificationOptional bool
+	var durationRequired bool
+	var maxRequestDuration time.Duration
 	dryRunResp, err := services.DryRunRequest(cmd.Context(), client, request)
 	if err == nil {
 		justificationOptional = services.IsJustificationOptionalForRequest(dryRunResp)
+		durationRequired = services.IsDurationRequiredForRequest(dryRunResp)
+		maxRequestDuration = services.GetMaximumRequestDuration(dryRunResp)
+	}
+
+	if accessDuration == nil && durationRequired {
+		var newDuration *time.Duration
+		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
+		if err != nil {
+			return nil, err
+		}
+
+		accessDuration = newDuration
+	}
+	if accessDuration != nil {
+		requestModels.Duration = accessDuration
+		accessDurationInSec := int32(accessDuration.Seconds())
+		request.DurationInSec = *clientapi.NewNullableInt32(&accessDurationInSec)
 	}
 
 	if justification == "" {
@@ -196,7 +243,7 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			bundleFlagValue = request.FilterBundleIds[0]
 		}
 
-		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification.Get())
+		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification.Get(), models.Duration)
 	}
 
 	var integrationFlagValue string
@@ -216,10 +263,10 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			resourcesFlagValues = append(resourcesFlagValues, resourceFilter.Value)
 		}
 	}
-	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get())
+	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get(), models.Duration)
 }
 
-func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string) error {
+func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string, duration *time.Duration) error {
 	createCommand := fmt.Sprintf("apono requests create --integration \"%s\" --resource-type \"%s\"", integration, resourceType)
 
 	var permissionFlags []string
@@ -234,7 +281,11 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 	}
 	createCommand += " " + strings.Join(resourceFlags, " ")
 
-	if justification != nil {
+	if duration != nil {
+		createCommand += fmt.Sprintf(" --duration %s", duration)
+	}
+
+	if justification != nil && *justification != "" {
 		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
 	}
 
@@ -246,9 +297,12 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 	return nil
 }
 
-func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification *string) error {
+func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification *string, duration *time.Duration) error {
 	createCommand := fmt.Sprintf("apono requests create --bundle \"%s\"", bundle)
-	if justification != nil {
+	if duration != nil {
+		createCommand += fmt.Sprintf(" --duration %s", duration)
+	}
+	if justification != nil && *justification != "" {
 		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
 	}
 
