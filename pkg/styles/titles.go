@@ -10,6 +10,7 @@ import (
 const (
 	prefixIconColor    = color.Green
 	selectedItemsColor = color.Cyan
+	optionalTextColor  = color.Gray
 )
 
 var (
@@ -18,8 +19,13 @@ var (
 	NoticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf("notice") + color.Bold.Sprintf("]")
 )
 
-func BeforeSelectingItemsTitleStyle(name string) string {
-	return fmt.Sprintf("%s %s:", beforeSelectIcon, name)
+func BeforeSelectingItemsTitleStyle(name string, optional bool) string {
+	var optionalText string
+	if optional {
+		optionalText = optionalTextColor.Sprint(" (optional)")
+	}
+
+	return fmt.Sprintf("%s %s%s:", beforeSelectIcon, name, optionalText)
 }
 
 func AfterSelectingItemsTitleStyle(name string, items []string) string {

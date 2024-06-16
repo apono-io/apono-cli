@@ -4,4 +4,5 @@ type TextInput struct {
 	Title       string
 	PostTitle   string
 	Placeholder string
+	Optional    bool
 }

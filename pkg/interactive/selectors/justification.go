@@ -4,11 +4,12 @@ import (
 	textinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/text_input"
 )
 
-func RunJustificationInput() (string, error) {
+func RunJustificationInput(optional bool) (string, error) {
 	justificationInput := textinput.TextInput{
-		Title:       "Enter justification",
+		Title:       "Enter Justification",
 		PostTitle:   "Justification",
 		Placeholder: "Justification",
+		Optional:    optional,
 	}
 
 	justification, err := textinput.LaunchTextInput(justificationInput)

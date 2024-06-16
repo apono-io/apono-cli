@@ -60,8 +60,15 @@ func StartBundleRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoa
 	}
 	request.FilterBundleIds = []string{bundleID}
 
+	var justificationOptional bool
+	dryRunResp, err := services.DryRunRequest(cmd.Context(), client, request)
+	if err == nil {
+		justificationOptional = services.IsJustificationOptionalForRequest(dryRunResp)
+	}
+
 	if justification == "" {
-		newJustification, err := selectors.RunJustificationInput()
+		var newJustification string
+		newJustification, err = selectors.RunJustificationInput(justificationOptional)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +77,7 @@ func StartBundleRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoa
 	}
 	request.Justification = *clientapi.NewNullableString(&justification)
 
-	err := GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
+	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +162,15 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	}
 	request.FilterPermissionIds = permissionIDs
 
+	var justificationOptional bool
+	dryRunResp, err := services.DryRunRequest(cmd.Context(), client, request)
+	if err == nil {
+		justificationOptional = services.IsJustificationOptionalForRequest(dryRunResp)
+	}
+
 	if justification == "" {
-		newJustification, err := selectors.RunJustificationInput()
+		var newJustification string
+		newJustification, err = selectors.RunJustificationInput(justificationOptional)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +179,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	}
 	request.Justification = *clientapi.NewNullableString(&justification)
 
-	err := GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
+	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
 		return nil, err
 	}
