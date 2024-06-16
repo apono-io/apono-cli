@@ -54,7 +54,15 @@ func SendCommandAnalyticsEvent(cmd *cobra.Command, args []string) {
 
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		if flag.Changed {
-			properties[flagFieldPrefix+flag.Name] = flag.Value
+			flagKey := flagFieldPrefix + flag.Name
+			switch flagValue := flag.Value.(type) {
+			case pflag.SliceValue:
+				properties[flagKey] = flagValue.GetSlice()
+			case pflag.Value:
+				properties[flagKey] = flagValue.String()
+			default:
+				properties[flagKey] = flag.Value.String()
+			}
 		}
 	})
 
