@@ -11,6 +11,7 @@ const (
 	prefixIconColor    = color.Green
 	selectedItemsColor = color.Cyan
 	optionalTextColor  = color.Gray
+	noItemsTextColor   = color.Gray
 )
 
 var (
@@ -29,13 +30,20 @@ func BeforeSelectingItemsTitleStyle(name string, optional bool) string {
 }
 
 func AfterSelectingItemsTitleStyle(name string, items []string) string {
-	return fmt.Sprintf("%s %s: %s", afterSelectIcon, name, joinNames(items))
+	itemsText := joinNames(items)
+	if itemsText == "" {
+		itemsText = noItemsTextColor.Sprint("(empty)")
+	}
+
+	return fmt.Sprintf("%s %s: %s", afterSelectIcon, name, itemsText)
 }
 
 func joinNames(names []string) string {
 	var coloredNames []string
 	for _, name := range names {
-		coloredNames = append(coloredNames, selectedItemsColor.Sprint(name))
+		if name != "" {
+			coloredNames = append(coloredNames, selectedItemsColor.Sprint(name))
+		}
 	}
 
 	return strings.Join(coloredNames, ", ")

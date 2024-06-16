@@ -145,11 +145,13 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 	}
 
 	durationFlag := cmd.Flag(durationFlagName)
+	var durationFlagValue *time.Duration
 	if durationFlag.Changed {
 		if flags.accessDuration <= 0 {
 			return nil, fmt.Errorf("duration must be greater than 0")
 		}
 
+		durationFlagValue = &flags.accessDuration
 		durationInSec := int32(flags.accessDuration.Seconds())
 		req.DurationInSec = *clientapi.NewNullableInt32(&durationInSec)
 	}
@@ -163,7 +165,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		}
 
 		if flags.runInteractiveMode {
-			req, err = flows.StartIntegrationRequestBuilderInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification)
+			req, err = flows.StartIntegrationRequestBuilderInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification, durationFlagValue)
 			if err != nil {
 				return nil, err
 			}
@@ -187,7 +189,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		}
 
 		if flags.runInteractiveMode {
-			req, err = flows.StartBundleRequestBuilderInteractiveMode(cmd, client, bundle.Id, flags.justification)
+			req, err = flows.StartBundleRequestBuilderInteractiveMode(cmd, client, bundle.Id, flags.justification, durationFlagValue)
 			if err != nil {
 				return nil, err
 			}
