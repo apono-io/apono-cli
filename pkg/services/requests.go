@@ -244,12 +244,12 @@ func DryRunRequest(ctx context.Context, client *aponoapi.AponoClient, request *c
 	return dryRunResponse, err
 }
 
-func IsJustificationOptionalForRequest(request *clientapi.DryRunClientResponse) bool {
-	if request == nil {
+func IsJustificationOptionalForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
+	if dryRunResponse == nil {
 		return false
 	}
 
-	for _, requestError := range request.Errors {
+	for _, requestError := range dryRunResponse.Errors {
 		if requestError.Code == dryRunFieldMissionCode && requestError.Field == dryRunJustificationFieldName {
 			return false
 		}
@@ -258,12 +258,12 @@ func IsJustificationOptionalForRequest(request *clientapi.DryRunClientResponse) 
 	return true
 }
 
-func IsDurationRequiredForRequest(request *clientapi.DryRunClientResponse) bool {
-	if request == nil {
+func IsDurationRequiredForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
+	if dryRunResponse == nil {
 		return false
 	}
 
-	for _, requestError := range request.Errors {
+	for _, requestError := range dryRunResponse.Errors {
 		if requestError.Code == dryRunInvalidDurationCode && requestError.Field == dryRunDurationInSecFieldName {
 			return true
 		}
@@ -272,12 +272,12 @@ func IsDurationRequiredForRequest(request *clientapi.DryRunClientResponse) bool 
 	return false
 }
 
-func GetMaximumRequestDuration(request *clientapi.DryRunClientResponse) time.Duration {
-	if request == nil {
+func GetMaximumRequestDuration(dryRunResponse *clientapi.DryRunClientResponse) time.Duration {
+	if dryRunResponse == nil {
 		return maxRequestDuration
 	}
 
-	for _, requestError := range request.Errors {
+	for _, requestError := range dryRunResponse.Errors {
 		if requestError.Code == dryRunInvalidDurationCode && requestError.Field == dryRunDurationInSecFieldName {
 			if maxDurationInSecondsDetails, ok := requestError.Details[dryRunMaxDurationInSecondsDetailsKey]; ok {
 				var maxDurationInSecondsResp float64
