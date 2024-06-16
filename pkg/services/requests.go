@@ -28,6 +28,9 @@ const (
 	AccessRequestRevokedStatus            = "Revoked"
 	AccessRequestFailedStatus             = "Failed"
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
+
+	dryRunFieldMissionCode       = "FIELD_MISSING"
+	dryRunJustificationFieldName = "justification"
 )
 
 func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestClientModel, format utils.Format, printAsArray bool) error {
@@ -207,6 +210,46 @@ func RevokeRequest(ctx context.Context, client *aponoapi.AponoClient, requestID 
 	}
 
 	return err
+}
+
+func DryRunRequest(ctx context.Context, client *aponoapi.AponoClient, request *clientapi.CreateAccessRequestClientModel) (*clientapi.DryRunClientResponse, error) {
+	dryRunRequest := clientapi.CreateAccessRequestClientModel{
+		FilterBundleIds:       request.FilterBundleIds,
+		FilterIntegrationIds:  request.FilterIntegrationIds,
+		FilterResourceTypeIds: request.FilterResourceTypeIds,
+		FilterResourceIds:     request.FilterResourceIds,
+		FilterResources:       request.FilterResources,
+		FilterPermissionIds:   request.FilterPermissionIds,
+		FilterAccessUnitIds:   request.FilterAccessUnitIds,
+		Justification:         request.Justification,
+		DurationInSec:         request.DurationInSec,
+	}
+
+	dryRunResponse, resp, err := client.ClientAPI.AccessRequestsAPI.DryRunCreateUserAccessRequest(ctx).
+		CreateAccessRequestClientModel(dryRunRequest).
+		Execute()
+	if resp != nil {
+		apiError := utils.ReturnAPIResponseError(resp)
+		if apiError != nil {
+			return nil, apiError
+		}
+	}
+
+	return dryRunResponse, err
+}
+
+func IsJustificationOptionalForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
+	if dryRunResponse == nil {
+		return false
+	}
+
+	for _, requestError := range dryRunResponse.Errors {
+		if requestError.Code == dryRunFieldMissionCode && requestError.Field == dryRunJustificationFieldName {
+			return false
+		}
+	}
+
+	return true
 }
 
 func ColoredStatus(request clientapi.AccessRequestClientModel) string {

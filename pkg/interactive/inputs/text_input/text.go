@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	inputWidth   = 200
-	abortingText = "Aborting..."
+	inputWidth     = 200
+	abortingText   = "Aborting..."
+	noTextInputMsg = "Input is required"
 )
 
 var helpText = fmt.Sprintf("(%s/%s to abort or %s to submit)", abortKey, quitKey, submitKey)
@@ -24,6 +25,8 @@ type model struct {
 	err        error
 	submitting bool
 	aborting   bool
+	optional   bool
+	statusMsg  string
 }
 
 func (m model) Init() tea.Cmd {
@@ -41,8 +44,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case submitKey:
-			m.submitting = true
-			return m, tea.Quit
+			if !m.optional && m.textInput.Value() == "" {
+				m.statusMsg = defaultNoInputStyle.Render(noTextInputMsg)
+				return m, nil
+			} else {
+				m.submitting = true
+				return m, tea.Quit
+			}
 		}
 
 	case errMsg:
@@ -62,14 +70,15 @@ func (m model) View() string {
 		return abortingText
 	}
 
-	return fmt.Sprintf("%s \n\n%s\n\n%s",
+	return fmt.Sprintf("%s %s\n\n%s\n\n%s",
 		m.title,
+		m.statusMsg,
 		m.textInput.View(),
 		helpText,
 	)
 }
 
-func initialModel(title string, placeholder string) model {
+func initialModel(title string, placeholder string, optional bool) model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Placeholder = placeholder
@@ -77,13 +86,14 @@ func initialModel(title string, placeholder string) model {
 
 	return model{
 		textInput: ti,
-		title:     styles.BeforeSelectingItemsTitleStyle(title),
+		title:     styles.BeforeSelectingItemsTitleStyle(title, optional),
 		err:       nil,
+		optional:  optional,
 	}
 }
 
 func LaunchTextInput(input TextInput) (string, error) {
-	result, err := tea.NewProgram(initialModel(input.Title, input.Placeholder)).Run()
+	result, err := tea.NewProgram(initialModel(input.Title, input.Placeholder, input.Optional)).Run()
 	if err != nil {
 		return "", err
 	}
@@ -94,6 +104,10 @@ func LaunchTextInput(input TextInput) (string, error) {
 	}
 
 	resultText := resultModel.textInput.Value()
+	if resultText == "" && !input.Optional {
+		return "", fmt.Errorf("no input provided")
+	}
+
 	if input.PostTitle != "" {
 		fmt.Println(styles.AfterSelectingItemsTitleStyle(input.PostTitle, []string{resultText}))
 	}

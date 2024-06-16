@@ -59,7 +59,6 @@ func SendCommandAnalyticsEvent(cmd *cobra.Command, args []string) {
 	})
 
 	eventName := fmt.Sprintf("Command %s Ran", cmd.CommandPath())
-
 	req := clientapi.CreateAnalyticEventClientModel{
 		EventName:  eventName,
 		ClientType: clientapi.ANALYTICCLIENTTYPECLIENTMODEL_CLI,

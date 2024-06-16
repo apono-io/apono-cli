@@ -29,6 +29,7 @@ type AccessRequestClientModel struct {
 	AccessGroups   []AccessGroupClientModel                  `json:"access_groups"`
 	Bundle         NullableAccessRequestClientModelBundle    `json:"bundle,omitempty"`
 	Challenge      NullableAccessRequestClientModelChallenge `json:"challenge,omitempty"`
+	DurationInSec  NullableInt32                             `json:"duration_in_sec,omitempty"`
 }
 
 type _AccessRequestClientModel AccessRequestClientModel
@@ -347,6 +348,49 @@ func (o *AccessRequestClientModel) UnsetChallenge() {
 	o.Challenge.Unset()
 }
 
+// GetDurationInSec returns the DurationInSec field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetDurationInSec() int32 {
+	if o == nil || IsNil(o.DurationInSec.Get()) {
+		var ret int32
+		return ret
+	}
+	return *o.DurationInSec.Get()
+}
+
+// GetDurationInSecOk returns a tuple with the DurationInSec field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetDurationInSecOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.DurationInSec.Get(), o.DurationInSec.IsSet()
+}
+
+// HasDurationInSec returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasDurationInSec() bool {
+	if o != nil && o.DurationInSec.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetDurationInSec gets a reference to the given NullableInt32 and assigns it to the DurationInSec field.
+func (o *AccessRequestClientModel) SetDurationInSec(v int32) {
+	o.DurationInSec.Set(&v)
+}
+
+// SetDurationInSecNil sets the value for DurationInSec to be an explicit nil
+func (o *AccessRequestClientModel) SetDurationInSecNil() {
+	o.DurationInSec.Set(nil)
+}
+
+// UnsetDurationInSec ensures that no value is present for DurationInSec, not even an explicit nil
+func (o *AccessRequestClientModel) UnsetDurationInSec() {
+	o.DurationInSec.Unset()
+}
+
 func (o AccessRequestClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -373,6 +417,9 @@ func (o AccessRequestClientModel) ToMap() (map[string]interface{}, error) {
 	}
 	if o.Challenge.IsSet() {
 		toSerialize["challenge"] = o.Challenge.Get()
+	}
+	if o.DurationInSec.IsSet() {
+		toSerialize["duration_in_sec"] = o.DurationInSec.Get()
 	}
 	return toSerialize, nil
 }

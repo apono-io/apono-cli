@@ -368,6 +368,14 @@
         "operationId": "listAccessRequests",
         "parameters": [
           {
+            "name": "include_autogrant",
+            "in": "query",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "schema": {
@@ -1737,6 +1745,11 @@
               }
             ],
             "nullable": true
+          },
+          "duration_in_sec": {
+            "format": "int32",
+            "type": "integer",
+            "nullable": true
           }
         }
       },
@@ -2178,8 +2191,8 @@
             "type": "string",
             "nullable": true
           },
-          "duration": {
-            "format": "int64",
+          "duration_in_sec": {
+            "format": "int32",
             "type": "integer",
             "nullable": true
           }
@@ -2269,7 +2282,8 @@
       "DryRunAccessRequestError": {
         "required": [
           "code",
-          "field"
+          "field",
+          "details"
         ],
         "type": "object",
         "properties": {
@@ -2282,6 +2296,9 @@
           "message": {
             "type": "string",
             "nullable": true
+          },
+          "details": {
+            "type": "object"
           }
         }
       },
@@ -2770,7 +2787,8 @@
       "UserSessionClientModel": {
         "required": [
           "user",
-          "account"
+          "account",
+          "settings"
         ],
         "type": "object",
         "properties": {
@@ -2779,6 +2797,20 @@
           },
           "account": {
             "$ref": "#/components/schemas/AccountClientModel"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/UserSettingsClientModel"
+          }
+        }
+      },
+      "UserSettingsClientModel": {
+        "required": [
+          "require_duration_for_access_request"
+        ],
+        "type": "object",
+        "properties": {
+          "require_duration_for_access_request": {
+            "type": "boolean"
           }
         }
       }

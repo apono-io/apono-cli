@@ -133,7 +133,7 @@ func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 	l.SetFilteringEnabled(inputModel.EnableFilter)
 	l.SetShowStatusBar(inputModel.ShowItemCount)
 
-	l.Title = styles.BeforeSelectingItemsTitleStyle(inputModel.Title)
+	l.Title = styles.BeforeSelectingItemsTitleStyle(inputModel.Title, false)
 	l.Styles.Title = defaultTitleStyle
 	l.Styles.PaginationStyle = defaultPaginationStyle
 	l.Styles.HelpStyle = defaultHelpStyle

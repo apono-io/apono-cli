@@ -69,5 +69,6 @@ model_resource_type_client_model.go
 model_session_type_client_model.go
 model_user_client_model.go
 model_user_session_client_model.go
+model_user_settings_client_model.go
 response.go
 utils.go
