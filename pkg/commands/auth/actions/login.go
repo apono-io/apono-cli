@@ -23,6 +23,7 @@ const (
 	clientIDFlagName = "client-id"
 	apiURLFlagName   = "api-url"
 	appURLFlagName   = "app-url"
+	tokenUrlFlagName = "token-url"
 )
 
 func Login() *cobra.Command {
@@ -32,6 +33,7 @@ func Login() *cobra.Command {
 		clientID    string
 		apiURL      string
 		appURL      string
+		tokenUrl    string
 	)
 
 	cmd := &cobra.Command{
@@ -42,11 +44,18 @@ func Login() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			apiURL = strings.TrimLeft(apiURL, "/")
 			appURL = strings.TrimLeft(appURL, "/")
+			tokenUrl = strings.TrimLeft(tokenUrl, "/")
 			pkce, err := oauth2params.NewPKCE()
 			if err != nil {
 				return fmt.Errorf("failed to create code challenge: %w", err)
 			}
 
+			var oauthTokenURL string
+			if tokenUrl != "" {
+				oauthTokenURL = tokenUrl
+			} else {
+				oauthTokenURL = appURL
+			}
 			ready := make(chan string, 1)
 			defer close(ready)
 			cfg := oauth2cli.Config{
@@ -54,7 +63,7 @@ func Login() *cobra.Command {
 					ClientID: clientID,
 					Endpoint: oauth2.Endpoint{
 						AuthURL:   config.GetOAuthAuthURL(appURL),
-						TokenURL:  config.GetOAuthTokenURL(appURL),
+						TokenURL:  config.GetOAuthTokenURL(oauthTokenURL),
 						AuthStyle: oauth2.AuthStyleInParams,
 					},
 					Scopes: []string{
@@ -119,9 +128,11 @@ func Login() *cobra.Command {
 	flags.StringVarP(&clientID, clientIDFlagName, "", "3afae9ff-48e6-45f3-b0e8-37658b7271b7", "oauth client id")
 	flags.StringVarP(&apiURL, apiURLFlagName, "", "https://api.apono.io", "apono api url")
 	flags.StringVarP(&appURL, appURLFlagName, "", "https://app.apono.io", "apono app url")
+	flags.StringVarP(&tokenUrl, tokenUrlFlagName, "", "", "apono token api url")
 	_ = flags.MarkHidden(clientIDFlagName)
 	_ = flags.MarkHidden(apiURLFlagName)
 	_ = flags.MarkHidden(appURLFlagName)
+	_ = flags.MarkHidden(tokenUrlFlagName)
 	return cmd
 }
 
