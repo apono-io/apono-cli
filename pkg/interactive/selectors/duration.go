@@ -1,8 +1,9 @@
 package selectors
 
 import (
-	numberinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/number_input"
 	"time"
+
+	numberinput "github.com/apono-io/apono-cli/pkg/interactive/inputs/number_input"
 )
 
 func RunDurationInput(optional bool, maxValueInHours float64, minValueInHours float64) (*time.Duration, error) {

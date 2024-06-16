@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/charmbracelet/bubbles/textinput"
+
+	"github.com/apono-io/apono-cli/pkg/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -48,7 +49,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case submitKey:
-			if m.textInput.Value() == "" {
+			switch {
+			case m.textInput.Value() == "":
 				if m.optional {
 					m.submitting = true
 					return m, tea.Quit
@@ -56,12 +58,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.statusMsg = defaultNoInputStyle.Render(noTextInputMsg)
 					return m, nil
 				}
-			} else if !isValueNumber(m.textInput.Value()) {
+
+			case !isValueNumber(m.textInput.Value()):
 				m.statusMsg = defaultNoInputStyle.Render(notValidNumber)
 				return m, nil
-			} else {
+			default:
 				value, _ := convertToFloat(m.textInput.Value())
-				_, validationErr := validateValueInRange(value, m.maxValue, m.minValue)
+				validationErr := validateValueInRange(value, m.maxValue, m.minValue)
 				if validationErr != nil {
 					m.statusMsg = defaultNoInputStyle.Render(validationErr.Error())
 					return m, nil
@@ -113,16 +116,16 @@ func initialModel(title string, placeholder string, optional bool, maxValue *flo
 	}
 }
 
-func validateValueInRange(value float64, maxValue *float64, minValue *float64) (bool, error) {
+func validateValueInRange(value float64, maxValue *float64, minValue *float64) error {
 	if maxValue != nil && value > *maxValue {
-		return false, fmt.Errorf("value should be less than %.2f", *maxValue)
+		return fmt.Errorf("value should be less than %.2f", *maxValue)
 	}
 
 	if minValue != nil && value <= *minValue {
-		return false, fmt.Errorf("value should be greater than %.2f", *minValue)
+		return fmt.Errorf("value should be greater than %.2f", *minValue)
 	}
 
-	return true, nil
+	return nil
 }
 
 func isValueNumber(input string) bool {
@@ -164,7 +167,7 @@ func LaunchNumberInput(input NumberInput) (*float64, error) {
 			return nil, fmt.Errorf("failed to convert input to number")
 		}
 
-		_, validationErr := validateValueInRange(convertNumber, input.MaxValue, input.MinValue)
+		validationErr := validateValueInRange(convertNumber, input.MaxValue, input.MinValue)
 		if validationErr != nil {
 			return nil, validationErr
 		}
