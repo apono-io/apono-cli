@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/styles"
 	"math"
 	"strings"
 	"time"
@@ -22,6 +24,7 @@ import (
 const (
 	AccessRequestInitStatus               = "Initializing"
 	AccessRequestPendingStatus            = "Pending"
+	AccessRequestPendingMFAStatus         = "PendingMFA"
 	AccessRequestGrantingStatus           = "Granting"
 	AccessRequestRejectedStatus           = "Rejected"
 	AccessRequestActiveStatus             = "Active"
@@ -29,6 +32,7 @@ const (
 	AccessRequestRevokedStatus            = "Revoked"
 	AccessRequestFailedStatus             = "Failed"
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
+	AccessRequestWaitingForMFAStatus      = "Pending MFA"
 
 	dryRunFieldMissionCode               = "FIELD_MISSING"
 	dryRunJustificationFieldName         = "justification"
@@ -61,6 +65,32 @@ func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestC
 	default:
 		return fmt.Errorf("unsupported output format")
 	}
+}
+
+func PrintAccessRequestMFALink(cmd *cobra.Command, requestId string) error {
+	currentConfig, err := config.GetCurrentProfile(cmd.Context())
+	if err != nil {
+		return err
+	}
+
+	portalURL := currentConfig.PortalURL
+	if portalURL == "" {
+		portalURL = config.PortalDefaultURL
+	}
+
+	link := fmt.Sprintf("%s/requests/open", portalURL)
+	_, err = fmt.Fprintf(
+		cmd.OutOrStdout(),
+		"\n%s Request %s requires completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
+		styles.NoticeMsgPrefix,
+		color.Bold.Sprint(requestId),
+		color.Green.Sprint(link),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateRequestsTable(requests []clientapi.AccessRequestClientModel) *uitable.Table {
@@ -193,6 +223,10 @@ func IsRequestWaitingForHumanApproval(request *clientapi.AccessRequestClientMode
 	return true
 }
 
+func IsRequestWaitingForMFA(request *clientapi.AccessRequestClientModel) bool {
+	return request.Status.Status == AccessRequestPendingMFAStatus
+}
+
 func listAccessGroupAccessUnits(ctx context.Context, client *aponoapi.AponoClient, accessGroupID string) ([]clientapi.AccessUnitClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessUnitClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resp, _, err := client.ClientAPI.AccessGroupsAPI.GetAccessGroupUnits(ctx, accessGroupID).
@@ -297,12 +331,15 @@ func ColoredStatus(request clientapi.AccessRequestClientModel) string {
 	if IsRequestWaitingForHumanApproval(&request) {
 		status = AccessRequestWaitingForApprovalStatus
 	}
+	if IsRequestWaitingForMFA(&request) {
+		status = AccessRequestWaitingForMFAStatus
+	}
 
 	statusTitle := cases.Title(language.English).String(status)
 	switch status {
-	case AccessRequestWaitingForApprovalStatus:
+	case AccessRequestWaitingForApprovalStatus, AccessRequestWaitingForMFAStatus:
 		return color.HiYellow.Sprint(statusTitle)
-	case AccessRequestInitStatus, AccessRequestPendingStatus:
+	case AccessRequestInitStatus, AccessRequestPendingStatus, AccessRequestPendingMFAStatus:
 		return color.Yellow.Sprint(statusTitle)
 	case AccessRequestGrantingStatus:
 		return color.HiYellow.Sprint(statusTitle)

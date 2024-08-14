@@ -45,6 +45,8 @@ func ShouldStopLoading(request *clientapi.AccessRequestClientModel) bool {
 		if services.IsRequestWaitingForHumanApproval(request) {
 			return true
 		}
+	case services.AccessRequestPendingMFAStatus:
+		return true
 	}
 
 	return false
