@@ -3,6 +3,7 @@ package apono
 import (
 	"context"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/config"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/analytics"
@@ -129,6 +130,7 @@ func createRootCommand(versionInfo version.VersionInfo) *cobra.Command {
 		cmd.SetContext(version.CreateVersionContext(cmd.Context(), &versionInfo))
 		cmd.SetContext(analytics.CreateStartTimeContext(cmd.Context(), &commandStartTime))
 		cmd.SetContext(analytics.CreateCommandIDContext(cmd.Context(), commandID))
+		cmd.SetContext(config.CreateProfileContext(cmd.Context(), profileName))
 
 		return nil
 	}

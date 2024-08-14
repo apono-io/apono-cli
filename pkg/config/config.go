@@ -1,10 +1,23 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"golang.org/x/oauth2"
+)
+
+const (
+	APIDefaultURL    = "https://api.apono.io"
+	AppDefaultURL    = "https://app.apono.io"
+	PortalDefaultURL = "https://portal.apono.io"
+)
+
+var (
+	ErrProfileNotExists  = errors.New("profile not exists")
+	ErrNoProfiles        = errors.New("no profiles configured, run `apono login` to create a profile")
+	ErrorNoActiveProfile = errors.New("no active profile configured, run `apono login` to create a profile")
 )
 
 type Config struct {
@@ -22,6 +35,7 @@ type SessionConfig struct {
 	ClientID  string       `json:"client_id"`
 	ApiURL    string       `json:"api_url"`
 	AppURL    string       `json:"app_url"`
+	PortalURL string       `json:"portal_url"`
 	AccountID string       `json:"account_id"`
 	UserID    string       `json:"user_id"`
 	Token     oauth2.Token `json:"token"`
@@ -45,4 +59,37 @@ func GetOAuthAuthURL(appURL string) string {
 
 func GetOAuthTokenURL(appURL string) string {
 	return fmt.Sprintf("%s/oauth/token", appURL)
+}
+
+func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
+	cfg, err := Get()
+	if err != nil {
+		return nil, err
+	}
+
+	authConfig := cfg.Auth
+	if len(authConfig.Profiles) == 0 {
+		return nil, ErrNoProfiles
+	}
+
+	var pn ProfileName
+	if profileName != "" {
+		pn = profileName
+	} else {
+		pn = authConfig.ActiveProfile
+		if pn == "" {
+			return nil, ErrorNoActiveProfile
+		}
+	}
+
+	sessionCfg, exists := authConfig.Profiles[pn]
+	if !exists {
+		if pn == "default" {
+			return nil, ErrNoProfiles
+		}
+
+		return nil, fmt.Errorf("%s %s", pn, ErrProfileNotExists)
+	}
+
+	return &sessionCfg, nil
 }
