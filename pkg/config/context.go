@@ -17,7 +17,7 @@ func CreateProfileContext(ctx context.Context, profileName string) context.Conte
 		return ctx
 	}
 
-	return context.WithValue(ctx, currentProfileContextKey, &sessionCfg)
+	return context.WithValue(ctx, currentProfileContextKey, sessionCfg)
 }
 
 func GetCurrentProfile(ctx context.Context) (*SessionConfig, error) {
