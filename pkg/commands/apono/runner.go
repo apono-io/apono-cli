@@ -3,10 +3,10 @@ package apono
 import (
 	"context"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/analytics"
+	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/version"
 
 	"github.com/apono-io/apono-cli/pkg/commands/access"

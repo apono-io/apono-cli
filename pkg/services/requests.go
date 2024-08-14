@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/config"
-	"github.com/apono-io/apono-cli/pkg/styles"
 	"math"
 	"strings"
 	"time"
+
+	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/styles"
 
 	"github.com/apono-io/apono-cli/pkg/utils"
 
@@ -67,7 +68,7 @@ func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestC
 	}
 }
 
-func PrintAccessRequestMFALink(cmd *cobra.Command, requestId string) error {
+func PrintAccessRequestMFALink(cmd *cobra.Command, requestID string) error {
 	currentConfig, err := config.GetCurrentProfile(cmd.Context())
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func PrintAccessRequestMFALink(cmd *cobra.Command, requestId string) error {
 		cmd.OutOrStdout(),
 		"\n%s Request %s requires completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
 		styles.NoticeMsgPrefix,
-		color.Bold.Sprint(requestId),
+		color.Bold.Sprint(requestID),
 		color.Green.Sprint(link),
 	)
 	if err != nil {
