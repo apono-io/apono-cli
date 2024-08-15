@@ -68,7 +68,7 @@ func PrintAccessRequests(cmd *cobra.Command, requests []clientapi.AccessRequestC
 	}
 }
 
-func PrintAccessRequestMFALink(cmd *cobra.Command, requestID string) error {
+func PrintAccessRequestMFALink(cmd *cobra.Command, requestID *string) error {
 	currentConfig, err := config.GetCurrentProfile(cmd.Context())
 	if err != nil {
 		return err
@@ -78,13 +78,20 @@ func PrintAccessRequestMFALink(cmd *cobra.Command, requestID string) error {
 	if portalURL == "" {
 		portalURL = config.PortalDefaultURL
 	}
-
 	link := fmt.Sprintf("%s/requests/open", portalURL)
+
+	var prefixMessage string
+	if requestID != nil {
+		prefixMessage = fmt.Sprintf("Request %s", color.Bold.Sprint(*requestID))
+	} else {
+		prefixMessage = "Some requests"
+	}
+
 	_, err = fmt.Fprintf(
 		cmd.OutOrStdout(),
-		"\n%s Request %s requires completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
+		"\n%s %s requires completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
 		styles.NoticeMsgPrefix,
-		color.Bold.Sprint(requestID),
+		prefixMessage,
 		color.Green.Sprint(link),
 	)
 	if err != nil {

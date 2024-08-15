@@ -95,7 +95,7 @@ func Create() *cobra.Command {
 			}
 
 			if services.IsRequestWaitingForMFA(newAccessRequest) && cmdFlags.output == utils.TableFormat {
-				err = services.PrintAccessRequestMFALink(cmd, newAccessRequest.Id)
+				err = services.PrintAccessRequestMFALink(cmd, &newAccessRequest.Id)
 				if err != nil {
 					return err
 				}

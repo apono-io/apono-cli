@@ -42,6 +42,13 @@ func Describe() *cobra.Command {
 				return err
 			}
 
+			if services.IsRequestWaitingForMFA(resp) && *format == utils.TableFormat {
+				err = services.PrintAccessRequestMFALink(cmd, &resp.Id)
+				if err != nil {
+					return err
+				}
+			}
+
 			return nil
 		},
 	}

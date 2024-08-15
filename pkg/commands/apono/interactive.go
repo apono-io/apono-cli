@@ -72,7 +72,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		}
 
 		if services.IsRequestWaitingForMFA(newAccessRequest) {
-			err = services.PrintAccessRequestMFALink(cmd, newAccessRequest.Id)
+			err = services.PrintAccessRequestMFALink(cmd, &newAccessRequest.Id)
 			if err != nil {
 				return err
 			}
