@@ -2,6 +2,7 @@ package actions
 
 import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
@@ -31,6 +32,13 @@ func List() *cobra.Command {
 				return err
 			}
 
+			if doesRequestsHavePendingMFAStatus(requests) {
+				err = services.PrintAccessRequestMFALink(cmd, nil)
+				if err != nil {
+					return err
+				}
+			}
+
 			return nil
 		},
 	}
@@ -40,4 +48,13 @@ func List() *cobra.Command {
 	utils.AddFormatFlag(flags, format)
 
 	return cmd
+}
+
+func doesRequestsHavePendingMFAStatus(requests []clientapi.AccessRequestClientModel) bool {
+	for i := range requests {
+		if services.IsRequestWaitingForMFA(&requests[i]) {
+			return true
+		}
+	}
+	return false
 }

@@ -66,7 +66,19 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	if newAccessRequest.Status.Status != services.AccessRequestActiveStatus {
 		fmt.Println()
 
-		return services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, utils.TableFormat, false)
+		err = services.PrintAccessRequests(cmd, []clientapi.AccessRequestClientModel{*newAccessRequest}, utils.TableFormat, false)
+		if err != nil {
+			return err
+		}
+
+		if services.IsRequestWaitingForMFA(newAccessRequest) {
+			err = services.PrintAccessRequestMFALink(cmd, &newAccessRequest.Id)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf(newAccessRequest.Id))

@@ -32,33 +32,9 @@ type Session struct {
 }
 
 func CreateClient(ctx context.Context, profileName string) (*AponoClient, error) {
-	cfg, err := config.Get()
+	sessionCfg, err := config.GetProfileByName(config.ProfileName(profileName))
 	if err != nil {
 		return nil, err
-	}
-
-	authConfig := cfg.Auth
-	if len(authConfig.Profiles) == 0 {
-		return nil, ErrNoProfiles
-	}
-
-	var pn config.ProfileName
-	if profileName != "" {
-		pn = config.ProfileName(profileName)
-	} else {
-		pn = authConfig.ActiveProfile
-		if pn == "" {
-			return nil, ErrorNoActiveProfile
-		}
-	}
-
-	sessionCfg, exists := authConfig.Profiles[pn]
-	if !exists {
-		if pn == "default" {
-			return nil, ErrNoProfiles
-		}
-
-		return nil, fmt.Errorf("%s %s", pn, ErrProfileNotExists)
 	}
 
 	token := &sessionCfg.Token
