@@ -82,14 +82,14 @@ func PrintAccessRequestMFALink(cmd *cobra.Command, requestID *string) error {
 
 	var prefixMessage string
 	if requestID != nil {
-		prefixMessage = fmt.Sprintf("Request %s", color.Bold.Sprint(*requestID))
+		prefixMessage = fmt.Sprintf("Request %s requires", color.Bold.Sprint(*requestID))
 	} else {
-		prefixMessage = "Some requests"
+		prefixMessage = "Some requests require"
 	}
 
 	_, err = fmt.Fprintf(
 		cmd.OutOrStdout(),
-		"\n%s %s requires completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
+		"\n%s %s completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
 		styles.NoticeMsgPrefix,
 		prefixMessage,
 		color.Green.Sprint(link),
