@@ -89,7 +89,7 @@ func PrintAccessRequestMFALink(cmd *cobra.Command, requestID *string) error {
 
 	_, err = fmt.Fprintf(
 		cmd.OutOrStdout(),
-		"\n%s %s completing MFA to proceed. It only takes a minute and helps keep you account secure: %s\n",
+		"\n%s %s completing MFA to proceed. It only takes a minute and helps keep your account secure: %s\n",
 		styles.NoticeMsgPrefix,
 		prefixMessage,
 		color.Green.Sprint(link),
