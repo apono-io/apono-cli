@@ -99,32 +99,23 @@ func Login() *cobra.Command {
 
 			eg, ctx := errgroup.WithContext(cmd.Context())
 			if personalToken == "" {
-				loginViaBrowser(eg, ready, cmdFlags, ctx)
-			}
-			eg.Go(func() error {
-				var oauthToken *oauth2.Token
-				var err error
-
-				if personalToken == "" {
-					oauthToken, err = oauth2cli.GetToken(ctx, cfg)
+				eg.Go(func() error {
+					return loginViaBrowser(ready, cmdFlags, ctx)
+				})
+				eg.Go(func() error {
+					oauthToken, err := oauth2cli.GetToken(ctx, cfg)
 					if err != nil {
 						return fmt.Errorf("could not get a oauthToken: %w", err)
 					}
+					return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, "", ctx)
+				})
+				if err := eg.Wait(); err != nil {
+					return fmt.Errorf("authorization error: %s", err)
 				}
-
-				session, err := storeProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, personalToken, ctx)
-				if err != nil {
-					return fmt.Errorf("could not store access oauthToken: %w", err)
-				}
-
-				fmt.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
 				return nil
-			})
-			if err := eg.Wait(); err != nil {
-				return fmt.Errorf("authorization error: %s", err)
+			} else {
+				return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx)
 			}
-
-			return nil
 		},
 	}
 
@@ -136,7 +127,7 @@ func Login() *cobra.Command {
 	flags.StringVarP(&cmdFlags.appURL, appURLFlagName, "", config.AppDefaultURL, "apono app url")
 	flags.StringVarP(&cmdFlags.portalURL, portalURLFlagName, "", config.PortalDefaultURL, "apono portal url")
 	flags.StringVarP(&cmdFlags.tokenURL, tokenURLFlagName, "", "", "apono token api url")
-	flags.StringVarP(&cmdFlags.personalToken, personalTokenFlagName, "", "", "personal token")
+	flags.StringVarP(&cmdFlags.personalToken, personalTokenFlagName, "", "", "Log in to Apono with user personal token")
 
 	_ = flags.MarkHidden(clientIDFlagName)
 	_ = flags.MarkHidden(apiURLFlagName)
@@ -146,21 +137,29 @@ func Login() *cobra.Command {
 	return cmd
 }
 
-func loginViaBrowser(eg *errgroup.Group, ready <-chan string, cmdFlags loginCommandFlags, ctx context.Context) {
-	eg.Go(func() error {
-		select {
-		case loginURL := <-ready:
-			_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
-			_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", loginURL)
-			if err := browser.OpenURL(loginURL); err != nil && cmdFlags.verbose {
-				log.Println("Could not open the browser:", err)
-			}
-
-			return nil
-		case <-ctx.Done():
-			return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
+func loginViaBrowser(ready <-chan string, cmdFlags loginCommandFlags, ctx context.Context) error {
+	select {
+	case loginURL := <-ready:
+		_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
+		_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", loginURL)
+		if err := browser.OpenURL(loginURL); err != nil && cmdFlags.verbose {
+			log.Println("Could not open the browser:", err)
 		}
-	})
+
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
+	}
+}
+
+func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) error {
+	session, err := storeProfileToken(profileName, clientID, apiURL, appURL, portalURL, oauthToken, personalToken, ctx)
+	if err != nil {
+		return fmt.Errorf("could not store access oauthToken: %w", err)
+	}
+
+	fmt.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
+	return nil
 }
 
 func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) (*config.SessionConfig, error) {
@@ -195,7 +194,7 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		accountID = claims.AccountID
 		userID = claims.UserID
 	} else {
-		endpointURL, urlParseErr := url.Parse(portalURL)
+		endpointURL, urlParseErr := url.Parse(apiURL)
 		if urlParseErr != nil {
 			return nil, fmt.Errorf("failed parsing url %s with error: %w", portalURL, urlParseErr)
 		}
