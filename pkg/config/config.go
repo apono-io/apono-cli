@@ -32,14 +32,15 @@ type AuthConfig struct {
 type ProfileName string
 
 type SessionConfig struct {
-	ClientID  string       `json:"client_id"`
-	ApiURL    string       `json:"api_url"`
-	AppURL    string       `json:"app_url"`
-	PortalURL string       `json:"portal_url"`
-	AccountID string       `json:"account_id"`
-	UserID    string       `json:"user_id"`
-	Token     oauth2.Token `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
+	ClientID      string       `json:"client_id"`
+	ApiURL        string       `json:"api_url"`
+	AppURL        string       `json:"app_url"`
+	PortalURL     string       `json:"portal_url"`
+	AccountID     string       `json:"account_id"`
+	UserID        string       `json:"user_id"`
+	Token         oauth2.Token `json:"token"`
+	CreatedAt     time.Time    `json:"created_at"`
+	PersonalToken string       `json:"personal_token"`
 }
 
 func (c SessionConfig) GetOAuth2Config() oauth2.Config {

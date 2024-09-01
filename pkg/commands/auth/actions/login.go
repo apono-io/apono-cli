@@ -1,10 +1,14 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
+
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
 	"github.com/apono-io/apono-cli/pkg/groups"
 
@@ -20,21 +24,23 @@ import (
 )
 
 const (
-	clientIDFlagName  = "client-id"
-	apiURLFlagName    = "api-url"
-	appURLFlagName    = "app-url"
-	portalURLFlagName = "portal-url"
-	tokenURLFlagName  = "token-url"
+	clientIDFlagName      = "client-id"
+	apiURLFlagName        = "api-url"
+	appURLFlagName        = "app-url"
+	portalURLFlagName     = "portal-url"
+	tokenURLFlagName      = "token-url"
+	personalTokenFlagName = "personal-token"
 )
 
 type loginCommandFlags struct {
-	profileName string
-	verbose     bool
-	clientID    string
-	apiURL      string
-	appURL      string
-	portalURL   string
-	tokenURL    string
+	profileName   string
+	verbose       bool
+	clientID      string
+	apiURL        string
+	appURL        string
+	portalURL     string
+	tokenURL      string
+	personalToken string
 }
 
 func Login() *cobra.Command {
@@ -50,6 +56,7 @@ func Login() *cobra.Command {
 			appURL := strings.TrimLeft(cmdFlags.appURL, "/")
 			portalURL := strings.TrimLeft(cmdFlags.portalURL, "/")
 			tokenURL := strings.TrimLeft(cmdFlags.tokenURL, "/")
+			personalToken := strings.TrimLeft(cmdFlags.personalToken, "")
 			pkce, err := oauth2params.NewPKCE()
 			if err != nil {
 				return fmt.Errorf("failed to create code challenge: %w", err)
@@ -91,29 +98,23 @@ func Login() *cobra.Command {
 			}
 
 			eg, ctx := errgroup.WithContext(cmd.Context())
+			if personalToken == "" {
+				loginViaBrowser(eg, ready, cmdFlags, ctx)
+			}
 			eg.Go(func() error {
-				select {
-				case url := <-ready:
-					_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
-					_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", url)
-					if err := browser.OpenURL(url); err != nil && cmdFlags.verbose {
-						log.Println("Could not open the browser:", err)
+				var oauthToken *oauth2.Token
+				var err error
+
+				if personalToken == "" {
+					oauthToken, err = oauth2cli.GetToken(ctx, cfg)
+					if err != nil {
+						return fmt.Errorf("could not get a oauthToken: %w", err)
 					}
-
-					return nil
-				case <-ctx.Done():
-					return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
-				}
-			})
-			eg.Go(func() error {
-				token, err := oauth2cli.GetToken(ctx, cfg)
-				if err != nil {
-					return fmt.Errorf("could not get a token: %w", err)
 				}
 
-				session, err := storeProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, token)
+				session, err := storeProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, personalToken, ctx)
 				if err != nil {
-					return fmt.Errorf("could not store access token: %w", err)
+					return fmt.Errorf("could not store access oauthToken: %w", err)
 				}
 
 				fmt.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
@@ -135,6 +136,8 @@ func Login() *cobra.Command {
 	flags.StringVarP(&cmdFlags.appURL, appURLFlagName, "", config.AppDefaultURL, "apono app url")
 	flags.StringVarP(&cmdFlags.portalURL, portalURLFlagName, "", config.PortalDefaultURL, "apono portal url")
 	flags.StringVarP(&cmdFlags.tokenURL, tokenURLFlagName, "", "", "apono token api url")
+	flags.StringVarP(&cmdFlags.personalToken, personalTokenFlagName, "", "", "personal token")
+
 	_ = flags.MarkHidden(clientIDFlagName)
 	_ = flags.MarkHidden(apiURLFlagName)
 	_ = flags.MarkHidden(appURLFlagName)
@@ -143,7 +146,24 @@ func Login() *cobra.Command {
 	return cmd
 }
 
-func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, token *oauth2.Token) (*config.SessionConfig, error) {
+func loginViaBrowser(eg *errgroup.Group, ready <-chan string, cmdFlags loginCommandFlags, ctx context.Context) {
+	eg.Go(func() error {
+		select {
+		case loginURL := <-ready:
+			_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
+			_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", loginURL)
+			if err := browser.OpenURL(loginURL); err != nil && cmdFlags.verbose {
+				log.Println("Could not open the browser:", err)
+			}
+
+			return nil
+		case <-ctx.Done():
+			return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
+		}
+	})
+}
+
+func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) (*config.SessionConfig, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -163,10 +183,29 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		jwt.RegisteredClaims
 	}
 
-	claims := new(aponoClaims)
-	_, _, err = jwt.NewParser().ParseUnverified(token.AccessToken, claims)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse access_token: %w", err)
+	var accountID string
+	var userID string
+
+	if oauthToken != nil {
+		claims := new(aponoClaims)
+		_, _, err = jwt.NewParser().ParseUnverified(oauthToken.AccessToken, claims)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse access_token: %w", err)
+		}
+		accountID = claims.AccountID
+		userID = claims.UserID
+	} else {
+		endpointURL, urlParseErr := url.Parse(portalURL)
+		if urlParseErr != nil {
+			return nil, fmt.Errorf("failed parsing url %s with error: %w", portalURL, urlParseErr)
+		}
+		clientAPI := aponoapi.CreateClientAPI(endpointURL, aponoapi.HTTPClientWithPersonalToken(personalToken))
+		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
+		if userSessionErr != nil {
+			return nil, fmt.Errorf("failed fetching user session with error: %w", userSessionErr)
+		}
+		accountID = userSession.Account.Id
+		userID = userSession.User.Id
 	}
 
 	if cfg.Auth.Profiles == nil {
@@ -174,14 +213,17 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 	}
 
 	session := config.SessionConfig{
-		ClientID:  clientID,
-		ApiURL:    apiURL,
-		AppURL:    appURL,
-		PortalURL: portalURL,
-		AccountID: claims.AccountID,
-		UserID:    claims.UserID,
-		Token:     *token,
-		CreatedAt: time.Now(),
+		ClientID:      clientID,
+		ApiURL:        apiURL,
+		AppURL:        appURL,
+		PortalURL:     portalURL,
+		AccountID:     accountID,
+		UserID:        userID,
+		CreatedAt:     time.Now(),
+		PersonalToken: personalToken,
+	}
+	if oauthToken != nil {
+		session.Token = *oauthToken
 	}
 	cfg.Auth.Profiles[pn] = session
 
