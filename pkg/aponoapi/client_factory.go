@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/apono-io/apono-sdk-go"
@@ -12,6 +13,10 @@ import (
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
+)
+
+const (
+	authorizationHeaderKey = "Authorization"
 )
 
 var (
@@ -37,12 +42,18 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, err
 	}
 
-	token := &sessionCfg.Token
-	ts := NewRefreshableTokenSource(ctx, sessionCfg.GetOAuth2Config(), token, func(t *oauth2.Token) error {
-		return saveOAuthToken(profileName, t)
-	})
+	oauthToken := &sessionCfg.Token
+	personalToken := sessionCfg.PersonalToken
+	var httpClient *http.Client
 
-	oauthHTTPClient := oauth2.NewClient(ctx, ts)
+	if personalToken == "" {
+		ts := NewRefreshableTokenSource(ctx, sessionCfg.GetOAuth2Config(), oauthToken, func(t *oauth2.Token) error {
+			return saveOAuthToken(profileName, t)
+		})
+		httpClient = oauth2.NewClient(ctx, ts)
+	} else {
+		httpClient = HTTPClientWithPersonalToken(personalToken)
+	}
 
 	endpointURL, err := url.Parse(sessionCfg.ApiURL)
 	if err != nil {
@@ -53,7 +64,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	adminAPIClientCfg.Scheme = endpointURL.Scheme
 	adminAPIClientCfg.Host = endpointURL.Host
 	adminAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
-	adminAPIClientCfg.HTTPClient = oauthHTTPClient
+	adminAPIClientCfg.HTTPClient = httpClient
 
 	client := apono.NewAPIClient(adminAPIClientCfg)
 	if err != nil {
@@ -64,12 +75,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, fmt.Errorf("failed to create clientapi client: %w", err)
 	}
 
-	clientAPIClientCfg := clientapi.NewConfiguration()
-	clientAPIClientCfg.Scheme = endpointURL.Scheme
-	clientAPIClientCfg.Host = endpointURL.Host
-	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
-	clientAPIClientCfg.HTTPClient = oauthHTTPClient
-	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
+	clientAPI := CreateClientAPI(endpointURL, httpClient)
 
 	return &AponoClient{
 		APIClient: client,
@@ -79,6 +85,16 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 			UserID:    sessionCfg.UserID,
 		},
 	}, nil
+}
+
+func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client) *clientapi.APIClient {
+	clientAPIClientCfg := clientapi.NewConfiguration()
+	clientAPIClientCfg.Scheme = endpointURL.Scheme
+	clientAPIClientCfg.Host = endpointURL.Host
+	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	clientAPIClientCfg.HTTPClient = httpClient
+	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
+	return clientAPI
 }
 
 func saveOAuthToken(profileName string, t *oauth2.Token) error {
@@ -91,4 +107,27 @@ func saveOAuthToken(profileName string, t *oauth2.Token) error {
 	sessionCfg.Token = *t
 	cfg.Auth.Profiles[config.ProfileName(profileName)] = sessionCfg
 	return config.Save(cfg)
+}
+
+func HTTPClientWithPersonalToken(personalToken string) *http.Client {
+	client := &http.Client{
+		Transport: &CustomHeaderTransport{
+			Transport:   http.DefaultTransport,
+			HeaderKey:   authorizationHeaderKey,
+			HeaderValue: fmt.Sprintf("Bearer %s", personalToken),
+		},
+	}
+
+	return client
+}
+
+type CustomHeaderTransport struct {
+	Transport   http.RoundTripper
+	HeaderKey   string
+	HeaderValue string
+}
+
+func (t *CustomHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set(t.HeaderKey, t.HeaderValue)
+	return t.Transport.RoundTrip(req)
 }
