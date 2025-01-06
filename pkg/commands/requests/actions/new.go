@@ -118,7 +118,6 @@ func Create() *cobra.Command {
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 	flags.DurationVarP(&cmdFlags.accessDuration, durationFlagName, "d", defaultAccessDuration, "The duration of the access request")
 
-	cmd.MarkFlagsRequiredTogether(integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName)
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
 
 	_ = cmd.RegisterFlagCompletionFunc(integrationFlagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -165,8 +164,13 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 
 	switch {
 	case flags.integrationIDOrName != "":
+		err := validateIntegrationRequestFlagCombinations(flags)
+		if err != nil {
+			return nil, err
+		}
+
 		var integration *clientapi.IntegrationClientModel
-		integration, err := services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, flags.integrationIDOrName)
+		integration, err = services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, flags.integrationIDOrName)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +193,6 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		}
 
 	case flags.bundleIDOrName != "":
-		var bundle *clientapi.BundleClientModel
 		bundle, err := services.GetBundleByNameOrID(cmd.Context(), client, flags.bundleIDOrName)
 		if err != nil {
 			return nil, err
@@ -433,6 +436,31 @@ func dryRunValidation(cmd *cobra.Command, client *aponoapi.AponoClient, flags *c
 		requestMaximumDuration := services.GetMaximumRequestDuration(dryRunResp)
 		if flags.accessDuration > requestMaximumDuration {
 			return fmt.Errorf("duration is too long, maximum duration is %.2f hours", requestMaximumDuration.Hours())
+		}
+	}
+
+	return nil
+}
+
+func validateIntegrationRequestFlagCombinations(flags *createRequestFlags) error {
+	if !flags.runInteractiveMode {
+		if flags.integrationIDOrName == "" || flags.resourceType == "" || len(flags.resourceIDs) == 0 || len(flags.permissionIDs) == 0 {
+			return fmt.Errorf(
+				"the following flags must be specified when requesting without interactive mode: --%s, --%s, --%s and --%s ",
+				integrationFlagName, resourceTypeFlagName, resourceFlagName, permissionFlagName,
+			)
+		}
+	}
+
+	if flags.integrationIDOrName == "" && flags.resourceType != "" {
+		return fmt.Errorf("flag --%s required when --%s is specified", integrationFlagName, resourceTypeFlagName)
+	}
+
+	if flags.resourceType == "" {
+		if len(flags.resourceIDs) > 0 || len(flags.permissionIDs) > 0 {
+			return fmt.Errorf("flag --%s required when one of the following flags are specified: --%s or --%s",
+				resourceTypeFlagName, resourceFlagName, permissionFlagName,
+			)
 		}
 	}
 

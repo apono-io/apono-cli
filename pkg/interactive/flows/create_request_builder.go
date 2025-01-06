@@ -125,70 +125,37 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	request := services.GetEmptyNewRequestAPIModel()
 	requestModels := &CreateAccessRequestWithFullModels{}
 
-	if integrationID == "" {
-		integration, err := selectors.RunIntegrationSelector(cmd.Context(), client)
-		if err != nil {
-			return nil, err
-		}
-
-		integrationID = integration.Id
-		requestModels.Integrations = []clientapi.IntegrationClientModel{*integration}
+	integration, err := resolveIntegration(cmd, client, integrationID)
+	if err != nil {
+		return nil, err
 	}
-	request.FilterIntegrationIds = []string{integrationID}
 
-	var allowMultiplePermissions bool
-	var resourceType *clientapi.ResourceTypeClientModel
-	if resourceTypeID == "" {
-		var err error
-		resourceType, err = selectors.RunResourceTypeSelector(cmd.Context(), client, integrationID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var err error
-		resourceType, err = services.GetResourceTypeByID(cmd.Context(), client, integrationID, resourceTypeID)
-		if err != nil {
-			return nil, err
-		}
+	resourceType, err := resolveResourceType(cmd, client, integration.Id, resourceTypeID)
+	if err != nil {
+		return nil, err
 	}
-	allowMultiplePermissions = resourceType.AllowMultiplePermissions
-	request.FilterResourceTypeIds = []string{resourceType.Id}
 
+	resources, err := resolveResources(cmd, client, integration.Id, resourceType.Id, resourceIDs)
+	if err != nil {
+		return nil, err
+	}
 	var resolvedResourceIDs []string
-	if len(resourceIDs) == 0 {
-		resources, err := selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceType.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, resource := range resources {
-			resolvedResourceIDs = append(resolvedResourceIDs, resource.Id)
-		}
-		requestModels.Resources = resources
-	} else {
-		resources, err := services.ListResourcesBySourceIDs(cmd.Context(), client, integrationID, resourceType.Id, resourceIDs)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, resource := range resources {
-			resolvedResourceIDs = append(resolvedResourceIDs, resource.Id)
-		}
-		requestModels.Resources = resources
+	for _, resource := range resources {
+		resolvedResourceIDs = append(resolvedResourceIDs, resource.Id)
 	}
+
+	permissions, err := resolvePermissions(cmd, client, integration.Id, resourceType.Id, permissionIDs, resourceType.AllowMultiplePermissions)
+	if err != nil {
+		return nil, err
+	}
+
+	requestModels.Integrations = []clientapi.IntegrationClientModel{*integration}
+	requestModels.Resources = resources
+
+	request.FilterIntegrationIds = []string{integration.Id}
+	request.FilterResourceTypeIds = []string{resourceType.Id}
 	request.FilterResources = services.ListResourceFiltersFromResourcesIDs(resolvedResourceIDs)
-
-	if len(permissionIDs) == 0 {
-		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceType.Id, allowMultiplePermissions)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, permission := range permissions {
-			permissionIDs = append(permissionIDs, permission.Id)
-		}
-	}
-	request.FilterPermissionIds = permissionIDs
+	request.FilterPermissionIds = permissions
 
 	var justificationOptional bool
 	var durationRequired bool
@@ -201,13 +168,10 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	}
 
 	if accessDuration == nil && durationRequired {
-		var newDuration *time.Duration
-		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
+		accessDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
 		if err != nil {
 			return nil, err
 		}
-
-		accessDuration = newDuration
 	}
 	if accessDuration != nil {
 		requestModels.Duration = accessDuration
@@ -215,16 +179,11 @@ func StartIntegrationRequestBuilderInteractiveMode(
 		request.DurationInSec = *clientapi.NewNullableInt32(&accessDurationInSec)
 	}
 
-	if justification == "" {
-		var newJustification string
-		newJustification, err = selectors.RunJustificationInput(justificationOptional)
-		if err != nil {
-			return nil, err
-		}
-
-		justification = newJustification
+	resolvedJustification, err := resolveJustification(justification, justificationOptional)
+	if err != nil {
+		return nil, err
 	}
-	request.Justification = *clientapi.NewNullableString(&justification)
+	request.Justification = *clientapi.NewNullableString(resolvedJustification)
 
 	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
@@ -264,6 +223,72 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 		}
 	}
 	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get(), models.Duration)
+}
+
+func resolveIntegration(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string) (*clientapi.IntegrationClientModel, error) {
+	if integrationID == "" {
+		return selectors.RunIntegrationSelector(cmd.Context(), client)
+	}
+
+	return services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationID)
+}
+
+func resolveResourceType(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string) (*clientapi.ResourceTypeClientModel, error) {
+	if resourceTypeID == "" {
+		return selectors.RunResourceTypeSelector(cmd.Context(), client, integrationID)
+	}
+
+	return services.GetResourceTypeByID(cmd.Context(), client, integrationID, resourceTypeID)
+}
+
+func resolveResources(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, resourceIDs []string) ([]clientapi.ResourceClientModel, error) {
+	if len(resourceIDs) == 0 {
+		return selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
+	}
+
+	return services.ListResourcesBySourceIDs(cmd.Context(), client, integrationID, resourceTypeID, resourceIDs)
+}
+
+func resolvePermissions(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, permissionIDs []string, allowMultiplePermissions bool) ([]string, error) {
+	if len(permissionIDs) == 0 {
+		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceTypeID, allowMultiplePermissions)
+		if err != nil {
+			return nil, err
+		}
+
+		var selectorPermissionIDs []string
+		for _, permission := range permissions {
+			selectorPermissionIDs = append(selectorPermissionIDs, permission.Id)
+		}
+
+		return selectorPermissionIDs, nil
+	}
+
+	if !allowMultiplePermissions && len(permissionIDs) > 1 {
+		return nil, fmt.Errorf("only one permission can be selected for this resource type")
+	}
+
+	return permissionIDs, nil
+}
+
+func resolveJustification(userJustification string, isJustificationOptional bool) (*string, error) {
+	var result string
+	if userJustification == "" {
+		selectorJustification, err := selectors.RunJustificationInput(isJustificationOptional)
+		if err != nil {
+			return nil, err
+		}
+
+		result = selectorJustification
+	} else {
+		result = userJustification
+	}
+
+	if result == "" {
+		return nil, nil
+	}
+
+	return &result, nil
 }
 
 func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string, duration *time.Duration) error {
