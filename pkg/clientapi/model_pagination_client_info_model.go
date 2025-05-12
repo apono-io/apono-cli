@@ -20,9 +20,10 @@ var _ MappedNullable = &PaginationClientInfoModel{}
 
 // PaginationClientInfoModel struct for PaginationClientInfoModel
 type PaginationClientInfoModel struct {
-	Limit  int32         `json:"limit"`
-	Offset int32         `json:"offset"`
-	Total  NullableInt32 `json:"total,omitempty"`
+	Limit   int32         `json:"limit"`
+	Offset  int32         `json:"offset"`
+	Total   NullableInt32 `json:"total,omitempty"`
+	HasMore NullableBool  `json:"has_more,omitempty"`
 }
 
 type _PaginationClientInfoModel PaginationClientInfoModel
@@ -137,6 +138,49 @@ func (o *PaginationClientInfoModel) UnsetTotal() {
 	o.Total.Unset()
 }
 
+// GetHasMore returns the HasMore field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *PaginationClientInfoModel) GetHasMore() bool {
+	if o == nil || IsNil(o.HasMore.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.HasMore.Get()
+}
+
+// GetHasMoreOk returns a tuple with the HasMore field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *PaginationClientInfoModel) GetHasMoreOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.HasMore.Get(), o.HasMore.IsSet()
+}
+
+// HasHasMore returns a boolean if a field has been set.
+func (o *PaginationClientInfoModel) HasHasMore() bool {
+	if o != nil && o.HasMore.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetHasMore gets a reference to the given NullableBool and assigns it to the HasMore field.
+func (o *PaginationClientInfoModel) SetHasMore(v bool) {
+	o.HasMore.Set(&v)
+}
+
+// SetHasMoreNil sets the value for HasMore to be an explicit nil
+func (o *PaginationClientInfoModel) SetHasMoreNil() {
+	o.HasMore.Set(nil)
+}
+
+// UnsetHasMore ensures that no value is present for HasMore, not even an explicit nil
+func (o *PaginationClientInfoModel) UnsetHasMore() {
+	o.HasMore.Unset()
+}
+
 func (o PaginationClientInfoModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -151,6 +195,9 @@ func (o PaginationClientInfoModel) ToMap() (map[string]interface{}, error) {
 	toSerialize["offset"] = o.Offset
 	if o.Total.IsSet() {
 		toSerialize["total"] = o.Total.Get()
+	}
+	if o.HasMore.IsSet() {
+		toSerialize["has_more"] = o.HasMore.Get()
 	}
 	return toSerialize, nil
 }

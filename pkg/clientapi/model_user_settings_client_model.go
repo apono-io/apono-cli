@@ -20,7 +20,10 @@ var _ MappedNullable = &UserSettingsClientModel{}
 
 // UserSettingsClientModel struct for UserSettingsClientModel
 type UserSettingsClientModel struct {
-	RequireDurationForAccessRequest bool `json:"require_duration_for_access_request"`
+	RequireDurationForAccessRequest bool                      `json:"require_duration_for_access_request"`
+	MfaEnabledForAccount            bool                      `json:"mfa_enabled_for_account"`
+	RequestCustomFields             []RequestCustomFieldModel `json:"request_custom_fields"`
+	LogoutRedirectUrl               NullableString            `json:"logout_redirect_url,omitempty"`
 }
 
 type _UserSettingsClientModel UserSettingsClientModel
@@ -29,9 +32,11 @@ type _UserSettingsClientModel UserSettingsClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewUserSettingsClientModel(requireDurationForAccessRequest bool) *UserSettingsClientModel {
+func NewUserSettingsClientModel(requireDurationForAccessRequest bool, mfaEnabledForAccount bool, requestCustomFields []RequestCustomFieldModel) *UserSettingsClientModel {
 	this := UserSettingsClientModel{}
 	this.RequireDurationForAccessRequest = requireDurationForAccessRequest
+	this.MfaEnabledForAccount = mfaEnabledForAccount
+	this.RequestCustomFields = requestCustomFields
 	return &this
 }
 
@@ -67,6 +72,97 @@ func (o *UserSettingsClientModel) SetRequireDurationForAccessRequest(v bool) {
 	o.RequireDurationForAccessRequest = v
 }
 
+// GetMfaEnabledForAccount returns the MfaEnabledForAccount field value
+func (o *UserSettingsClientModel) GetMfaEnabledForAccount() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.MfaEnabledForAccount
+}
+
+// GetMfaEnabledForAccountOk returns a tuple with the MfaEnabledForAccount field value
+// and a boolean to check if the value has been set.
+func (o *UserSettingsClientModel) GetMfaEnabledForAccountOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.MfaEnabledForAccount, true
+}
+
+// SetMfaEnabledForAccount sets field value
+func (o *UserSettingsClientModel) SetMfaEnabledForAccount(v bool) {
+	o.MfaEnabledForAccount = v
+}
+
+// GetRequestCustomFields returns the RequestCustomFields field value
+func (o *UserSettingsClientModel) GetRequestCustomFields() []RequestCustomFieldModel {
+	if o == nil {
+		var ret []RequestCustomFieldModel
+		return ret
+	}
+
+	return o.RequestCustomFields
+}
+
+// GetRequestCustomFieldsOk returns a tuple with the RequestCustomFields field value
+// and a boolean to check if the value has been set.
+func (o *UserSettingsClientModel) GetRequestCustomFieldsOk() ([]RequestCustomFieldModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.RequestCustomFields, true
+}
+
+// SetRequestCustomFields sets field value
+func (o *UserSettingsClientModel) SetRequestCustomFields(v []RequestCustomFieldModel) {
+	o.RequestCustomFields = v
+}
+
+// GetLogoutRedirectUrl returns the LogoutRedirectUrl field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *UserSettingsClientModel) GetLogoutRedirectUrl() string {
+	if o == nil || IsNil(o.LogoutRedirectUrl.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.LogoutRedirectUrl.Get()
+}
+
+// GetLogoutRedirectUrlOk returns a tuple with the LogoutRedirectUrl field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *UserSettingsClientModel) GetLogoutRedirectUrlOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.LogoutRedirectUrl.Get(), o.LogoutRedirectUrl.IsSet()
+}
+
+// HasLogoutRedirectUrl returns a boolean if a field has been set.
+func (o *UserSettingsClientModel) HasLogoutRedirectUrl() bool {
+	if o != nil && o.LogoutRedirectUrl.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetLogoutRedirectUrl gets a reference to the given NullableString and assigns it to the LogoutRedirectUrl field.
+func (o *UserSettingsClientModel) SetLogoutRedirectUrl(v string) {
+	o.LogoutRedirectUrl.Set(&v)
+}
+
+// SetLogoutRedirectUrlNil sets the value for LogoutRedirectUrl to be an explicit nil
+func (o *UserSettingsClientModel) SetLogoutRedirectUrlNil() {
+	o.LogoutRedirectUrl.Set(nil)
+}
+
+// UnsetLogoutRedirectUrl ensures that no value is present for LogoutRedirectUrl, not even an explicit nil
+func (o *UserSettingsClientModel) UnsetLogoutRedirectUrl() {
+	o.LogoutRedirectUrl.Unset()
+}
+
 func (o UserSettingsClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -78,6 +174,11 @@ func (o UserSettingsClientModel) MarshalJSON() ([]byte, error) {
 func (o UserSettingsClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["require_duration_for_access_request"] = o.RequireDurationForAccessRequest
+	toSerialize["mfa_enabled_for_account"] = o.MfaEnabledForAccount
+	toSerialize["request_custom_fields"] = o.RequestCustomFields
+	if o.LogoutRedirectUrl.IsSet() {
+		toSerialize["logout_redirect_url"] = o.LogoutRedirectUrl.Get()
+	}
 	return toSerialize, nil
 }
 
@@ -87,6 +188,8 @@ func (o *UserSettingsClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"require_duration_for_access_request",
+		"mfa_enabled_for_account",
+		"request_custom_fields",
 	}
 
 	allProperties := make(map[string]interface{})
