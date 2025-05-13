@@ -62,7 +62,7 @@ func ListResources(ctx context.Context, client *aponoapi.AponoClient, integratio
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.ResourceClientModel, *clientapi.PaginationClientInfoModel, error) {
 		resourcesRequest := client.ClientAPI.InventoryAPI.ListResources(ctx).
 			IntegrationId(integrationID).
-			ResourceTypeId(resourceType).
+			ResourceTypeId([]string{resourceType}).
 			Skip(skip).
 			Limit(resourcesAPIPageSize)
 
