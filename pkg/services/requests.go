@@ -286,6 +286,15 @@ func DryRunRequest(ctx context.Context, client *aponoapi.AponoClient, request *c
 	return dryRunResponse, err
 }
 
+func GetRequestCustomFields(ctx context.Context, client *aponoapi.AponoClient) ([]clientapi.RequestCustomFieldModel, error) {
+	userSession, _, err := client.ClientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	return userSession.Settings.RequestCustomFields, nil
+}
+
 func IsJustificationOptionalForRequest(dryRunResponse *clientapi.DryRunClientResponse) bool {
 	if dryRunResponse == nil {
 		return false

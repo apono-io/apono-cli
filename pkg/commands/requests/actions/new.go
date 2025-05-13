@@ -44,6 +44,7 @@ type createRequestFlags struct {
 	noWait              bool
 	timeout             time.Duration
 	output              utils.Format
+	customFields        []string
 }
 
 func Create() *cobra.Command {
@@ -117,6 +118,7 @@ func Create() *cobra.Command {
 	flags.BoolVar(&cmdFlags.noWait, noWaitFlagName, false, "Dont wait for the request to be granted")
 	flags.DurationVar(&cmdFlags.timeout, timeoutFlagName, defaultWaitTimeForNewRequest, "Timeout for waiting for the request to be granted")
 	flags.DurationVarP(&cmdFlags.accessDuration, durationFlagName, "d", defaultAccessDuration, "The duration of the access request")
+	flags.StringSliceVar(&cmdFlags.customFields, "custom-field", []string{}, "Custom field values in format 'field-id=value'")
 
 	cmd.MarkFlagsMutuallyExclusive(bundleFlagName, integrationFlagName)
 
@@ -143,6 +145,24 @@ func Create() *cobra.Command {
 	return cmd
 }
 
+func parseCustomFields(fields []string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid custom field format: %s (expected 'field-id=value')", field)
+		}
+
+		fieldID := strings.TrimSpace(parts[0])
+		fieldValue := strings.TrimSpace(parts[1])
+
+		result[fieldID] = fieldValue
+	}
+
+	return result, nil
+}
+
 func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.AponoClient, flags *createRequestFlags) (*clientapi.CreateAccessRequestClientModel, error) {
 	req := services.GetEmptyNewRequestAPIModel()
 
@@ -161,6 +181,13 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		durationInSec := int32(flags.accessDuration.Seconds())
 		req.DurationInSec = *clientapi.NewNullableInt32(&durationInSec)
 	}
+
+	customFieldValues, err := parseCustomFields(flags.customFields)
+	if err != nil {
+		return nil, err
+	}
+
+	req.CustomFields = customFieldValues
 
 	switch {
 	case flags.integrationIDOrName != "":

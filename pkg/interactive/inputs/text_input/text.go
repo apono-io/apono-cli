@@ -78,11 +78,16 @@ func (m model) View() string {
 	)
 }
 
-func initialModel(title string, placeholder string, optional bool) model {
+func initialModel(title string, placeholder string, optional bool, initialValue string) model {
 	ti := textinput.New()
 	ti.Focus()
 	ti.Placeholder = placeholder
 	ti.Width = inputWidth
+
+	if initialValue != "" {
+		ti.SetValue(initialValue)
+		ti.CursorEnd()
+	}
 
 	return model{
 		textInput: ti,
@@ -93,7 +98,12 @@ func initialModel(title string, placeholder string, optional bool) model {
 }
 
 func LaunchTextInput(input TextInput) (string, error) {
-	result, err := tea.NewProgram(initialModel(input.Title, input.Placeholder, input.Optional)).Run()
+	result, err := tea.NewProgram(initialModel(
+		input.Title,
+		input.Placeholder,
+		input.Optional,
+		input.InitialValue,
+	)).Run()
 	if err != nil {
 		return "", err
 	}
