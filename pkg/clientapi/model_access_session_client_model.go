@@ -20,14 +20,15 @@ var _ MappedNullable = &AccessSessionClientModel{}
 
 // AccessSessionClientModel struct for AccessSessionClientModel
 type AccessSessionClientModel struct {
-	Id                 string                                      `json:"id"`
-	Name               string                                      `json:"name"`
-	Type               SessionTypeClientModel                      `json:"type"`
-	Integration        IntegrationClientModel                      `json:"integration"`
-	Credentials        NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
-	ConnectionMethods  []string                                    `json:"connection_methods"`
-	Status             string                                      `json:"status"`
-	HasMoreAccessUnits bool                                        `json:"has_more_access_units"`
+	Id                   string                                      `json:"id"`
+	Name                 string                                      `json:"name"`
+	Type                 SessionTypeClientModel                      `json:"type"`
+	Integration          IntegrationClientModel                      `json:"integration"`
+	Credentials          NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
+	ConnectionMethods    []string                                    `json:"connection_methods"`
+	Status               string                                      `json:"status"`
+	HasMoreAccessUnits   bool                                        `json:"has_more_access_units"`
+	HasLinkAccessDetails NullableBool                                `json:"has_link_access_details,omitempty"`
 }
 
 type _AccessSessionClientModel AccessSessionClientModel
@@ -267,6 +268,49 @@ func (o *AccessSessionClientModel) SetHasMoreAccessUnits(v bool) {
 	o.HasMoreAccessUnits = v
 }
 
+// GetHasLinkAccessDetails returns the HasLinkAccessDetails field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionClientModel) GetHasLinkAccessDetails() bool {
+	if o == nil || IsNil(o.HasLinkAccessDetails.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.HasLinkAccessDetails.Get()
+}
+
+// GetHasLinkAccessDetailsOk returns a tuple with the HasLinkAccessDetails field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessSessionClientModel) GetHasLinkAccessDetailsOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.HasLinkAccessDetails.Get(), o.HasLinkAccessDetails.IsSet()
+}
+
+// HasHasLinkAccessDetails returns a boolean if a field has been set.
+func (o *AccessSessionClientModel) HasHasLinkAccessDetails() bool {
+	if o != nil && o.HasLinkAccessDetails.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetHasLinkAccessDetails gets a reference to the given NullableBool and assigns it to the HasLinkAccessDetails field.
+func (o *AccessSessionClientModel) SetHasLinkAccessDetails(v bool) {
+	o.HasLinkAccessDetails.Set(&v)
+}
+
+// SetHasLinkAccessDetailsNil sets the value for HasLinkAccessDetails to be an explicit nil
+func (o *AccessSessionClientModel) SetHasLinkAccessDetailsNil() {
+	o.HasLinkAccessDetails.Set(nil)
+}
+
+// UnsetHasLinkAccessDetails ensures that no value is present for HasLinkAccessDetails, not even an explicit nil
+func (o *AccessSessionClientModel) UnsetHasLinkAccessDetails() {
+	o.HasLinkAccessDetails.Unset()
+}
+
 func (o AccessSessionClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -287,6 +331,9 @@ func (o AccessSessionClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize["connection_methods"] = o.ConnectionMethods
 	toSerialize["status"] = o.Status
 	toSerialize["has_more_access_units"] = o.HasMoreAccessUnits
+	if o.HasLinkAccessDetails.IsSet() {
+		toSerialize["has_link_access_details"] = o.HasLinkAccessDetails.Get()
+	}
 	return toSerialize, nil
 }
 

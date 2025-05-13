@@ -20,7 +20,9 @@ var _ MappedNullable = &RequestAgainClientModel{}
 
 // RequestAgainClientModel struct for RequestAgainClientModel
 type RequestAgainClientModel struct {
-	Justification string `json:"justification"`
+	Justification             string            `json:"justification"`
+	CustomFields              map[string]string `json:"custom_fields,omitempty"`
+	RunPreApprovalValidations NullableBool      `json:"run_pre_approval_validations,omitempty"`
 }
 
 type _RequestAgainClientModel RequestAgainClientModel
@@ -67,6 +69,82 @@ func (o *RequestAgainClientModel) SetJustification(v string) {
 	o.Justification = v
 }
 
+// GetCustomFields returns the CustomFields field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *RequestAgainClientModel) GetCustomFields() map[string]string {
+	if o == nil {
+		var ret map[string]string
+		return ret
+	}
+	return o.CustomFields
+}
+
+// GetCustomFieldsOk returns a tuple with the CustomFields field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *RequestAgainClientModel) GetCustomFieldsOk() (*map[string]string, bool) {
+	if o == nil || IsNil(o.CustomFields) {
+		return nil, false
+	}
+	return &o.CustomFields, true
+}
+
+// HasCustomFields returns a boolean if a field has been set.
+func (o *RequestAgainClientModel) HasCustomFields() bool {
+	if o != nil && IsNil(o.CustomFields) {
+		return true
+	}
+
+	return false
+}
+
+// SetCustomFields gets a reference to the given map[string]string and assigns it to the CustomFields field.
+func (o *RequestAgainClientModel) SetCustomFields(v map[string]string) {
+	o.CustomFields = v
+}
+
+// GetRunPreApprovalValidations returns the RunPreApprovalValidations field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *RequestAgainClientModel) GetRunPreApprovalValidations() bool {
+	if o == nil || IsNil(o.RunPreApprovalValidations.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.RunPreApprovalValidations.Get()
+}
+
+// GetRunPreApprovalValidationsOk returns a tuple with the RunPreApprovalValidations field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *RequestAgainClientModel) GetRunPreApprovalValidationsOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.RunPreApprovalValidations.Get(), o.RunPreApprovalValidations.IsSet()
+}
+
+// HasRunPreApprovalValidations returns a boolean if a field has been set.
+func (o *RequestAgainClientModel) HasRunPreApprovalValidations() bool {
+	if o != nil && o.RunPreApprovalValidations.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetRunPreApprovalValidations gets a reference to the given NullableBool and assigns it to the RunPreApprovalValidations field.
+func (o *RequestAgainClientModel) SetRunPreApprovalValidations(v bool) {
+	o.RunPreApprovalValidations.Set(&v)
+}
+
+// SetRunPreApprovalValidationsNil sets the value for RunPreApprovalValidations to be an explicit nil
+func (o *RequestAgainClientModel) SetRunPreApprovalValidationsNil() {
+	o.RunPreApprovalValidations.Set(nil)
+}
+
+// UnsetRunPreApprovalValidations ensures that no value is present for RunPreApprovalValidations, not even an explicit nil
+func (o *RequestAgainClientModel) UnsetRunPreApprovalValidations() {
+	o.RunPreApprovalValidations.Unset()
+}
+
 func (o RequestAgainClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -78,6 +156,12 @@ func (o RequestAgainClientModel) MarshalJSON() ([]byte, error) {
 func (o RequestAgainClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["justification"] = o.Justification
+	if o.CustomFields != nil {
+		toSerialize["custom_fields"] = o.CustomFields
+	}
+	if o.RunPreApprovalValidations.IsSet() {
+		toSerialize["run_pre_approval_validations"] = o.RunPreApprovalValidations.Get()
+	}
 	return toSerialize, nil
 }
 

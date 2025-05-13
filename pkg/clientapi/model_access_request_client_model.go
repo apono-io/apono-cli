@@ -20,16 +20,19 @@ var _ MappedNullable = &AccessRequestClientModel{}
 
 // AccessRequestClientModel struct for AccessRequestClientModel
 type AccessRequestClientModel struct {
-	Id             string                                    `json:"id"`
-	Requestor      UserClientModel                           `json:"requestor"`
-	CreationTime   float64                                   `json:"creation_time"`
-	RevocationTime NullableFloat64                           `json:"revocation_time,omitempty"`
-	Status         RequestStatusClientModel                  `json:"status"`
-	Justification  NullableString                            `json:"justification,omitempty"`
-	AccessGroups   []AccessGroupClientModel                  `json:"access_groups"`
-	Bundle         NullableAccessRequestClientModelBundle    `json:"bundle,omitempty"`
-	Challenge      NullableAccessRequestClientModelChallenge `json:"challenge,omitempty"`
-	DurationInSec  NullableInt32                             `json:"duration_in_sec,omitempty"`
+	Id                    string                                    `json:"id"`
+	Requestor             UserClientModel                           `json:"requestor"`
+	CreationTime          float64                                   `json:"creation_time"`
+	RevocationTime        NullableFloat64                           `json:"revocation_time,omitempty"`
+	Status                RequestStatusClientModel                  `json:"status"`
+	Justification         NullableString                            `json:"justification,omitempty"`
+	AccessGroups          []AccessGroupClientModel                  `json:"access_groups"`
+	Bundle                NullableAccessRequestClientModelBundle    `json:"bundle,omitempty"`
+	Challenge             NullableAccessRequestClientModelChallenge `json:"challenge,omitempty"`
+	DurationInSec         NullableInt32                             `json:"duration_in_sec,omitempty"`
+	CustomFields          map[string]string                         `json:"custom_fields,omitempty"`
+	RequireApproverReason NullableBool                              `json:"require_approver_reason,omitempty"`
+	Favorite              NullableBool                              `json:"favorite,omitempty"`
 }
 
 type _AccessRequestClientModel AccessRequestClientModel
@@ -391,6 +394,125 @@ func (o *AccessRequestClientModel) UnsetDurationInSec() {
 	o.DurationInSec.Unset()
 }
 
+// GetCustomFields returns the CustomFields field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetCustomFields() map[string]string {
+	if o == nil {
+		var ret map[string]string
+		return ret
+	}
+	return o.CustomFields
+}
+
+// GetCustomFieldsOk returns a tuple with the CustomFields field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetCustomFieldsOk() (*map[string]string, bool) {
+	if o == nil || IsNil(o.CustomFields) {
+		return nil, false
+	}
+	return &o.CustomFields, true
+}
+
+// HasCustomFields returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasCustomFields() bool {
+	if o != nil && IsNil(o.CustomFields) {
+		return true
+	}
+
+	return false
+}
+
+// SetCustomFields gets a reference to the given map[string]string and assigns it to the CustomFields field.
+func (o *AccessRequestClientModel) SetCustomFields(v map[string]string) {
+	o.CustomFields = v
+}
+
+// GetRequireApproverReason returns the RequireApproverReason field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetRequireApproverReason() bool {
+	if o == nil || IsNil(o.RequireApproverReason.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.RequireApproverReason.Get()
+}
+
+// GetRequireApproverReasonOk returns a tuple with the RequireApproverReason field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetRequireApproverReasonOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.RequireApproverReason.Get(), o.RequireApproverReason.IsSet()
+}
+
+// HasRequireApproverReason returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasRequireApproverReason() bool {
+	if o != nil && o.RequireApproverReason.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetRequireApproverReason gets a reference to the given NullableBool and assigns it to the RequireApproverReason field.
+func (o *AccessRequestClientModel) SetRequireApproverReason(v bool) {
+	o.RequireApproverReason.Set(&v)
+}
+
+// SetRequireApproverReasonNil sets the value for RequireApproverReason to be an explicit nil
+func (o *AccessRequestClientModel) SetRequireApproverReasonNil() {
+	o.RequireApproverReason.Set(nil)
+}
+
+// UnsetRequireApproverReason ensures that no value is present for RequireApproverReason, not even an explicit nil
+func (o *AccessRequestClientModel) UnsetRequireApproverReason() {
+	o.RequireApproverReason.Unset()
+}
+
+// GetFavorite returns the Favorite field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetFavorite() bool {
+	if o == nil || IsNil(o.Favorite.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.Favorite.Get()
+}
+
+// GetFavoriteOk returns a tuple with the Favorite field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetFavoriteOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Favorite.Get(), o.Favorite.IsSet()
+}
+
+// HasFavorite returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasFavorite() bool {
+	if o != nil && o.Favorite.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetFavorite gets a reference to the given NullableBool and assigns it to the Favorite field.
+func (o *AccessRequestClientModel) SetFavorite(v bool) {
+	o.Favorite.Set(&v)
+}
+
+// SetFavoriteNil sets the value for Favorite to be an explicit nil
+func (o *AccessRequestClientModel) SetFavoriteNil() {
+	o.Favorite.Set(nil)
+}
+
+// UnsetFavorite ensures that no value is present for Favorite, not even an explicit nil
+func (o *AccessRequestClientModel) UnsetFavorite() {
+	o.Favorite.Unset()
+}
+
 func (o AccessRequestClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -420,6 +542,15 @@ func (o AccessRequestClientModel) ToMap() (map[string]interface{}, error) {
 	}
 	if o.DurationInSec.IsSet() {
 		toSerialize["duration_in_sec"] = o.DurationInSec.Get()
+	}
+	if o.CustomFields != nil {
+		toSerialize["custom_fields"] = o.CustomFields
+	}
+	if o.RequireApproverReason.IsSet() {
+		toSerialize["require_approver_reason"] = o.RequireApproverReason.Get()
+	}
+	if o.Favorite.IsSet() {
+		toSerialize["favorite"] = o.Favorite.Get()
 	}
 	return toSerialize, nil
 }

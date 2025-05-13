@@ -249,10 +249,16 @@ type ApiDryRunCreateUserAccessRequestRequest struct {
 	ctx                            context.Context
 	ApiService                     *AccessRequestsAPIService
 	createAccessRequestClientModel *CreateAccessRequestClientModel
+	resourceTypeOnlyMode           *bool
 }
 
 func (r ApiDryRunCreateUserAccessRequestRequest) CreateAccessRequestClientModel(createAccessRequestClientModel CreateAccessRequestClientModel) ApiDryRunCreateUserAccessRequestRequest {
 	r.createAccessRequestClientModel = &createAccessRequestClientModel
+	return r
+}
+
+func (r ApiDryRunCreateUserAccessRequestRequest) ResourceTypeOnlyMode(resourceTypeOnlyMode bool) ApiDryRunCreateUserAccessRequestRequest {
+	r.resourceTypeOnlyMode = &resourceTypeOnlyMode
 	return r
 }
 
@@ -298,6 +304,12 @@ func (a *AccessRequestsAPIService) DryRunCreateUserAccessRequestExecute(r ApiDry
 		return localVarReturnValue, nil, reportError("createAccessRequestClientModel is required and must be specified")
 	}
 
+	if r.resourceTypeOnlyMode != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "resource_type_only_mode", r.resourceTypeOnlyMode, "")
+	} else {
+		var defaultValue bool = false
+		r.resourceTypeOnlyMode = &defaultValue
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{"application/json"}
 
@@ -460,6 +472,7 @@ type ApiListAccessRequestsRequest struct {
 	ctx              context.Context
 	ApiService       *AccessRequestsAPIService
 	scope            *AccessRequestsScopeModel
+	favoriteOnly     *bool
 	includeAutogrant *bool
 	limit            *int32
 	requestIds       *[]string
@@ -469,6 +482,11 @@ type ApiListAccessRequestsRequest struct {
 
 func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiListAccessRequestsRequest {
 	r.scope = &scope
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) FavoriteOnly(favoriteOnly bool) ApiListAccessRequestsRequest {
+	r.favoriteOnly = &favoriteOnly
 	return r
 }
 
@@ -539,6 +557,12 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 		return localVarReturnValue, nil, reportError("scope is required and must be specified")
 	}
 
+	if r.favoriteOnly != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "favorite_only", r.favoriteOnly, "")
+	} else {
+		var defaultValue bool = false
+		r.favoriteOnly = &defaultValue
+	}
 	if r.includeAutogrant != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "include_autogrant", r.includeAutogrant, "")
 	} else {
@@ -580,6 +604,104 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 			parameterAddToHeaderOrQuery(localVarQueryParams, "statuses", t, "multi")
 		}
 	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiPassMfaForAccessRequestsRequest struct {
+	ctx        context.Context
+	ApiService *AccessRequestsAPIService
+}
+
+func (r ApiPassMfaForAccessRequestsRequest) Execute() (*PassMfaClientResponse, *http.Response, error) {
+	return r.ApiService.PassMfaForAccessRequestsExecute(r)
+}
+
+/*
+PassMfaForAccessRequests Method for PassMfaForAccessRequests
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiPassMfaForAccessRequestsRequest
+*/
+func (a *AccessRequestsAPIService) PassMfaForAccessRequests(ctx context.Context) ApiPassMfaForAccessRequestsRequest {
+	return ApiPassMfaForAccessRequestsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return PassMfaClientResponse
+func (a *AccessRequestsAPIService) PassMfaForAccessRequestsExecute(r ApiPassMfaForAccessRequestsRequest) (*PassMfaClientResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *PassMfaClientResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.PassMfaForAccessRequests")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-requests/pass-mfa"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -925,6 +1047,119 @@ func (a *AccessRequestsAPIService) RevokeAccessRequestExecute(r ApiRevokeAccessR
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiUpdateFavoriteStateRequest struct {
+	ctx                             context.Context
+	ApiService                      *AccessRequestsAPIService
+	id                              string
+	updateRequestFavoriteStateModel *UpdateRequestFavoriteStateModel
+}
+
+func (r ApiUpdateFavoriteStateRequest) UpdateRequestFavoriteStateModel(updateRequestFavoriteStateModel UpdateRequestFavoriteStateModel) ApiUpdateFavoriteStateRequest {
+	r.updateRequestFavoriteStateModel = &updateRequestFavoriteStateModel
+	return r
+}
+
+func (r ApiUpdateFavoriteStateRequest) Execute() (*AccessRequestClientModel, *http.Response, error) {
+	return r.ApiService.UpdateFavoriteStateExecute(r)
+}
+
+/*
+UpdateFavoriteState Update access request favorite state
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param id
+	@return ApiUpdateFavoriteStateRequest
+*/
+func (a *AccessRequestsAPIService) UpdateFavoriteState(ctx context.Context, id string) ApiUpdateFavoriteStateRequest {
+	return ApiUpdateFavoriteStateRequest{
+		ApiService: a,
+		ctx:        ctx,
+		id:         id,
+	}
+}
+
+// Execute executes the request
+//
+//	@return AccessRequestClientModel
+func (a *AccessRequestsAPIService) UpdateFavoriteStateExecute(r ApiUpdateFavoriteStateRequest) (*AccessRequestClientModel, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *AccessRequestClientModel
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.UpdateFavoriteState")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-requests/{id}/favorite"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.updateRequestFavoriteStateModel == nil {
+		return localVarReturnValue, nil, reportError("updateRequestFavoriteStateModel is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.updateRequestFavoriteStateModel
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err

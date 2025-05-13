@@ -20,15 +20,17 @@ var _ MappedNullable = &CreateAccessRequestClientModel{}
 
 // CreateAccessRequestClientModel struct for CreateAccessRequestClientModel
 type CreateAccessRequestClientModel struct {
-	FilterIntegrationIds  []string         `json:"filter_integration_ids"`
-	FilterBundleIds       []string         `json:"filter_bundle_ids"`
-	FilterResourceTypeIds []string         `json:"filter_resource_type_ids"`
-	FilterResourceIds     []string         `json:"filter_resource_ids"`
-	FilterResources       []ResourceFilter `json:"filter_resources"`
-	FilterPermissionIds   []string         `json:"filter_permission_ids"`
-	FilterAccessUnitIds   []string         `json:"filter_access_unit_ids"`
-	Justification         NullableString   `json:"justification,omitempty"`
-	DurationInSec         NullableInt32    `json:"duration_in_sec,omitempty"`
+	FilterIntegrationIds      []string          `json:"filter_integration_ids"`
+	FilterBundleIds           []string          `json:"filter_bundle_ids"`
+	FilterResourceTypeIds     []string          `json:"filter_resource_type_ids"`
+	FilterResourceIds         []string          `json:"filter_resource_ids"`
+	FilterResources           []ResourceFilter  `json:"filter_resources"`
+	FilterPermissionIds       []string          `json:"filter_permission_ids"`
+	FilterAccessUnitIds       []string          `json:"filter_access_unit_ids"`
+	Justification             NullableString    `json:"justification,omitempty"`
+	DurationInSec             NullableInt32     `json:"duration_in_sec,omitempty"`
+	CustomFields              map[string]string `json:"custom_fields,omitempty"`
+	RunPreApprovalValidations NullableBool      `json:"run_pre_approval_validations,omitempty"`
 }
 
 type _CreateAccessRequestClientModel CreateAccessRequestClientModel
@@ -311,6 +313,82 @@ func (o *CreateAccessRequestClientModel) UnsetDurationInSec() {
 	o.DurationInSec.Unset()
 }
 
+// GetCustomFields returns the CustomFields field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CreateAccessRequestClientModel) GetCustomFields() map[string]string {
+	if o == nil {
+		var ret map[string]string
+		return ret
+	}
+	return o.CustomFields
+}
+
+// GetCustomFieldsOk returns a tuple with the CustomFields field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CreateAccessRequestClientModel) GetCustomFieldsOk() (*map[string]string, bool) {
+	if o == nil || IsNil(o.CustomFields) {
+		return nil, false
+	}
+	return &o.CustomFields, true
+}
+
+// HasCustomFields returns a boolean if a field has been set.
+func (o *CreateAccessRequestClientModel) HasCustomFields() bool {
+	if o != nil && IsNil(o.CustomFields) {
+		return true
+	}
+
+	return false
+}
+
+// SetCustomFields gets a reference to the given map[string]string and assigns it to the CustomFields field.
+func (o *CreateAccessRequestClientModel) SetCustomFields(v map[string]string) {
+	o.CustomFields = v
+}
+
+// GetRunPreApprovalValidations returns the RunPreApprovalValidations field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CreateAccessRequestClientModel) GetRunPreApprovalValidations() bool {
+	if o == nil || IsNil(o.RunPreApprovalValidations.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.RunPreApprovalValidations.Get()
+}
+
+// GetRunPreApprovalValidationsOk returns a tuple with the RunPreApprovalValidations field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CreateAccessRequestClientModel) GetRunPreApprovalValidationsOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.RunPreApprovalValidations.Get(), o.RunPreApprovalValidations.IsSet()
+}
+
+// HasRunPreApprovalValidations returns a boolean if a field has been set.
+func (o *CreateAccessRequestClientModel) HasRunPreApprovalValidations() bool {
+	if o != nil && o.RunPreApprovalValidations.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetRunPreApprovalValidations gets a reference to the given NullableBool and assigns it to the RunPreApprovalValidations field.
+func (o *CreateAccessRequestClientModel) SetRunPreApprovalValidations(v bool) {
+	o.RunPreApprovalValidations.Set(&v)
+}
+
+// SetRunPreApprovalValidationsNil sets the value for RunPreApprovalValidations to be an explicit nil
+func (o *CreateAccessRequestClientModel) SetRunPreApprovalValidationsNil() {
+	o.RunPreApprovalValidations.Set(nil)
+}
+
+// UnsetRunPreApprovalValidations ensures that no value is present for RunPreApprovalValidations, not even an explicit nil
+func (o *CreateAccessRequestClientModel) UnsetRunPreApprovalValidations() {
+	o.RunPreApprovalValidations.Unset()
+}
+
 func (o CreateAccessRequestClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -333,6 +411,12 @@ func (o CreateAccessRequestClientModel) ToMap() (map[string]interface{}, error) 
 	}
 	if o.DurationInSec.IsSet() {
 		toSerialize["duration_in_sec"] = o.DurationInSec.Get()
+	}
+	if o.CustomFields != nil {
+		toSerialize["custom_fields"] = o.CustomFields
+	}
+	if o.RunPreApprovalValidations.IsSet() {
+		toSerialize["run_pre_approval_validations"] = o.RunPreApprovalValidations.Get()
 	}
 	return toSerialize, nil
 }

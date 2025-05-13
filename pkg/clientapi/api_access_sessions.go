@@ -129,7 +129,13 @@ type ApiGetAccessSessionAccessDetailsRequest struct {
 	ctx        context.Context
 	ApiService *AccessSessionsAPIService
 	id         string
+	formatType *string
 	aponoSec   *map[string]interface{}
+}
+
+func (r ApiGetAccessSessionAccessDetailsRequest) FormatType(formatType string) ApiGetAccessSessionAccessDetailsRequest {
+	r.formatType = &formatType
+	return r
 }
 
 func (r ApiGetAccessSessionAccessDetailsRequest) AponoSec(aponoSec map[string]interface{}) ApiGetAccessSessionAccessDetailsRequest {
@@ -179,6 +185,9 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGet
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.formatType != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "format_type", r.formatType, "")
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
