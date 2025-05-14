@@ -104,6 +104,18 @@ func StartBundleRequestBuilderInteractiveMode(
 	}
 	request.Justification = *clientapi.NewNullableString(&justification)
 
+	requestCustomFields, err := services.GetRequestCustomFields(cmd.Context(), client)
+	if err != nil {
+		return nil, err
+	}
+
+	customFieldValues, err := selectors.RunCustomFieldsInputs(requestCustomFields)
+	if err != nil {
+		return nil, err
+	}
+
+	request.CustomFields = customFieldValues
+
 	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
 		return nil, err
@@ -185,6 +197,18 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	}
 	request.Justification = *clientapi.NewNullableString(resolvedJustification)
 
+	requestCustomFields, err := services.GetRequestCustomFields(cmd.Context(), client)
+	if err != nil {
+		return nil, err
+	}
+
+	customFieldValues, err := selectors.RunCustomFieldsInputs(requestCustomFields)
+	if err != nil {
+		return nil, err
+	}
+
+	request.CustomFields = customFieldValues
+
 	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
 		return nil, err
@@ -202,7 +226,7 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			bundleFlagValue = request.FilterBundleIds[0]
 		}
 
-		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification.Get(), models.Duration)
+		return printCreateBundleRequestCommand(cmd, bundleFlagValue, request.Justification.Get(), models.Duration, request.CustomFields)
 	}
 
 	var integrationFlagValue string
@@ -222,7 +246,7 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 			resourcesFlagValues = append(resourcesFlagValues, resourceFilter.Value)
 		}
 	}
-	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get(), models.Duration)
+	return printCreateIntegrationRequestCommand(cmd, integrationFlagValue, request.FilterResourceTypeIds[0], resourcesFlagValues, request.FilterPermissionIds, request.Justification.Get(), models.Duration, request.CustomFields)
 }
 
 func resolveIntegration(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string) (*clientapi.IntegrationClientModel, error) {
@@ -291,7 +315,7 @@ func resolveJustification(userJustification string, isJustificationOptional bool
 	return &result, nil
 }
 
-func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string, duration *time.Duration) error {
+func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string, resourceType string, resourceIDs []string, permissionIDs []string, justification *string, duration *time.Duration, customFields map[string]string) error {
 	createCommand := fmt.Sprintf("apono requests create --integration \"%s\" --resource-type \"%s\"", integration, resourceType)
 
 	var permissionFlags []string
@@ -314,6 +338,10 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
 	}
 
+	for id, value := range customFields {
+		createCommand += fmt.Sprintf(" --custom-field \"%s=%s\"", id, value)
+	}
+
 	err := printCreateCommand(cmd, createCommand)
 	if err != nil {
 		return err
@@ -322,13 +350,17 @@ func printCreateIntegrationRequestCommand(cmd *cobra.Command, integration string
 	return nil
 }
 
-func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification *string, duration *time.Duration) error {
+func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justification *string, duration *time.Duration, customFields map[string]string) error {
 	createCommand := fmt.Sprintf("apono requests create --bundle \"%s\"", bundle)
 	if duration != nil {
 		createCommand += fmt.Sprintf(" --duration %s", duration)
 	}
 	if justification != nil && *justification != "" {
 		createCommand += fmt.Sprintf(" --justification \"%s\"", *justification)
+	}
+
+	for id, value := range customFields {
+		createCommand += fmt.Sprintf(" --custom-field \"%s=%s\"", id, value)
 	}
 
 	err := printCreateCommand(cmd, createCommand)
