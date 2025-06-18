@@ -11,24 +11,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func getUpdatedRequest(ctx context.Context, client *aponoapi.AponoClient, requestID string) tea.Cmd {
+func getRequestByID(ctx context.Context, client *aponoapi.AponoClient, requestID string) tea.Cmd {
 	return func() tea.Msg {
 		resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
 		if err != nil {
 			return errMsg{err}
 		}
 		return updatedRequestMsg(*resp)
-	}
-}
-
-func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, creationTime time.Time, timeout time.Duration) tea.Cmd {
-	return func() tea.Msg {
-		newAccessRequest, err := services.WaitForNewRequest(ctx, client, creationTime, timeout)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return updatedRequestMsg(*newAccessRequest)
 	}
 }
 

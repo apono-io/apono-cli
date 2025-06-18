@@ -21,7 +21,7 @@ const (
 )
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(waitForRequest(m.ctx, m.client, m.creationTime, m.timeout), m.spinner.Tick)
+	return tea.Batch(getRequestByID(m.ctx, m.client, m.requestID), m.spinner.Tick)
 }
 
 func (e errMsg) Error() string { return e.err.Error() }
@@ -34,13 +34,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
-		if time.Now().After(m.creationTime.Add(m.timeout)) {
+		if time.Now().After(m.startLoadingTime.Add(m.timeout)) {
 			m.err = fmt.Errorf("timeout waiting for request to be granted")
 			return m, tea.Quit
 		}
 		if shouldRetryLoading(m.lastRequestTime, interval) {
 			m.lastRequestTime = time.Now()
-			return m, getUpdatedRequest(m.ctx, m.client, m.request.Id)
+			return m, getRequestByID(m.ctx, m.client, m.request.Id)
 		}
 
 		return m, func() tea.Msg { return updatedRequestMsg(*m.request) }
@@ -73,7 +73,7 @@ func (m model) View() string {
 
 	var msg string
 	if m.request == nil {
-		msg = fmt.Sprintf("%s Waiting for request to be created", m.spinner.View())
+		msg = fmt.Sprintf("%s Waiting for request to be ready", m.spinner.View())
 	} else {
 		msg = fmt.Sprintf("%s Request %s is %s", m.spinner.View(), color.Bold.Sprint(m.request.Id), services.ColoredStatus(*m.request))
 	}
@@ -81,19 +81,20 @@ func (m model) View() string {
 	return "\n" + msg + "\n\n"
 }
 
-func RunRequestLoader(ctx context.Context, client *aponoapi.AponoClient, creationTime time.Time, timeout time.Duration, noWaitForGrant bool) (*clientapi.AccessRequestClientModel, error) {
+func RunRequestLoader(ctx context.Context, client *aponoapi.AponoClient, requestID string, timeout time.Duration, noWaitForGrant bool) (*clientapi.AccessRequestClientModel, error) {
 	s := spinner.New()
 	s.Spinner = spinner.MiniDot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	initModel := model{
-		spinner:         s,
-		ctx:             ctx,
-		client:          client,
-		creationTime:    creationTime,
-		timeout:         timeout,
-		lastRequestTime: time.Now(),
-		noWaitForGrant:  noWaitForGrant,
+		spinner:          s,
+		ctx:              ctx,
+		client:           client,
+		requestID:        requestID,
+		timeout:          timeout,
+		startLoadingTime: time.Now(),
+		lastRequestTime:  time.Now(),
+		noWaitForGrant:   noWaitForGrant,
 	}
 
 	result, err := tea.NewProgram(initModel).Run()
