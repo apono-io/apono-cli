@@ -80,7 +80,7 @@ func Create() *cobra.Command {
 			var newAccessRequest *clientapi.AccessRequestClientModel
 
 			if len(createResp.RequestIds) == 0 {
-				return fmt.Errorf("no request IDs returned from the API, cannot proceed with request loading")
+				return fmt.Errorf("failed to create access request, no request IDs returned from the API")
 			}
 			requestID := createResp.RequestIds[0]
 			newAccessRequest, err = waitForRequest(cmd.Context(), client, cmdFlags, requestID)

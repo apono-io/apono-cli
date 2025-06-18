@@ -57,7 +57,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	if len(createResp.RequestIds) == 0 {
-		return fmt.Errorf("no request IDs returned from the API, cannot proceed with request loading")
+		return fmt.Errorf("failed to create access request, no request IDs returned from the API")
 	}
 
 	requestID := createResp.RequestIds[0]
