@@ -150,6 +150,14 @@ func WaitForNewRequest(ctx context.Context, client *aponoapi.AponoClient, creati
 	}
 }
 
+func GetRequestByID(ctx context.Context, client *aponoapi.AponoClient, requestID string) (*clientapi.AccessRequestClientModel, error) {
+	request, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
+	if err != nil {
+		return nil, err
+	}
+	return request, nil
+}
+
 func getUserLastRequest(ctx context.Context, client *aponoapi.AponoClient) (*clientapi.AccessRequestClientModel, error) {
 	userLastRequests, _, err := client.ClientAPI.AccessRequestsAPI.ListAccessRequests(ctx).
 		Scope(clientapi.ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS).

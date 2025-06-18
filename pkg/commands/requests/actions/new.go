@@ -65,9 +65,7 @@ func Create() *cobra.Command {
 				return err
 			}
 
-			creationTime := time.Now()
-
-			_, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
+			createResp, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
 				CreateAccessRequestClientModel(*req).
 				Execute()
 			if err != nil {
@@ -81,7 +79,11 @@ func Create() *cobra.Command {
 
 			var newAccessRequest *clientapi.AccessRequestClientModel
 
-			newAccessRequest, err = waitForRequest(cmd.Context(), client, cmdFlags, creationTime)
+			if len(createResp.RequestIds) == 0 {
+				return fmt.Errorf("no request IDs returned from the API, cannot proceed with request loading")
+			}
+			requestID := createResp.RequestIds[0]
+			newAccessRequest, err = waitForRequest(cmd.Context(), client, cmdFlags, requestID)
 			if err != nil {
 				return err
 			}
@@ -403,11 +405,12 @@ func listResourcesIDsFromSourceIDs(ctx context.Context, client *aponoapi.AponoCl
 	return resourceIDsToReturn, nil
 }
 
-func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags *createRequestFlags, creationTime time.Time) (*clientapi.AccessRequestClientModel, error) {
+func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags *createRequestFlags, requestID string) (*clientapi.AccessRequestClientModel, error) {
 	var newAccessRequest *clientapi.AccessRequestClientModel
 	var err error
+
 	if cmdFlags.runInteractiveMode {
-		newAccessRequest, err = requestloader.RunRequestLoader(ctx, client, creationTime, cmdFlags.timeout, cmdFlags.noWait)
+		newAccessRequest, err = requestloader.RunRequestLoader(ctx, client, requestID, cmdFlags.timeout, cmdFlags.noWait)
 		if err != nil {
 			return nil, err
 		}
@@ -415,7 +418,7 @@ func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags 
 		return newAccessRequest, nil
 	}
 
-	newAccessRequest, err = services.WaitForNewRequest(ctx, client, creationTime, cmdFlags.timeout)
+	newAccessRequest, err = services.GetRequestByID(ctx, client, requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -424,19 +427,19 @@ func waitForRequest(ctx context.Context, client *aponoapi.AponoClient, cmdFlags 
 		return newAccessRequest, nil
 	}
 
-	requestID := newAccessRequest.Id
+	startTime := time.Now()
 	for {
 		if requestloader.ShouldStopLoading(newAccessRequest) {
 			return newAccessRequest, nil
 		}
 
-		if time.Now().After(creationTime.Add(cmdFlags.timeout)) {
+		if time.Now().After(startTime.Add(cmdFlags.timeout)) {
 			return newAccessRequest, fmt.Errorf("timeout waiting for request to be granted")
 		}
 
 		time.Sleep(1 * time.Second)
 
-		newAccessRequest, _, err = client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
+		newAccessRequest, err = services.GetRequestByID(ctx, client, requestID)
 		if err != nil {
 			return nil, err
 		}

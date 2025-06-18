@@ -44,9 +44,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return err
 	}
 
-	creationTime := time.Now()
-
-	_, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
+	createResp, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
 		CreateAccessRequestClientModel(*req).
 		Execute()
 	if err != nil {
@@ -58,7 +56,12 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return err
 	}
 
-	newAccessRequest, err := requestloader.RunRequestLoader(cmd.Context(), client, creationTime, requestWaitTime, false)
+	if len(createResp.RequestIds) == 0 {
+		return fmt.Errorf("no request IDs returned from the API, cannot proceed with request loading")
+	}
+
+	requestID := createResp.RequestIds[0] // Take the first request created
+	newAccessRequest, err := requestloader.RunRequestLoader(cmd.Context(), client, requestID, requestWaitTime, false)
 	if err != nil {
 		return err
 	}
