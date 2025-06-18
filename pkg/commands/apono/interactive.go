@@ -60,7 +60,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return fmt.Errorf("no request IDs returned from the API, cannot proceed with request loading")
 	}
 
-	requestID := createResp.RequestIds[0] // Take the first request created
+	requestID := createResp.RequestIds[0]
 	newAccessRequest, err := requestloader.RunRequestLoader(cmd.Context(), client, requestID, requestWaitTime, false)
 	if err != nil {
 		return err
