@@ -21,7 +21,7 @@ const (
 )
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(getRequestById(m.ctx, m.client, m.requestID), m.spinner.Tick)
+	return tea.Batch(getRequestByID(m.ctx, m.client, m.requestID), m.spinner.Tick)
 }
 
 func (e errMsg) Error() string { return e.err.Error() }
@@ -40,7 +40,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if shouldRetryLoading(m.lastRequestTime, interval) {
 			m.lastRequestTime = time.Now()
-			return m, getRequestById(m.ctx, m.client, m.request.Id)
+			return m, getRequestByID(m.ctx, m.client, m.request.Id)
 		}
 
 		return m, func() tea.Msg { return updatedRequestMsg(*m.request) }

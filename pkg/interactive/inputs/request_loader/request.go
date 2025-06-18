@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func getRequestById(ctx context.Context, client *aponoapi.AponoClient, requestID string) tea.Cmd {
+func getRequestByID(ctx context.Context, client *aponoapi.AponoClient, requestID string) tea.Cmd {
 	return func() tea.Msg {
 		resp, _, err := client.ClientAPI.AccessRequestsAPI.GetAccessRequest(ctx, requestID).Execute()
 		if err != nil {
