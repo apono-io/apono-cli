@@ -85,6 +85,7 @@ func Login() *cobra.Command {
 						"end_user:access_requests:write",
 						"end_user:inventory:read",
 						"end_user:analytics:write",
+						"end_user:mcp",
 					},
 				},
 				AuthCodeOptions:        pkce.AuthCodeOptions(),
