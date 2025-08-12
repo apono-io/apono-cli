@@ -3,23 +3,17 @@ package actions
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
-
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/groups"
-
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/int128/oauth2cli"
-	"github.com/int128/oauth2cli/oauth2params"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"golang.org/x/sync/errgroup"
 
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 )
 
@@ -57,65 +51,34 @@ func Login() *cobra.Command {
 			portalURL := strings.TrimLeft(cmdFlags.portalURL, "/")
 			tokenURL := strings.TrimLeft(cmdFlags.tokenURL, "/")
 			personalToken := strings.TrimLeft(cmdFlags.personalToken, "")
-			pkce, err := oauth2params.NewPKCE()
-			if err != nil {
-				return fmt.Errorf("failed to create code challenge: %w", err)
+
+			if personalToken != "" {
+				return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, cmd.Context())
 			}
 
-			var oauthTokenURL string
-			if tokenURL != "" {
-				oauthTokenURL = tokenURL
-			} else {
-				oauthTokenURL = appURL
-			}
-			ready := make(chan string, 1)
-			defer close(ready)
-			cfg := oauth2cli.Config{
-				OAuth2Config: oauth2.Config{
-					ClientID: cmdFlags.clientID,
-					Endpoint: oauth2.Endpoint{
-						AuthURL:   config.GetOAuthAuthURL(appURL),
-						TokenURL:  config.GetOAuthTokenURL(oauthTokenURL),
-						AuthStyle: oauth2.AuthStyleInParams,
-					},
-					Scopes: []string{
-						"end_user:access_sessions:read",
-						"end_user:access_sessions:write",
-						"end_user:access_requests:read",
-						"end_user:access_requests:write",
-						"end_user:inventory:read",
-						"end_user:analytics:write",
-					},
+			oauthConfig := OAuthConfig{
+				ClientID:  cmdFlags.clientID,
+				ApiURL:    apiURL,
+				AppURL:    appURL,
+				PortalURL: portalURL,
+				TokenURL:  tokenURL,
+				Scopes: []string{
+					"end_user:access_sessions:read",
+					"end_user:access_sessions:write",
+					"end_user:access_requests:read",
+					"end_user:access_requests:write",
+					"end_user:inventory:read",
+					"end_user:analytics:write",
 				},
-				AuthCodeOptions:        pkce.AuthCodeOptions(),
-				TokenRequestOptions:    pkce.TokenRequestOptions(),
-				LocalServerReadyChan:   ready,
-				LocalServerBindAddress: []string{"localhost:64131", "localhost:64132", "localhost:64133", "localhost:64134"},
+				Verbose: cmdFlags.verbose,
 			}
 
-			if cmdFlags.verbose {
-				cfg.Logf = log.Printf
+			oauthToken, err := PerformOAuthLogin(cmd.Context(), oauthConfig)
+			if err != nil {
+				return fmt.Errorf("OAuth authentication failed: %w", err)
 			}
 
-			eg, ctx := errgroup.WithContext(cmd.Context())
-			if personalToken == "" {
-				eg.Go(func() error {
-					return loginViaBrowser(ready, cmdFlags, ctx)
-				})
-				eg.Go(func() error {
-					oauthToken, err := oauth2cli.GetToken(ctx, cfg)
-					if err != nil {
-						return fmt.Errorf("could not get a oauthToken: %w", err)
-					}
-					return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, "", ctx)
-				})
-				if err := eg.Wait(); err != nil {
-					return fmt.Errorf("authorization error: %s", err)
-				}
-				return nil
-			} else {
-				return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx)
-			}
+			return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, "", cmd.Context())
 		},
 	}
 
@@ -135,21 +98,6 @@ func Login() *cobra.Command {
 	_ = flags.MarkHidden(portalURLFlagName)
 	_ = flags.MarkHidden(tokenURLFlagName)
 	return cmd
-}
-
-func loginViaBrowser(ready <-chan string, cmdFlags loginCommandFlags, ctx context.Context) error {
-	select {
-	case loginURL := <-ready:
-		_, _ = fmt.Println("You will be redirected to your web browser to complete the login process")
-		_, _ = fmt.Println("If the page did not open automatically, open this URL manually:", loginURL)
-		if err := browser.OpenURL(loginURL); err != nil && cmdFlags.verbose {
-			log.Println("Could not open the browser:", err)
-		}
-
-		return nil
-	case <-ctx.Done():
-		return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
-	}
 }
 
 func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) error {
@@ -198,7 +146,8 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		if urlParseErr != nil {
 			return nil, fmt.Errorf("failed parsing url %s with error: %w", portalURL, urlParseErr)
 		}
-		clientAPI := aponoapi.CreateClientAPI(endpointURL, aponoapi.HTTPClientWithPersonalToken(personalToken))
+		userAgent := fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+		clientAPI := aponoapi.CreateClientAPI(endpointURL, aponoapi.HTTPClientWithPersonalToken(personalToken), userAgent)
 		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
 		if userSessionErr != nil {
 			return nil, fmt.Errorf("failed fetching user session with error: %w", userSessionErr)

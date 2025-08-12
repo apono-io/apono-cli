@@ -60,22 +60,35 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 		return nil, fmt.Errorf("failed parsing url %s with error: %w", sessionCfg.ApiURL, err)
 	}
 
+	userAgent := fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	return createClientWithConfig(endpointURL, httpClient, userAgent, sessionCfg)
+}
+
+func CreateClientWithTokenSource(ctx context.Context, profileName string, tokenSource oauth2.TokenSource, userAgent string) (*AponoClient, error) {
+	sessionCfg, err := config.GetProfileByName(config.ProfileName(profileName))
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := oauth2.NewClient(ctx, tokenSource)
+
+	endpointURL, err := url.Parse(sessionCfg.ApiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing url %s with error: %w", sessionCfg.ApiURL, err)
+	}
+
+	return createClientWithConfig(endpointURL, httpClient, userAgent, sessionCfg)
+}
+
+func createClientWithConfig(endpointURL *url.URL, httpClient *http.Client, userAgent string, sessionCfg *config.SessionConfig) (*AponoClient, error) {
 	adminAPIClientCfg := apono.NewConfiguration()
 	adminAPIClientCfg.Scheme = endpointURL.Scheme
 	adminAPIClientCfg.Host = endpointURL.Host
-	adminAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	adminAPIClientCfg.UserAgent = userAgent
 	adminAPIClientCfg.HTTPClient = httpClient
 
 	client := apono.NewAPIClient(adminAPIClientCfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create apono client: %w", err)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create clientapi client: %w", err)
-	}
-
-	clientAPI := CreateClientAPI(endpointURL, httpClient)
+	clientAPI := CreateClientAPI(endpointURL, httpClient, userAgent)
 
 	return &AponoClient{
 		APIClient: client,
@@ -87,11 +100,11 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	}, nil
 }
 
-func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client) *clientapi.APIClient {
+func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client, userAgent string) *clientapi.APIClient {
 	clientAPIClientCfg := clientapi.NewConfiguration()
 	clientAPIClientCfg.Scheme = endpointURL.Scheme
 	clientAPIClientCfg.Host = endpointURL.Host
-	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	clientAPIClientCfg.UserAgent = userAgent
 	clientAPIClientCfg.HTTPClient = httpClient
 	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
 	return clientAPI
