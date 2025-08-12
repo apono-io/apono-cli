@@ -22,6 +22,7 @@ var (
 
 type Config struct {
 	Auth AuthConfig `json:"auth"`
+	MCP  MCPConfig  `json:"mcp"`
 }
 
 type AuthConfig struct {
@@ -41,6 +42,10 @@ type SessionConfig struct {
 	Token         oauth2.Token `json:"token"`
 	CreatedAt     time.Time    `json:"created_at"`
 	PersonalToken string       `json:"personal_token"`
+}
+
+type MCPConfig struct {
+	Token oauth2.Token `json:"token"`
 }
 
 func (c SessionConfig) GetOAuth2Config() oauth2.Config {
@@ -93,4 +98,14 @@ func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
 	}
 
 	return &sessionCfg, nil
+}
+
+func SaveMCPToken(token oauth2.Token) error {
+	cfg, err := Get()
+	if err != nil {
+		return err
+	}
+
+	cfg.MCP.Token = token
+	return Save(cfg)
 }
