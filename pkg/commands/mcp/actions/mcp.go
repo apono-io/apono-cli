@@ -192,6 +192,18 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusForbidden {
+		return McpResponse{
+			JsonRpc: JsonrpcVersion,
+			ID:      request.ID,
+			Error: map[string]interface{}{
+				"code":    AuthError,
+				"message": "Authentication failed. Please run 'apono login' to authenticate.",
+				"data":    fmt.Sprintf("Status code %v - Invalid or expired authentication token", resp.StatusCode),
+			},
+		}, resp.StatusCode, nil
+	}
+
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Failed to read response body: %v", err)
