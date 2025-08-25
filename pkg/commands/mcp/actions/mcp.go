@@ -15,6 +15,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/groups"
+	"github.com/apono-io/apono-cli/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -49,14 +50,19 @@ func MCP() *cobra.Command {
 		GroupID:           groups.OtherCommandsGroup.ID,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("=== Apono MCP STDIO Server Starting ===")
+			if err := utils.InitMcpLogFile(); err != nil {
+				return fmt.Errorf("failed to initialize MCP log file: %w", err)
+			}
+			defer utils.CloseMcpLogFile()
+
+			utils.McpLog("=== Apono MCP STDIO Server Starting ===")
 
 			endpoint, httpClient, err := setupMCPServer(cmd)
 			if err != nil {
 				return fmt.Errorf("failed to setup MCP server: %w", err)
 			}
 
-			fmt.Println("Ready to receive requests...")
+			utils.McpLog("Ready to receive requests...")
 
 			return runSTDIOServer(endpoint, httpClient)
 		},
@@ -66,9 +72,8 @@ func MCP() *cobra.Command {
 }
 
 func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
-	fmt.Println("=== Starting Setup ===")
+	utils.McpLog("=== Starting Setup ===")
 
-	// Get the current profile configuration
 	sessionCfg, err := config.GetProfileByName("")
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get profile: %w", err)
@@ -80,12 +85,10 @@ func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
 	}
 	apiURL.Path = McpEndpointPath
 
-	// Create HTTP client with authentication
 	var httpClient *http.Client
 	if sessionCfg.PersonalToken != "" {
 		httpClient = aponoapi.HTTPClientWithPersonalToken(sessionCfg.PersonalToken)
 	} else {
-		// For OAuth tokens, we need to create a proper client
 		client, err := aponoapi.CreateClient(cmd.Context(), "")
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create API client: %w", err)
@@ -93,12 +96,14 @@ func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
 		httpClient = client.APIClient.GetConfig().HTTPClient
 	}
 
-	fmt.Println("=== Setup Finished ===")
+	utils.McpLog("=== Setup Finished ===")
 	return apiURL.String(), httpClient, nil
 }
 
 func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 	scanner := bufio.NewScanner(os.Stdin)
+
+	utils.McpLog("=== STDIO Server Started, waiting for input ===")
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -106,10 +111,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			continue
 		}
 
-		fmt.Printf("[DEBUG] Received Line: %s\n", line)
+		utils.McpLog("Received Line: %s", line)
 
 		var request McpRequest
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
+			utils.McpLog("ERROR: Failed to parse JSON: %v", err)
 			response := McpResponse{
 				JsonRpc: JsonrpcVersion,
 				ID:      nil,
@@ -123,8 +129,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			continue
 		}
 
+		utils.McpLog("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
+
 		response, statusCode, err := sendMcpRequest(endpoint, httpClient, request)
 		if err != nil {
+			utils.McpLog("ERROR: Failed to send MCP request: %v", err)
 			response = McpResponse{
 				JsonRpc: JsonrpcVersion,
 				ID:      request.ID,
@@ -136,10 +145,12 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			}
 		}
 
+		utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
 		sendResponse(response, statusCode)
 	}
 
 	if err := scanner.Err(); err != nil {
+		utils.McpLog("ERROR: Scanner error: %v", err)
 		return fmt.Errorf("error reading stdin: %w", err)
 	}
 
@@ -147,6 +158,8 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 }
 
 func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest) (McpResponse, int, error) {
+	utils.McpLog("Sending request to endpoint: %s", endpoint)
+
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		log.Printf("Failed to marshal request: %v", err)
@@ -160,6 +173,8 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 			},
 		}, EmptyErrorStatusCode, nil
 	}
+
+	utils.McpLog("Request body: %s", string(requestBody))
 
 	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -177,6 +192,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	httpReq.Header.Set("Content-Type", "application/json")
 
+	utils.McpLog("Sending HTTP request...")
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		log.Printf("Failed to send HTTP request: %v", err)
@@ -186,11 +202,13 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 			Error: map[string]interface{}{
 				"code":    InternalError,
 				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    "Failed to send HTTP request",
+				"data":    fmt.Sprintf("Failed to send HTTP request: %v", err),
 			},
 		}, EmptyErrorStatusCode, nil
 	}
 	defer resp.Body.Close()
+
+	utils.McpLog("HTTP response status: %d", resp.StatusCode)
 
 	if resp.StatusCode == http.StatusForbidden {
 		return McpResponse{
@@ -217,6 +235,8 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 			},
 		}, resp.StatusCode, nil
 	}
+
+	utils.McpLog("Response body: %s", string(responseBody))
 
 	var response McpResponse
 	if err := json.Unmarshal(responseBody, &response); err != nil {
