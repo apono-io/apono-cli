@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -143,6 +142,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 					"data":    fmt.Sprintf("Failed to send to Apono API: %v", err),
 				},
 			}
+			statusCode = EmptyErrorStatusCode
 		}
 
 		utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
@@ -162,7 +162,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	requestBody, err := json.Marshal(request)
 	if err != nil {
-		log.Printf("Failed to marshal request: %v", err)
+		utils.McpLog("ERROR: Failed to marshal request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -178,7 +178,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
-		log.Printf("Failed to create HTTP request: %v", err)
+		utils.McpLog("ERROR: Failed to create HTTP request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -195,7 +195,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	utils.McpLog("Sending HTTP request...")
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
-		log.Printf("Failed to send HTTP request: %v", err)
+		utils.McpLog("ERROR: Failed to send HTTP request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -224,7 +224,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Failed to read response body: %v", err)
+		utils.McpLog("ERROR: Failed to read response body: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -240,7 +240,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	var response McpResponse
 	if err := json.Unmarshal(responseBody, &response); err != nil {
-		log.Printf("Failed to unmarshal response: %v", err)
+		utils.McpLog("ERROR: Failed to unmarshal response: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -251,6 +251,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 			},
 		}, resp.StatusCode, nil
 	}
+
+	// Ensure the response ID matches the request ID exactly and is always an integer
+	response.ID = request.ID
 
 	return response, resp.StatusCode, nil
 }
@@ -287,5 +290,6 @@ func sendResponse(response McpResponse, statusCode int) {
 		return
 	}
 
+	utils.McpLog("Sending response: %s", string(responseJSON))
 	fmt.Println(string(responseJSON))
 }
