@@ -22,7 +22,10 @@ func InitMcpLogFile() error {
 	logFilePath := path.Join(configDirPath, McpLogFileName)
 
 	if mcpLogFile != nil {
-		mcpLogFile.Close()
+		err := mcpLogFile.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := configdir.MakePath(configDirPath); err != nil {
@@ -46,7 +49,7 @@ func InitMcpLogFile() error {
 	return nil
 }
 
-func McpLog(format string, args ...interface{}) {
+func McpLogf(format string, args ...interface{}) {
 	if mcpLogFile == nil {
 		return
 	}
@@ -63,7 +66,10 @@ func McpLog(format string, args ...interface{}) {
 
 func CloseMcpLogFile() {
 	if mcpLogFile != nil {
-		mcpLogFile.Close()
+		err := mcpLogFile.Close()
+		if err != nil {
+			return
+		}
 		mcpLogFile = nil
 	}
 }

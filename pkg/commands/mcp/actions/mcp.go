@@ -54,14 +54,14 @@ func MCP() *cobra.Command {
 			}
 			defer utils.CloseMcpLogFile()
 
-			utils.McpLog("=== Apono MCP STDIO Server Starting ===")
+			utils.McpLogf("=== Apono MCP STDIO Server Starting ===")
 
 			endpoint, httpClient, err := setupMCPServer(cmd)
 			if err != nil {
 				return fmt.Errorf("failed to setup MCP server: %w", err)
 			}
 
-			utils.McpLog("Ready to receive requests...")
+			utils.McpLogf("Ready to receive requests...")
 
 			return runSTDIOServer(endpoint, httpClient)
 		},
@@ -71,7 +71,7 @@ func MCP() *cobra.Command {
 }
 
 func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
-	utils.McpLog("=== Starting Setup ===")
+	utils.McpLogf("=== Starting Setup ===")
 
 	sessionCfg, err := config.GetProfileByName("")
 	if err != nil {
@@ -95,14 +95,14 @@ func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
 		httpClient = client.APIClient.GetConfig().HTTPClient
 	}
 
-	utils.McpLog("=== Setup Finished ===")
+	utils.McpLogf("=== Setup Finished ===")
 	return apiURL.String(), httpClient, nil
 }
 
 func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 	scanner := bufio.NewScanner(os.Stdin)
 
-	utils.McpLog("=== STDIO Server Started, waiting for input ===")
+	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -110,11 +110,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			continue
 		}
 
-		utils.McpLog("Received Line: %s", line)
+		utils.McpLogf("Received Line: %s", line)
 
 		var request McpRequest
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
-			utils.McpLog("ERROR: Failed to parse JSON: %v", err)
+			utils.McpLogf("ERROR: Failed to parse JSON: %v", err)
 			response := McpResponse{
 				JsonRpc: JsonrpcVersion,
 				ID:      nil,
@@ -128,11 +128,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			continue
 		}
 
-		utils.McpLog("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
+		utils.McpLogf("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
 
 		response, statusCode, err := sendMcpRequest(endpoint, httpClient, request)
 		if err != nil {
-			utils.McpLog("ERROR: Failed to send MCP request: %v", err)
+			utils.McpLogf("ERROR: Failed to send MCP request: %v", err)
 			response = McpResponse{
 				JsonRpc: JsonrpcVersion,
 				ID:      request.ID,
@@ -146,13 +146,13 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 		}
 
 		if !isNotificationsMethod(request.Method) {
-			utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
+			utils.McpLogf("Sending response - Status: %d, ID: %v", statusCode, response.ID)
 			sendResponse(response, statusCode)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		utils.McpLog("ERROR: Scanner error: %v", err)
+		utils.McpLogf("ERROR: Scanner error: %v", err)
 		return fmt.Errorf("error reading stdin: %w", err)
 	}
 
@@ -160,11 +160,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 }
 
 func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest) (McpResponse, int, error) {
-	utils.McpLog("Sending request to endpoint: %s", endpoint)
+	utils.McpLogf("Sending request to endpoint: %s", endpoint)
 
 	requestBody, err := json.Marshal(request)
 	if err != nil {
-		utils.McpLog("ERROR: Failed to marshal request: %v", err)
+		utils.McpLogf("ERROR: Failed to marshal request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -176,11 +176,11 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		}, EmptyErrorStatusCode, nil
 	}
 
-	utils.McpLog("Request body: %s", string(requestBody))
+	utils.McpLogf("Request body: %s", string(requestBody))
 
 	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
-		utils.McpLog("ERROR: Failed to create HTTP request: %v", err)
+		utils.McpLogf("ERROR: Failed to create HTTP request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -194,10 +194,10 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	utils.McpLog("Sending HTTP request...")
+	utils.McpLogf("Sending HTTP request...")
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
-		utils.McpLog("ERROR: Failed to send HTTP request: %v", err)
+		utils.McpLogf("ERROR: Failed to send HTTP request: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -208,9 +208,14 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 			},
 		}, EmptyErrorStatusCode, nil
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
 
-	utils.McpLog("HTTP response status: %d", resp.StatusCode)
+		}
+	}(resp.Body)
+
+	utils.McpLogf("HTTP response status: %d", resp.StatusCode)
 
 	if resp.StatusCode == http.StatusForbidden {
 		return McpResponse{
@@ -226,13 +231,13 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 
 	// For notification methods, don't read response body - just log completion
 	if isNotificationsMethod(request.Method) {
-		utils.McpLog("Notification method %s completed successfully with status %d", request.Method, resp.StatusCode)
+		utils.McpLogf("Notification method %s completed successfully with status %d", request.Method, resp.StatusCode)
 		return McpResponse{}, resp.StatusCode, nil
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		utils.McpLog("ERROR: Failed to read response body: %v", err)
+		utils.McpLogf("ERROR: Failed to read response body: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -244,11 +249,11 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		}, resp.StatusCode, nil
 	}
 
-	utils.McpLog("Response body: %s", string(responseBody))
+	utils.McpLogf("Response body: %s", string(responseBody))
 
 	var response McpResponse
 	if err := json.Unmarshal(responseBody, &response); err != nil {
-		utils.McpLog("ERROR: Failed to unmarshal response: %v", err)
+		utils.McpLogf("ERROR: Failed to unmarshal response: %v", err)
 		return McpResponse{
 			JsonRpc: JsonrpcVersion,
 			ID:      request.ID,
@@ -299,7 +304,7 @@ func sendResponse(response McpResponse, statusCode int) {
 		return
 	}
 
-	utils.McpLog("Sending response: %s", string(responseJSON))
+	utils.McpLogf("Sending response: %s", string(responseJSON))
 	fmt.Println(string(responseJSON))
 }
 
