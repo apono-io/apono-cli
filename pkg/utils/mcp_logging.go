@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
+	"path/filepath"
 	"time"
 
 	"github.com/kirsle/configdir"
@@ -22,11 +22,6 @@ var (
 func InitMcpLogFile() error {
 	logFilePath := path.Join(configDirPath, McpLogFileName)
 
-	// Validate the log file path to prevent directory traversal attacks
-	if !strings.HasPrefix(logFilePath, configDirPath) {
-		return fmt.Errorf("invalid log file path: %s", logFilePath)
-	}
-
 	if mcpLogFile != nil {
 		err := mcpLogFile.Close()
 		if err != nil {
@@ -38,7 +33,7 @@ func InitMcpLogFile() error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	file, err := os.Create(logFilePath)
+	file, err := os.Create(filepath.Clean(logFilePath))
 	if err != nil {
 		return fmt.Errorf("failed to create MCP log file: %w", err)
 	}
