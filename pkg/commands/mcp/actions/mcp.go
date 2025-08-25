@@ -145,7 +145,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			statusCode = EmptyErrorStatusCode
 		}
 
-		if !strings.HasPrefix(request.Method, "notifications/") {
+		if !isNotificationsMethod(request.Method) {
 			utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
 			sendResponse(response, statusCode)
 		}
@@ -225,7 +225,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	}
 
 	// For notification methods, don't read response body - just log completion
-	if strings.HasPrefix(request.Method, "notifications/") {
+	if isNotificationsMethod(request.Method) {
 		utils.McpLog("Notification method %s completed successfully with status %d", request.Method, resp.StatusCode)
 		return McpResponse{}, resp.StatusCode, nil
 	}
@@ -260,7 +260,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		}, resp.StatusCode, nil
 	}
 
-	if !strings.HasPrefix(request.Method, "notifications/") {
+	if !isNotificationsMethod(request.Method) {
 		response.ID = request.ID
 	}
 
@@ -301,4 +301,8 @@ func sendResponse(response McpResponse, statusCode int) {
 
 	utils.McpLog("Sending response: %s", string(responseJSON))
 	fmt.Println(string(responseJSON))
+}
+
+func isNotificationsMethod(method string) bool {
+	return strings.HasPrefix(method, "notifications/")
 }
