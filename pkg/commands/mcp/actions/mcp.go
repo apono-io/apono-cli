@@ -32,7 +32,7 @@ type McpRequest struct {
 	Params  interface{} `json:"params"`
 	Meta    interface{} `json:"_meta"`
 	JsonRpc string      `json:"jsonrpc"`
-	ID      interface{} `json:"id"`
+	ID      interface{} `json:"id,omitempty"`
 }
 
 type McpResponse struct {
@@ -145,8 +145,10 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 			statusCode = EmptyErrorStatusCode
 		}
 
-		utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
-		sendResponse(response, statusCode)
+		if !strings.HasPrefix(request.Method, "notifications/") {
+			utils.McpLog("Sending response - Status: %d, ID: %v", statusCode, response.ID)
+			sendResponse(response, statusCode)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -222,6 +224,12 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		}, resp.StatusCode, nil
 	}
 
+	// For notification methods, don't read response body - just log completion
+	if strings.HasPrefix(request.Method, "notifications/") {
+		utils.McpLog("Notification method %s completed successfully with status %d", request.Method, resp.StatusCode)
+		return McpResponse{}, resp.StatusCode, nil
+	}
+
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		utils.McpLog("ERROR: Failed to read response body: %v", err)
@@ -252,8 +260,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		}, resp.StatusCode, nil
 	}
 
-	// Ensure the response ID matches the request ID exactly and is always an integer
-	response.ID = request.ID
+	if !strings.HasPrefix(request.Method, "notifications/") {
+		response.ID = request.ID
+	}
 
 	return response, resp.StatusCode, nil
 }
