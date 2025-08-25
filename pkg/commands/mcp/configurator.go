@@ -1,10 +1,10 @@
 package mcp
 
 import (
-	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/actions"
+	"github.com/apono-io/apono-cli/pkg/groups"
 )
 
 type Configurator struct{}

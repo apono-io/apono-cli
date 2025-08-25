@@ -12,11 +12,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/apono-io/apono-cli/pkg/utils"
-	"github.com/spf13/cobra"
 )
 
 const (
