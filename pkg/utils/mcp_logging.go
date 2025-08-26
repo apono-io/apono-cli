@@ -7,20 +7,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/kirsle/configdir"
 )
 
 const (
-	McpLogFileName = "mcp_logging.txt"
+	McpLogFileName = "mcp_logging.log"
 )
 
 var (
-	configDirPath = configdir.LocalConfig("apono-cli")
-	mcpLogFile    *os.File
+	mcpLogFile *os.File
 )
 
 func InitMcpLogFile() error {
-	logFilePath := path.Join(configDirPath, McpLogFileName)
+	logFilePath := path.Join(config.DirPath, McpLogFileName)
 
 	if mcpLogFile != nil {
 		err := mcpLogFile.Close()
@@ -29,19 +29,19 @@ func InitMcpLogFile() error {
 		}
 	}
 
-	if err := configdir.MakePath(configDirPath); err != nil {
+	if err := configdir.MakePath(config.DirPath); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
 	file, err := os.Create(filepath.Clean(logFilePath))
 	if err != nil {
-		return fmt.Errorf("failed to create MCP log file: %w", err)
+		return fmt.Errorf("failed to create MCP Server log file: %w", err)
 	}
 
 	mcpLogFile = file
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-	header := fmt.Sprintf("=== Apono MCP Log Started at %s ===\n", timestamp)
+	header := fmt.Sprintf("=== Apono MCP Server Log Started at %s ===\n", timestamp)
 	_, err = mcpLogFile.WriteString(header)
 	if err != nil {
 		return fmt.Errorf("failed to write header to log file: %w", err)

@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	configDirPath  = configdir.LocalConfig("apono-cli")
-	configFilePath = path.Join(configDirPath, "config.json")
+	DirPath        = configdir.LocalConfig("apono-cli")
+	configFilePath = path.Join(DirPath, "config.json")
 )
 
 func Get() (*Config, error) {
@@ -55,7 +55,7 @@ func Save(cfg *Config) error {
 	}
 
 	if _, err = os.Stat("/path/to/whatever"); os.IsNotExist(err) {
-		err = configdir.MakePath(configDirPath) // Ensure it exists.
+		err = configdir.MakePath(DirPath) // Ensure it exists.
 		if err != nil {
 			return err
 		}

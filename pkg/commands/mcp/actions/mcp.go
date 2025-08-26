@@ -47,7 +47,7 @@ type McpResponse struct {
 func MCP() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "mcp",
-		Short:             "Run stdio MCP proxy server",
+		Short:             "Run stdio MCP server",
 		GroupID:           groups.OtherCommandsGroup.ID,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func MCP() *cobra.Command {
 
 			utils.McpLogf("=== Apono MCP STDIO Server Starting ===")
 
-			endpoint, httpClient, err := setupMCPServer(cmd)
+			endpoint, httpClient, err := createAponoMCPClient(cmd)
 			if err != nil {
 				return fmt.Errorf("failed to setup MCP server: %w", err)
 			}
@@ -72,7 +72,7 @@ func MCP() *cobra.Command {
 	return cmd
 }
 
-func setupMCPServer(cmd *cobra.Command) (string, *http.Client, error) {
+func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 	utils.McpLogf("=== Starting Setup ===")
 
 	sessionCfg, err := config.GetProfileByName("")
