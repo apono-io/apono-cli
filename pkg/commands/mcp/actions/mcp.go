@@ -122,7 +122,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
 			utils.McpLogf("ERROR: Failed to parse JSON: %v", err)
 			response := createErrorResponse(nil, ParseError, "Request received cannot be parsed as an MCP request", fmt.Sprintf("Invalid JSON: %v", err))
-			sendResponse(response, EmptyErrorStatusCode)
+			propagateResponseToStdout(response, EmptyErrorStatusCode)
 			continue
 		}
 
@@ -132,7 +132,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 
 		if !isNotificationsMethod(request.Method) {
 			utils.McpLogf("Sending response - Status: %d, ID: %v", statusCode, response.ID)
-			sendResponse(response, statusCode)
+			propagateResponseToStdout(response, statusCode)
 		}
 	}
 
@@ -213,7 +213,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	return response, resp.StatusCode
 }
 
-func sendResponse(response McpResponse, statusCode int) {
+func propagateResponseToStdout(response McpResponse, statusCode int) {
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		if statusCode == http.StatusForbidden {
