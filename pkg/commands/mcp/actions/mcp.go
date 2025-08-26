@@ -27,6 +27,7 @@ const (
 	InternalError        = -32603
 	AuthError            = -32002
 	EmptyErrorStatusCode = 0
+	debugFlagName        = "debug"
 )
 
 type McpRequest struct {
@@ -45,6 +46,8 @@ type McpResponse struct {
 }
 
 func MCP() *cobra.Command {
+	var debug bool
+
 	cmd := &cobra.Command{
 		Use:               "mcp",
 		Short:             "Run stdio MCP server",
@@ -65,9 +68,12 @@ func MCP() *cobra.Command {
 
 			utils.McpLogf("Ready to receive requests...")
 
-			return runSTDIOServer(endpoint, httpClient)
+			return runSTDIOServer(endpoint, httpClient, debug)
 		},
 	}
+
+	flags := cmd.Flags()
+	flags.BoolVar(&debug, debugFlagName, false, "Enable debug logging for request/response bodies")
 
 	return cmd
 }
@@ -101,7 +107,7 @@ func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 	return apiURL.String(), httpClient, nil
 }
 
-func runSTDIOServer(endpoint string, httpClient *http.Client) error {
+func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
@@ -111,8 +117,6 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 		if line == "" {
 			continue
 		}
-
-		utils.McpLogf("Received Line: %s", line)
 
 		var request McpRequest
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
@@ -124,7 +128,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 
 		utils.McpLogf("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
 
-		response, statusCode := sendMcpRequest(endpoint, httpClient, request)
+		response, statusCode := sendMcpRequest(endpoint, httpClient, request, debug)
 
 		if !isNotificationsMethod(request.Method) {
 			utils.McpLogf("Sending response - Status: %d, ID: %v", statusCode, response.ID)
@@ -140,7 +144,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 	return nil
 }
 
-func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest) (McpResponse, int) {
+func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest, debug bool) (McpResponse, int) {
 	utils.McpLogf("Sending request to endpoint: %s", endpoint)
 
 	requestBody, err := json.Marshal(request)
@@ -149,7 +153,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to marshal request"), EmptyErrorStatusCode
 	}
 
-	utils.McpLogf("Request body: %s", string(requestBody))
+	if debug {
+		utils.McpLogf("Request body: %s", string(requestBody))
+	}
 
 	httpReq, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -190,7 +196,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to read response body"), resp.StatusCode
 	}
 
-	utils.McpLogf("Response body: %s", string(responseBody))
+	if debug {
+		utils.McpLogf("Response body: %s", string(responseBody))
+	}
 
 	var response McpResponse
 	if err := json.Unmarshal(responseBody, &response); err != nil {
