@@ -117,15 +117,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client) error {
 		var request McpRequest
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
 			utils.McpLogf("ERROR: Failed to parse JSON: %v", err)
-			response := McpResponse{
-				JSONRPC: JsonrpcVersion,
-				ID:      nil,
-				Error: map[string]interface{}{
-					"code":    ParseError,
-					"message": "Request received cannot be parsed as an MCP request",
-					"data":    fmt.Sprintf("Invalid JSON: %v", err),
-				},
-			}
+			response := createErrorResponse(nil, ParseError, "Request received cannot be parsed as an MCP request", fmt.Sprintf("Invalid JSON: %v", err))
 			sendResponse(response, EmptyErrorStatusCode)
 			continue
 		}
@@ -154,15 +146,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		utils.McpLogf("ERROR: Failed to marshal request: %v", err)
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    "Failed to marshal request",
-			},
-		}, EmptyErrorStatusCode
+		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to marshal request"), EmptyErrorStatusCode
 	}
 
 	utils.McpLogf("Request body: %s", string(requestBody))
@@ -170,15 +154,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	httpReq, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
 		utils.McpLogf("ERROR: Failed to create HTTP request: %v", err)
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    "Failed to create HTTP request",
-			},
-		}, EmptyErrorStatusCode
+		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to create HTTP request"), EmptyErrorStatusCode
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -187,15 +163,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		utils.McpLogf("ERROR: Failed to send HTTP request: %v", err)
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    fmt.Sprintf("Failed to send HTTP request: %v", err),
-			},
-		}, EmptyErrorStatusCode
+		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", fmt.Sprintf("Failed to send HTTP request: %v", err)), EmptyErrorStatusCode
 	}
 	defer func(Body io.ReadCloser) {
 		closeErr := Body.Close()
@@ -207,15 +175,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	utils.McpLogf("HTTP response status: %d", resp.StatusCode)
 
 	if resp.StatusCode == http.StatusForbidden {
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    AuthError,
-				"message": "Authentication failed. Please run 'apono login' to authenticate.",
-				"data":    fmt.Sprintf("Status code %v - Invalid or expired authentication token", resp.StatusCode),
-			},
-		}, resp.StatusCode
+		return createErrorResponse(request.ID, AuthError, "Authentication failed. Please run 'apono login' to authenticate.", fmt.Sprintf("Status code %v - Invalid or expired authentication token", resp.StatusCode)), resp.StatusCode
 	}
 
 	// For notification methods, don't read response body - just log completion
@@ -227,15 +187,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		utils.McpLogf("ERROR: Failed to read response body: %v", err)
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    "Failed to read response body",
-			},
-		}, resp.StatusCode
+		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to read response body"), resp.StatusCode
 	}
 
 	utils.McpLogf("Response body: %s", string(responseBody))
@@ -243,15 +195,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	var response McpResponse
 	if err := json.Unmarshal(responseBody, &response); err != nil {
 		utils.McpLogf("ERROR: Failed to unmarshal response: %v", err)
-		return McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      request.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to unmarshal the MCP response from the server",
-				"data":    "Failed to parse response",
-			},
-		}, resp.StatusCode
+		return createErrorResponse(request.ID, InternalError, "An internal error occurred when trying to unmarshal the MCP response from the server", "Failed to parse response"), resp.StatusCode
 	}
 
 	if !isNotificationsMethod(request.Method) {
@@ -265,29 +209,13 @@ func sendResponse(response McpResponse, statusCode int) {
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		if statusCode == http.StatusForbidden {
-			errorResponse := McpResponse{
-				JSONRPC: JsonrpcVersion,
-				ID:      response.ID,
-				Error: map[string]interface{}{
-					"code":    AuthError,
-					"message": "Authentication failed. Please run 'apono login' to authenticate.",
-					"data":    fmt.Sprintf("Status code %v - Invalid or expired authentication token", statusCode),
-				},
-			}
+			errorResponse := createErrorResponse(response.ID, AuthError, "Authentication failed. Please run 'apono login' to authenticate.", fmt.Sprintf("Status code %v - Invalid or expired authentication token", statusCode))
 			errorJSON, _ := json.Marshal(errorResponse)
 			fmt.Println(string(errorJSON))
 			return
 		}
 
-		errorResponse := McpResponse{
-			JSONRPC: JsonrpcVersion,
-			ID:      response.ID,
-			Error: map[string]interface{}{
-				"code":    InternalError,
-				"message": "An internal error occurred when trying to send the MCP request to Apono",
-				"data":    "Failed to marshal response",
-			},
-		}
+		errorResponse := createErrorResponse(response.ID, InternalError, "An internal error occurred when trying to send the MCP request to Apono", "Failed to marshal response")
 		errorJSON, _ := json.Marshal(errorResponse)
 		fmt.Println(string(errorJSON))
 		return
@@ -299,4 +227,16 @@ func sendResponse(response McpResponse, statusCode int) {
 
 func isNotificationsMethod(method string) bool {
 	return strings.HasPrefix(method, "notifications/")
+}
+
+func createErrorResponse(requestID interface{}, errorCode int, message, data string) McpResponse {
+	return McpResponse{
+		JSONRPC: JsonrpcVersion,
+		ID:      requestID,
+		Error: map[string]interface{}{
+			"code":    errorCode,
+			"message": message,
+			"data":    data,
+		},
+	}
 }
