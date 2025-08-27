@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/kirsle/configdir"
+
+	"github.com/apono-io/apono-cli/pkg/config"
 )
 
 const (
