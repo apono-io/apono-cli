@@ -16,9 +16,7 @@ const (
 	McpLogFileName = "mcp_logging.log"
 )
 
-var (
-	mcpLogFile *os.File
-)
+var mcpLogFile *os.File
 
 func InitMcpLogFile() error {
 	logFilePath := path.Join(config.DirPath, McpLogFileName)
