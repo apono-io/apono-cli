@@ -216,7 +216,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 func propagateResponseToStdout(response McpResponse, statusCode int) {
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
-		if statusCode == http.StatusForbidden {
+		if statusCode == http.StatusUnauthorized {
 			errorResponse := createErrorResponse(response.ID, AuthError, "Authentication failed. Please run 'apono login' to authenticate.", fmt.Sprintf("Status code %v - Invalid or expired authentication token", statusCode))
 			errorJSON, _ := json.Marshal(errorResponse)
 			fmt.Println(string(errorJSON))
