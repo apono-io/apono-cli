@@ -122,17 +122,21 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 		if err := json.Unmarshal([]byte(line), &request); err != nil {
 			utils.McpLogf("ERROR: Failed to parse JSON: %v", err)
 			response := createErrorResponse(nil, ParseError, "Request received cannot be parsed as an MCP request", fmt.Sprintf("Invalid JSON: %v", err))
-			propagateResponseToStdout(response, EmptyErrorStatusCode)
+			propagateResponseToStdout(response, EmptyErrorStatusCode, debug)
 			continue
 		}
 
-		utils.McpLogf("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
+		if request.ID != nil {
+			utils.McpLogf("Parsed request - Method: %s, ID: %v", request.Method, request.ID)
+		} else {
+			utils.McpLogf("Parsed request - Method: %s", request.Method)
+		}
 
 		response, statusCode := sendMcpRequest(endpoint, httpClient, request, debug)
 
 		if !isNotificationsMethod(request.Method) {
 			utils.McpLogf("Sending response - Status: %d, ID: %v", statusCode, response.ID)
-			propagateResponseToStdout(response, statusCode)
+			propagateResponseToStdout(response, statusCode, debug)
 		}
 	}
 
@@ -145,7 +149,9 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 }
 
 func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest, debug bool) (McpResponse, int) {
-	utils.McpLogf("Sending request to endpoint: %s", endpoint)
+	if debug {
+		utils.McpLogf("Sending request to endpoint: %s", endpoint)
+	}
 
 	requestBody, err := json.Marshal(request)
 	if err != nil {
@@ -164,8 +170,6 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-
-	utils.McpLogf("Sending HTTP request...")
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		utils.McpLogf("ERROR: Failed to send HTTP request: %v", err)
@@ -213,7 +217,7 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request McpRequest
 	return response, resp.StatusCode
 }
 
-func propagateResponseToStdout(response McpResponse, statusCode int) {
+func propagateResponseToStdout(response McpResponse, statusCode int, debug bool) {
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		if statusCode == http.StatusUnauthorized {
@@ -229,7 +233,10 @@ func propagateResponseToStdout(response McpResponse, statusCode int) {
 		return
 	}
 
-	utils.McpLogf("Sending response: %s", string(responseJSON))
+	if debug {
+		utils.McpLogf("Sending response: %s", string(responseJSON))
+	}
+
 	fmt.Println(string(responseJSON))
 }
 
