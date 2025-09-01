@@ -68,11 +68,13 @@ func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 
 	sessionCfg, err := config.GetProfileByName("")
 	if err != nil {
+		utils.McpLogf("[Error]: Couldn't get profile: %v", err)
 		return "", nil, fmt.Errorf("failed to get profile: %w", err)
 	}
 
 	apiURL, err := url.Parse(sessionCfg.ApiURL)
 	if err != nil {
+		utils.McpLogf("[Error]: Couldn't parse API URL: %v", err)
 		return "", nil, fmt.Errorf("failed to parse API URL: %w", err)
 	}
 	apiURL.Path = McpEndpointPath
@@ -83,6 +85,7 @@ func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 	} else {
 		client, err := aponoapi.CreateClient(cmd.Context(), "")
 		if err != nil {
+			utils.McpLogf("[Error]: Couldn't create API client: %v", err)
 			return "", nil, fmt.Errorf("failed to create API client: %w", err)
 		}
 		httpClient = client.APIClient.GetConfig().HTTPClient
@@ -116,7 +119,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 		response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)
 
 		if statusCode == EmptyErrorStatusCode {
-			utils.McpLogf("ERROR: Failed to process request, sending error response")
+			utils.McpLogf("[Error]: Failed to process request, sending error response")
 			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
 			fmt.Println(errorResponse)
 			continue
@@ -126,7 +129,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	}
 
 	if err := scanner.Err(); err != nil {
-		utils.McpLogf("ERROR: Scanner error: %v", err)
+		utils.McpLogf("[Error]: Scanner error: %v", err)
 		return fmt.Errorf("error reading stdin: %w", err)
 	}
 
@@ -140,14 +143,14 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, de
 
 	httpReq, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer([]byte(request)))
 	if err != nil {
-		utils.McpLogf("ERROR: Failed to create HTTP request: %v", err)
+		utils.McpLogf("[Error]: Failed to create HTTP request: %v", err)
 		return "", EmptyErrorStatusCode
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
-		utils.McpLogf("ERROR: Failed to send HTTP request: %v", err)
+		utils.McpLogf("[Error]: Failed to send HTTP request: %v", err)
 		return "", EmptyErrorStatusCode
 	}
 	defer func(Body io.ReadCloser) {
@@ -160,20 +163,20 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, de
 	utils.McpLogf("HTTP response status: %d", resp.StatusCode)
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		utils.McpLogf("ERROR: Authentication failed - Status: %d", resp.StatusCode)
+		utils.McpLogf("[Error]: Authentication failed - Status: %d", resp.StatusCode)
 		errorResponse := createErrorResponse(ErrorCodeAuthenticationFailed, "Authentication failed", "Please run 'apono login' command to authenticate")
 		return errorResponse, resp.StatusCode
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		utils.McpLogf("ERROR: Authorization failed - Status: %d", resp.StatusCode)
+		utils.McpLogf("[Error]: Authorization failed - Status: %d", resp.StatusCode)
 		errorResponse := createErrorResponse(ErrorCodeAuthorizationFailed, "Authorization failed", "Access forbidden")
 		return errorResponse, resp.StatusCode
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		utils.McpLogf("ERROR: Failed to read response body: %v", err)
+		utils.McpLogf("[Error]: Failed to read response body: %v", err)
 		return "", resp.StatusCode
 	}
 
