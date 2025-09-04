@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -29,12 +30,12 @@ func MCP() *cobra.Command {
 	var debug bool
 
 	cmd := &cobra.Command{
-		Use:               "mcp",
-		Short:             "Run stdio MCP server",
-		GroupID:           groups.OtherCommandsGroup.ID,
-		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
+		Use:     "mcp",
+		Short:   "Run stdio MCP server",
+		GroupID: groups.OtherCommandsGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := utils.InitMcpLogFile(); err != nil {
+				utils.McpLogf("[Error]: Failed to initialize MCP log file: %v", err)
 				return fmt.Errorf("failed to initialize MCP log file: %w", err)
 			}
 			defer utils.CloseMcpLogFile()
@@ -43,6 +44,7 @@ func MCP() *cobra.Command {
 
 			mcpClient, err := createAponoMCPClient(cmd)
 			if err != nil {
+				utils.McpLogf("[Error]: Failed to setup MCP server: %v", err)
 				return fmt.Errorf("failed to setup MCP server: %w", err)
 			}
 
@@ -63,6 +65,7 @@ func createAponoMCPClient(cmd *cobra.Command) (clientapi.ApiHandleMcpMethodReque
 
 	client, err := aponoapi.GetClient(cmd.Context())
 	if err != nil {
+		utils.McpLogf("[Error]: Failed to create Apono client: %v", err)
 		return clientapi.ApiHandleMcpMethodRequest{}, fmt.Errorf("failed to create Apono client: %w", err)
 	}
 
@@ -85,8 +88,8 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 		mcpRequest, method, err := parseMcpRequest(line)
 		if err != nil {
 			utils.McpLogf("[Error]: %v", err)
-			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to parse request")
-			fmt.Println(errorResponse)
+			errorResponse := createMcpErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to parse request")
+			propagateResponseToStdout(errorResponse)
 			continue
 		}
 
@@ -98,16 +101,21 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 		response, httpResponse, err := mcpClient.McpRequest(mcpRequest).Execute()
 		if err != nil {
 			utils.McpLogf("[Error]: MCP client request failed: %v", err)
-			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
-			fmt.Println(errorResponse)
+			errorResponse := createMcpErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
+			propagateResponseToStdout(errorResponse)
 			continue
 		}
-		statusCode := httpResponse.StatusCode
 
-		if statusCode == EmptyErrorStatusCode {
-			utils.McpLogf("[Error]: Failed to process request, sending error response")
-			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
-			fmt.Println(errorResponse)
+		if debug {
+			utils.McpLogf("[Debug]: HTTP response status: %d", httpResponse.StatusCode)
+			if response != nil {
+				responseBytes, _ := json.Marshal(response)
+				utils.McpLogf("[Debug]: Response body: %s", string(responseBytes))
+			}
+		}
+
+		if errorResponse := handleMcpResponseState(httpResponse); errorResponse != nil {
+			propagateResponseToStdout(errorResponse)
 			continue
 		}
 
@@ -126,13 +134,44 @@ func propagateResponseToStdout(response *clientapi.McpResponse) {
 	fmt.Println(response)
 }
 
-func createErrorResponse(errorCode int, message, data string) string {
-	return fmt.Sprintf(`{"jsonrpc":"2.0","id":null,"error":{"code":%d,"message":"%s","data":"%s"}}`, errorCode, message, data)
+func handleMcpResponseState(httpResponse *http.Response) *clientapi.McpResponse {
+	statusCode := httpResponse.StatusCode
+
+	switch statusCode {
+	case http.StatusUnauthorized:
+		utils.McpLogf("[Error]: Authentication failed - Status: %d", statusCode)
+		return createMcpErrorResponse(ErrorCodeAuthenticationFailed, "Authentication failed", "Please run 'apono login' command to authenticate")
+	case http.StatusForbidden:
+		utils.McpLogf("[Error]: Authorization failed - Status: %d", statusCode)
+		return createMcpErrorResponse(ErrorCodeAuthorizationFailed, "Authorization failed", "Access forbidden")
+	case EmptyErrorStatusCode:
+		utils.McpLogf("[Error]: Failed to process request, sending error response")
+		return createMcpErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
+	default:
+		return nil
+	}
+}
+
+func createMcpErrorResponse(errorCode int, message, data string) *clientapi.McpResponse {
+	errorData := map[string]interface{}{
+		"description": data,
+	}
+
+	mcpError := clientapi.NewMcpResponseError(int32(errorCode), message, errorData)
+	response := clientapi.NewMcpResponseWithDefaults()
+	response.SetJsonrpc("2.0")
+	response.SetId("null")
+	response.SetResult(nil)
+	response.SetError(*mcpError)
+
+	utils.McpLogf("[Error]: Creating error response - Code: %d, Message: %s, Data: %s", errorCode, message, data)
+	return response
 }
 
 func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
 	var requestData map[string]interface{}
 	if err := json.Unmarshal([]byte(line), &requestData); err != nil {
+		utils.McpLogf("[Error]: Failed to parse request JSON: %v", err)
 		return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request JSON: %w", err)
 	}
 
@@ -141,6 +180,7 @@ func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
 	if isStandardRequest {
 		var standardRequest clientapi.StandardMcpRequest
 		if err := json.Unmarshal([]byte(line), &standardRequest); err != nil {
+			utils.McpLogf("[Error]: Failed to parse request as StandardMcpRequest: %v", err)
 			return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request as StandardMcpRequest: %w", err)
 		}
 		mcpRequest := clientapi.StandardMcpRequestAsMcpRequest(&standardRequest)
@@ -148,6 +188,7 @@ func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
 	} else {
 		var notificationRequest clientapi.NotificationMcpRequest
 		if err := json.Unmarshal([]byte(line), &notificationRequest); err != nil {
+			utils.McpLogf("[Error]: Failed to parse request as NotificationMcpRequest: %v", err)
 			return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request as NotificationMcpRequest: %w", err)
 		}
 		mcpRequest := clientapi.NotificationMcpRequestAsMcpRequest(&notificationRequest)
