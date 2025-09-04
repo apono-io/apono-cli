@@ -4493,6 +4493,46 @@
         }
       },
       "McpRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StandardMcpRequest"
+          },
+          {
+            "$ref": "#/components/schemas/NotificationMcpRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "id",
+          "mapping": {
+            "StandardMcpRequest": "#/components/schemas/StandardMcpRequest",
+            "NotificationMcpRequest": "#/components/schemas/NotificationMcpRequest"
+          }
+        }
+      },
+      "StandardMcpRequest": {
+        "required": [
+          "id",
+          "jsonrpc",
+          "method"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object",
+            "nullable": true
+          },
+          "jsonrpc": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          }
+        }
+      },
+      "NotificationMcpRequest": {
         "required": [
           "jsonrpc",
           "method"
@@ -4504,6 +4544,10 @@
           },
           "method": {
             "type": "string"
+          },
+          "params": {
+            "type": "object",
+            "nullable": true
           }
         }
       },

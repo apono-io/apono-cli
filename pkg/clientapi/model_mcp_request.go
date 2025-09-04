@@ -15,133 +15,97 @@ import (
 	"fmt"
 )
 
-// checks if the McpRequest type satisfies the MappedNullable interface at compile time
-var _ MappedNullable = &McpRequest{}
-
-// McpRequest struct for McpRequest
+// McpRequest - struct for McpRequest
 type McpRequest struct {
-	Jsonrpc string `json:"jsonrpc"`
-	Method  string `json:"method"`
+	NotificationMcpRequest *NotificationMcpRequest
+	StandardMcpRequest     *StandardMcpRequest
 }
 
-type _McpRequest McpRequest
-
-// NewMcpRequest instantiates a new McpRequest object
-// This constructor will assign default values to properties that have it defined,
-// and makes sure properties required by API are set, but the set of arguments
-// will change when the set of required properties is changed
-func NewMcpRequest(jsonrpc string, method string) *McpRequest {
-	this := McpRequest{}
-	this.Jsonrpc = jsonrpc
-	this.Method = method
-	return &this
-}
-
-// NewMcpRequestWithDefaults instantiates a new McpRequest object
-// This constructor will only assign default values to properties that have it defined,
-// but it doesn't guarantee that properties required by API are set
-func NewMcpRequestWithDefaults() *McpRequest {
-	this := McpRequest{}
-	return &this
-}
-
-// GetJsonrpc returns the Jsonrpc field value
-func (o *McpRequest) GetJsonrpc() string {
-	if o == nil {
-		var ret string
-		return ret
+// NotificationMcpRequestAsMcpRequest is a convenience function that returns NotificationMcpRequest wrapped in McpRequest
+func NotificationMcpRequestAsMcpRequest(v *NotificationMcpRequest) McpRequest {
+	return McpRequest{
+		NotificationMcpRequest: v,
 	}
-
-	return o.Jsonrpc
 }
 
-// GetJsonrpcOk returns a tuple with the Jsonrpc field value
-// and a boolean to check if the value has been set.
-func (o *McpRequest) GetJsonrpcOk() (*string, bool) {
-	if o == nil {
-		return nil, false
+// StandardMcpRequestAsMcpRequest is a convenience function that returns StandardMcpRequest wrapped in McpRequest
+func StandardMcpRequestAsMcpRequest(v *StandardMcpRequest) McpRequest {
+	return McpRequest{
+		StandardMcpRequest: v,
 	}
-	return &o.Jsonrpc, true
 }
 
-// SetJsonrpc sets field value
-func (o *McpRequest) SetJsonrpc(v string) {
-	o.Jsonrpc = v
-}
-
-// GetMethod returns the Method field value
-func (o *McpRequest) GetMethod() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Method
-}
-
-// GetMethodOk returns a tuple with the Method field value
-// and a boolean to check if the value has been set.
-func (o *McpRequest) GetMethodOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Method, true
-}
-
-// SetMethod sets field value
-func (o *McpRequest) SetMethod(v string) {
-	o.Method = v
-}
-
-func (o McpRequest) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
-	if err != nil {
-		return []byte{}, err
-	}
-	return json.Marshal(toSerialize)
-}
-
-func (o McpRequest) ToMap() (map[string]interface{}, error) {
-	toSerialize := map[string]interface{}{}
-	toSerialize["jsonrpc"] = o.Jsonrpc
-	toSerialize["method"] = o.Method
-	return toSerialize, nil
-}
-
-func (o *McpRequest) UnmarshalJSON(bytes []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"jsonrpc",
-		"method",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(bytes, &allProperties)
-
-	if err != nil {
-		return err
-	}
-
-	for _, requiredProperty := range requiredProperties {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
+// Unmarshal JSON data into one of the pointers in the struct
+func (dst *McpRequest) UnmarshalJSON(data []byte) error {
+	var err error
+	match := 0
+	// try to unmarshal data into NotificationMcpRequest
+	err = newStrictDecoder(data).Decode(&dst.NotificationMcpRequest)
+	if err == nil {
+		jsonNotificationMcpRequest, _ := json.Marshal(dst.NotificationMcpRequest)
+		if string(jsonNotificationMcpRequest) == "{}" { // empty struct
+			dst.NotificationMcpRequest = nil
+		} else {
+			match++
 		}
+	} else {
+		dst.NotificationMcpRequest = nil
 	}
 
-	varMcpRequest := _McpRequest{}
-
-	err = json.Unmarshal(bytes, &varMcpRequest)
-
-	if err != nil {
-		return err
+	// try to unmarshal data into StandardMcpRequest
+	err = newStrictDecoder(data).Decode(&dst.StandardMcpRequest)
+	if err == nil {
+		jsonStandardMcpRequest, _ := json.Marshal(dst.StandardMcpRequest)
+		if string(jsonStandardMcpRequest) == "{}" { // empty struct
+			dst.StandardMcpRequest = nil
+		} else {
+			match++
+		}
+	} else {
+		dst.StandardMcpRequest = nil
 	}
 
-	*o = McpRequest(varMcpRequest)
+	if match > 1 { // more than 1 match
+		// reset to nil
+		dst.NotificationMcpRequest = nil
+		dst.StandardMcpRequest = nil
 
-	return err
+		return fmt.Errorf("data matches more than one schema in oneOf(McpRequest)")
+	} else if match == 1 {
+		return nil // exactly one match
+	} else { // no match
+		return fmt.Errorf("data failed to match schemas in oneOf(McpRequest)")
+	}
+}
+
+// Marshal data from the first non-nil pointers in the struct to JSON
+func (src McpRequest) MarshalJSON() ([]byte, error) {
+	if src.NotificationMcpRequest != nil {
+		return json.Marshal(&src.NotificationMcpRequest)
+	}
+
+	if src.StandardMcpRequest != nil {
+		return json.Marshal(&src.StandardMcpRequest)
+	}
+
+	return nil, nil // no data in oneOf schemas
+}
+
+// Get the actual instance
+func (obj *McpRequest) GetActualInstance() interface{} {
+	if obj == nil {
+		return nil
+	}
+	if obj.NotificationMcpRequest != nil {
+		return obj.NotificationMcpRequest
+	}
+
+	if obj.StandardMcpRequest != nil {
+		return obj.StandardMcpRequest
+	}
+
+	// all schemas are nil
+	return nil
 }
 
 type NullableMcpRequest struct {
