@@ -6,16 +6,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -46,14 +45,14 @@ func MCP() *cobra.Command {
 
 			utils.McpLogf("=== Apono MCP STDIO Server Starting ===")
 
-			endpoint, httpClient, err := createAponoMCPClient(cmd)
+			mcpClient, err := createAponoMCPClient(cmd)
 			if err != nil {
 				return fmt.Errorf("failed to setup MCP server: %w", err)
 			}
 
 			utils.McpLogf("Ready to receive requests...")
 
-			return runSTDIOServer(endpoint, httpClient, debug)
+			return runSTDIOServer(mcpClient, debug)
 		},
 	}
 
@@ -63,39 +62,20 @@ func MCP() *cobra.Command {
 	return cmd
 }
 
-func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
+func createAponoMCPClient(cmd *cobra.Command) (clientapi.ApiHandleMcpMethodRequest, error) {
 	utils.McpLogf("=== Starting Setup ===")
 
-	sessionCfg, err := config.GetProfileByName("")
+	client, err := aponoapi.GetClient(cmd.Context())
 	if err != nil {
-		utils.McpLogf("[Error]: Couldn't get profile: %v", err)
-		return "", nil, fmt.Errorf("failed to get profile: %w", err)
+		return clientapi.ApiHandleMcpMethodRequest{}, fmt.Errorf("failed to create Apono client: %w", err)
 	}
 
-	apiURL, err := url.Parse(sessionCfg.ApiURL)
-	if err != nil {
-		utils.McpLogf("[Error]: Couldn't parse API URL: %v", err)
-		return "", nil, fmt.Errorf("failed to parse API URL: %w", err)
-	}
-	apiURL.Path = McpEndpointPath
-
-	var httpClient *http.Client
-	if sessionCfg.PersonalToken != "" {
-		httpClient = aponoapi.HTTPClientWithPersonalToken(sessionCfg.PersonalToken)
-	} else {
-		client, err := aponoapi.CreateClient(cmd.Context(), "")
-		if err != nil {
-			utils.McpLogf("[Error]: Couldn't create API client: %v", err)
-			return "", nil, fmt.Errorf("failed to create API client: %w", err)
-		}
-		httpClient = client.APIClient.GetConfig().HTTPClient
-	}
-
+	mcpClient := client.ClientAPI.MCPServerAPI.HandleMcpMethod(cmd.Context())
 	utils.McpLogf("=== Setup Finished ===")
-	return apiURL.String(), httpClient, nil
+	return mcpClient, nil
 }
 
-func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error {
+func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
@@ -116,7 +96,15 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 			}
 		}
 
-		response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)
+		response, httpResponse, err := mcpClient.McpRequest(requestData).Execute()
+		if err != nil {
+			utils.McpLogf("[Error]: MCP client request failed: %v", err)
+			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
+			fmt.Println(errorResponse)
+			continue
+		}
+		statusCode := httpResponse.StatusCode
+		/*response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)*/
 
 		if statusCode == EmptyErrorStatusCode {
 			utils.McpLogf("[Error]: Failed to process request, sending error response")
@@ -189,13 +177,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, de
 	return response, resp.StatusCode
 }
 
-func propagateResponseToStdout(response string, statusCode int) {
-	if response != "" {
-		fmt.Println(response)
-		return
-	}
-
-	utils.McpLogf("No response body to send, status: %d", statusCode)
+func propagateResponseToStdout(response *clientapi.McpResponse, statusCode int) {
+	fmt.Println(response)
+	return
 }
 
 func createErrorResponse(errorCode int, message, data string) string {
