@@ -42,7 +42,7 @@ func MCP() *cobra.Command {
 
 			utils.McpLogf("=== Apono MCP STDIO Server Starting ===")
 
-			mcpClient, err := createAponoMCPClient(cmd)
+			mcpClient, err := createAponoMCPClient(cmd, debug)
 			if err != nil {
 				utils.McpLogf("[Error]: Failed to setup MCP server: %v", err)
 				return fmt.Errorf("failed to setup MCP server: %w", err)
@@ -60,7 +60,7 @@ func MCP() *cobra.Command {
 	return cmd
 }
 
-func createAponoMCPClient(cmd *cobra.Command) (clientapi.ApiHandleMcpMethodRequest, error) {
+func createAponoMCPClient(cmd *cobra.Command, debug bool) (clientapi.ApiHandleMcpMethodRequest, error) {
 	utils.McpLogf("=== Starting Setup ===")
 
 	client, err := aponoapi.GetClient(cmd.Context())
@@ -69,6 +69,10 @@ func createAponoMCPClient(cmd *cobra.Command) (clientapi.ApiHandleMcpMethodReque
 		return clientapi.ApiHandleMcpMethodRequest{}, fmt.Errorf("failed to create Apono client: %w", err)
 	}
 
+	if debug {
+		cfg := client.ClientAPI.GetConfig()
+		utils.McpLogf("[Debug]: Sending request to host: %s", cfg.Host)
+	}
 	mcpClient := client.ClientAPI.MCPServerAPI.HandleMcpMethod(cmd.Context())
 	utils.McpLogf("=== Setup Finished ===")
 	return mcpClient, nil
@@ -76,6 +80,7 @@ func createAponoMCPClient(cmd *cobra.Command) (clientapi.ApiHandleMcpMethodReque
 
 func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
+	var clientUserAgent string = "apono-cli-mcp-server" // default fallback
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
 
@@ -98,7 +103,14 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 			utils.McpLogf("[Debug]: Request body: %s", line)
 		}
 
-		response, httpResponse, err := mcpClient.McpRequest(mcpRequest).Execute()
+		// Update user agent from initialize request
+		if method == "initialize" {
+			if userAgent := getClientName(mcpRequest); userAgent != "" {
+				clientUserAgent = userAgent
+			}
+		}
+
+		response, httpResponse, err := mcpClient.UserAgent(clientUserAgent).McpRequest(mcpRequest).Execute()
 		if err != nil {
 			utils.McpLogf("[Error]: MCP client request failed: %v", err)
 			errorResponse := createMcpErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
@@ -178,8 +190,16 @@ func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
 	isStandardRequest := requestData["id"] != nil
 
 	if isStandardRequest {
+		requestData["id"] = fmt.Sprintf("%v", requestData["id"])
+
+		modifiedLine, err := json.Marshal(requestData)
+		if err != nil {
+			utils.McpLogf("[Error]: Failed to re-marshal request data: %v", err)
+			return clientapi.McpRequest{}, "", fmt.Errorf("failed to re-marshal request data: %w", err)
+		}
+
 		var standardRequest clientapi.StandardMcpRequest
-		if err := json.Unmarshal([]byte(line), &standardRequest); err != nil {
+		if err := json.Unmarshal(modifiedLine, &standardRequest); err != nil {
 			utils.McpLogf("[Error]: Failed to parse request as StandardMcpRequest: %v", err)
 			return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request as StandardMcpRequest: %w", err)
 		}
@@ -194,4 +214,15 @@ func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
 		mcpRequest := clientapi.NotificationMcpRequestAsMcpRequest(&notificationRequest)
 		return mcpRequest, notificationRequest.Method, nil
 	}
+}
+
+func getClientName(mcpRequest clientapi.McpRequest) string {
+	req := mcpRequest.StandardMcpRequest
+	if req == nil {
+		return ""
+	}
+
+	clientInfo, _ := req.GetParams()["clientInfo"].(map[string]interface{})
+	name, _ := clientInfo["name"].(string)
+	return name
 }
