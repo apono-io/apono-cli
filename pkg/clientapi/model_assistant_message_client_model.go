@@ -21,10 +21,10 @@ var _ MappedNullable = &AssistantMessageClientModel{}
 
 // AssistantMessageClientModel struct for AssistantMessageClientModel
 type AssistantMessageClientModel struct {
-	Id       string         `json:"id"`
-	Number   int32          `json:"number"`
-	Role     string         `json:"role"`
-	Feedback NullableString `json:"feedback,omitempty"`
+	Id             string         `json:"id"`
+	MessageOrdinal int32          `json:"message_ordinal"`
+	Role           string         `json:"role"`
+	Feedback       NullableString `json:"feedback,omitempty"`
 	// ISO 8601 formatted date-time
 	CreatedDate time.Time                         `json:"created_date"`
 	Data        []AssistantMessageDataClientModel `json:"data"`
@@ -36,10 +36,10 @@ type _AssistantMessageClientModel AssistantMessageClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAssistantMessageClientModel(id string, number int32, role string, createdDate time.Time, data []AssistantMessageDataClientModel) *AssistantMessageClientModel {
+func NewAssistantMessageClientModel(id string, messageOrdinal int32, role string, createdDate time.Time, data []AssistantMessageDataClientModel) *AssistantMessageClientModel {
 	this := AssistantMessageClientModel{}
 	this.Id = id
-	this.Number = number
+	this.MessageOrdinal = messageOrdinal
 	this.Role = role
 	this.CreatedDate = createdDate
 	this.Data = data
@@ -78,28 +78,28 @@ func (o *AssistantMessageClientModel) SetId(v string) {
 	o.Id = v
 }
 
-// GetNumber returns the Number field value
-func (o *AssistantMessageClientModel) GetNumber() int32 {
+// GetMessageOrdinal returns the MessageOrdinal field value
+func (o *AssistantMessageClientModel) GetMessageOrdinal() int32 {
 	if o == nil {
 		var ret int32
 		return ret
 	}
 
-	return o.Number
+	return o.MessageOrdinal
 }
 
-// GetNumberOk returns a tuple with the Number field value
+// GetMessageOrdinalOk returns a tuple with the MessageOrdinal field value
 // and a boolean to check if the value has been set.
-func (o *AssistantMessageClientModel) GetNumberOk() (*int32, bool) {
+func (o *AssistantMessageClientModel) GetMessageOrdinalOk() (*int32, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Number, true
+	return &o.MessageOrdinal, true
 }
 
-// SetNumber sets field value
-func (o *AssistantMessageClientModel) SetNumber(v int32) {
-	o.Number = v
+// SetMessageOrdinal sets field value
+func (o *AssistantMessageClientModel) SetMessageOrdinal(v int32) {
+	o.MessageOrdinal = v
 }
 
 // GetRole returns the Role field value
@@ -228,7 +228,7 @@ func (o AssistantMessageClientModel) MarshalJSON() ([]byte, error) {
 func (o AssistantMessageClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
-	toSerialize["number"] = o.Number
+	toSerialize["message_ordinal"] = o.MessageOrdinal
 	toSerialize["role"] = o.Role
 	if o.Feedback.IsSet() {
 		toSerialize["feedback"] = o.Feedback.Get()
@@ -244,7 +244,7 @@ func (o *AssistantMessageClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"id",
-		"number",
+		"message_ordinal",
 		"role",
 		"created_date",
 		"data",

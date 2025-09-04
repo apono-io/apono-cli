@@ -28,7 +28,7 @@ type ApiDeleteAssistantConversationRequest struct {
 	id         string
 }
 
-func (r ApiDeleteAssistantConversationRequest) Execute() (*MessageResponse, *http.Response, error) {
+func (r ApiDeleteAssistantConversationRequest) Execute() (*http.Response, error) {
 	return r.ApiService.DeleteAssistantConversationExecute(r)
 }
 
@@ -48,19 +48,16 @@ func (a *AccessAssistantAPIService) DeleteAssistantConversation(ctx context.Cont
 }
 
 // Execute executes the request
-//
-//	@return MessageResponse
-func (a *AccessAssistantAPIService) DeleteAssistantConversationExecute(r ApiDeleteAssistantConversationRequest) (*MessageResponse, *http.Response, error) {
+func (a *AccessAssistantAPIService) DeleteAssistantConversationExecute(r ApiDeleteAssistantConversationRequest) (*http.Response, error) {
 	var (
-		localVarHTTPMethod  = http.MethodDelete
-		localVarPostBody    interface{}
-		formFiles           []formFile
-		localVarReturnValue *MessageResponse
+		localVarHTTPMethod = http.MethodDelete
+		localVarPostBody   interface{}
+		formFiles          []formFile
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessAssistantAPIService.DeleteAssistantConversation")
 	if err != nil {
-		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+		return nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
 	localVarPath := localBasePath + "/api/client/v1/assistant/conversations/{id}"
@@ -80,7 +77,7 @@ func (a *AccessAssistantAPIService) DeleteAssistantConversationExecute(r ApiDele
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json"}
+	localVarHTTPHeaderAccepts := []string{}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -89,19 +86,19 @@ func (a *AccessAssistantAPIService) DeleteAssistantConversationExecute(r ApiDele
 	}
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return nil, err
 	}
 
 	localVarHTTPResponse, err := a.client.callAPI(req)
 	if err != nil || localVarHTTPResponse == nil {
-		return localVarReturnValue, localVarHTTPResponse, err
+		return localVarHTTPResponse, err
 	}
 
 	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
 	localVarHTTPResponse.Body.Close()
 	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
 	if err != nil {
-		return localVarReturnValue, localVarHTTPResponse, err
+		return localVarHTTPResponse, err
 	}
 
 	if localVarHTTPResponse.StatusCode >= 300 {
@@ -109,19 +106,10 @@ func (a *AccessAssistantAPIService) DeleteAssistantConversationExecute(r ApiDele
 			body:  localVarBody,
 			error: localVarHTTPResponse.Status,
 		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
+		return localVarHTTPResponse, newErr
 	}
 
-	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-	if err != nil {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: err.Error(),
-		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	return localVarReturnValue, localVarHTTPResponse, nil
+	return localVarHTTPResponse, nil
 }
 
 type ApiGetAssistantConversationRequest struct {
@@ -244,7 +232,7 @@ func (r ApiGetAssistantConversationHistoryRequest) Skip(skip int32) ApiGetAssist
 	return r
 }
 
-func (r ApiGetAssistantConversationHistoryRequest) Execute() ([]AssistantMessageClientModel, *http.Response, error) {
+func (r ApiGetAssistantConversationHistoryRequest) Execute() (*PaginatedClientResponseModelAssistantMessageClientModel, *http.Response, error) {
 	return r.ApiService.GetAssistantConversationHistoryExecute(r)
 }
 
@@ -265,13 +253,13 @@ func (a *AccessAssistantAPIService) GetAssistantConversationHistory(ctx context.
 
 // Execute executes the request
 //
-//	@return []AssistantMessageClientModel
-func (a *AccessAssistantAPIService) GetAssistantConversationHistoryExecute(r ApiGetAssistantConversationHistoryRequest) ([]AssistantMessageClientModel, *http.Response, error) {
+//	@return PaginatedClientResponseModelAssistantMessageClientModel
+func (a *AccessAssistantAPIService) GetAssistantConversationHistoryExecute(r ApiGetAssistantConversationHistoryRequest) (*PaginatedClientResponseModelAssistantMessageClientModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue []AssistantMessageClientModel
+		localVarReturnValue *PaginatedClientResponseModelAssistantMessageClientModel
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessAssistantAPIService.GetAssistantConversationHistory")
@@ -375,12 +363,12 @@ func (r ApiListAssistantConversationsRequest) Skip(skip int32) ApiListAssistantC
 	return r
 }
 
-func (r ApiListAssistantConversationsRequest) Execute() ([]AssistantConversationClientModel, *http.Response, error) {
+func (r ApiListAssistantConversationsRequest) Execute() (*PaginatedClientResponseModelAssistantConversationClientModel, *http.Response, error) {
 	return r.ApiService.ListAssistantConversationsExecute(r)
 }
 
 /*
-ListAssistantConversations Search all conversations
+ListAssistantConversations List all conversations
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiListAssistantConversationsRequest
@@ -394,13 +382,13 @@ func (a *AccessAssistantAPIService) ListAssistantConversations(ctx context.Conte
 
 // Execute executes the request
 //
-//	@return []AssistantConversationClientModel
-func (a *AccessAssistantAPIService) ListAssistantConversationsExecute(r ApiListAssistantConversationsRequest) ([]AssistantConversationClientModel, *http.Response, error) {
+//	@return PaginatedClientResponseModelAssistantConversationClientModel
+func (a *AccessAssistantAPIService) ListAssistantConversationsExecute(r ApiListAssistantConversationsRequest) (*PaginatedClientResponseModelAssistantConversationClientModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue []AssistantConversationClientModel
+		localVarReturnValue *PaginatedClientResponseModelAssistantConversationClientModel
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessAssistantAPIService.ListAssistantConversations")

@@ -20,9 +20,10 @@ var _ MappedNullable = &MessageDataSearchCTAClientModelResources{}
 
 // MessageDataSearchCTAClientModelResources struct for MessageDataSearchCTAClientModelResources
 type MessageDataSearchCTAClientModelResources struct {
-	Total   int32                 `json:"total"`
-	HasMore bool                  `json:"has_more"`
-	Data    []ResourceClientModel `json:"data"`
+	Total   int32                                        `json:"total"`
+	HasMore bool                                         `json:"has_more"`
+	Data    []ResourceClientModel                        `json:"data"`
+	Filters MessageDataSearchResourcesFiltersClientModel `json:"filters"`
 }
 
 type _MessageDataSearchCTAClientModelResources MessageDataSearchCTAClientModelResources
@@ -31,11 +32,12 @@ type _MessageDataSearchCTAClientModelResources MessageDataSearchCTAClientModelRe
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataSearchCTAClientModelResources(total int32, hasMore bool, data []ResourceClientModel) *MessageDataSearchCTAClientModelResources {
+func NewMessageDataSearchCTAClientModelResources(total int32, hasMore bool, data []ResourceClientModel, filters MessageDataSearchResourcesFiltersClientModel) *MessageDataSearchCTAClientModelResources {
 	this := MessageDataSearchCTAClientModelResources{}
 	this.Total = total
 	this.HasMore = hasMore
 	this.Data = data
+	this.Filters = filters
 	return &this
 }
 
@@ -119,6 +121,30 @@ func (o *MessageDataSearchCTAClientModelResources) SetData(v []ResourceClientMod
 	o.Data = v
 }
 
+// GetFilters returns the Filters field value
+func (o *MessageDataSearchCTAClientModelResources) GetFilters() MessageDataSearchResourcesFiltersClientModel {
+	if o == nil {
+		var ret MessageDataSearchResourcesFiltersClientModel
+		return ret
+	}
+
+	return o.Filters
+}
+
+// GetFiltersOk returns a tuple with the Filters field value
+// and a boolean to check if the value has been set.
+func (o *MessageDataSearchCTAClientModelResources) GetFiltersOk() (*MessageDataSearchResourcesFiltersClientModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Filters, true
+}
+
+// SetFilters sets field value
+func (o *MessageDataSearchCTAClientModelResources) SetFilters(v MessageDataSearchResourcesFiltersClientModel) {
+	o.Filters = v
+}
+
 func (o MessageDataSearchCTAClientModelResources) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -132,6 +158,7 @@ func (o MessageDataSearchCTAClientModelResources) ToMap() (map[string]interface{
 	toSerialize["total"] = o.Total
 	toSerialize["has_more"] = o.HasMore
 	toSerialize["data"] = o.Data
+	toSerialize["filters"] = o.Filters
 	return toSerialize, nil
 }
 
@@ -143,6 +170,7 @@ func (o *MessageDataSearchCTAClientModelResources) UnmarshalJSON(bytes []byte) (
 		"total",
 		"has_more",
 		"data",
+		"filters",
 	}
 
 	allProperties := make(map[string]interface{})

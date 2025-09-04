@@ -20,9 +20,10 @@ var _ MappedNullable = &MessageDataRequestPastRequestsClientModel{}
 
 // MessageDataRequestPastRequestsClientModel struct for MessageDataRequestPastRequestsClientModel
 type MessageDataRequestPastRequestsClientModel struct {
-	Entitlements     []map[string]interface{} `json:"entitlements"`
-	Justification    string                   `json:"justification"`
-	RequiresApproval bool                     `json:"requires_approval"`
+	Entitlements     []AccessRequestClientModel `json:"entitlements"`
+	Justification    string                     `json:"justification"`
+	RequiresApproval bool                       `json:"requires_approval"`
+	ValidRequest     bool                       `json:"valid_request"`
 }
 
 type _MessageDataRequestPastRequestsClientModel MessageDataRequestPastRequestsClientModel
@@ -31,11 +32,12 @@ type _MessageDataRequestPastRequestsClientModel MessageDataRequestPastRequestsCl
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataRequestPastRequestsClientModel(entitlements []map[string]interface{}, justification string, requiresApproval bool) *MessageDataRequestPastRequestsClientModel {
+func NewMessageDataRequestPastRequestsClientModel(entitlements []AccessRequestClientModel, justification string, requiresApproval bool, validRequest bool) *MessageDataRequestPastRequestsClientModel {
 	this := MessageDataRequestPastRequestsClientModel{}
 	this.Entitlements = entitlements
 	this.Justification = justification
 	this.RequiresApproval = requiresApproval
+	this.ValidRequest = validRequest
 	return &this
 }
 
@@ -48,9 +50,9 @@ func NewMessageDataRequestPastRequestsClientModelWithDefaults() *MessageDataRequ
 }
 
 // GetEntitlements returns the Entitlements field value
-func (o *MessageDataRequestPastRequestsClientModel) GetEntitlements() []map[string]interface{} {
+func (o *MessageDataRequestPastRequestsClientModel) GetEntitlements() []AccessRequestClientModel {
 	if o == nil {
-		var ret []map[string]interface{}
+		var ret []AccessRequestClientModel
 		return ret
 	}
 
@@ -59,7 +61,7 @@ func (o *MessageDataRequestPastRequestsClientModel) GetEntitlements() []map[stri
 
 // GetEntitlementsOk returns a tuple with the Entitlements field value
 // and a boolean to check if the value has been set.
-func (o *MessageDataRequestPastRequestsClientModel) GetEntitlementsOk() ([]map[string]interface{}, bool) {
+func (o *MessageDataRequestPastRequestsClientModel) GetEntitlementsOk() ([]AccessRequestClientModel, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -67,7 +69,7 @@ func (o *MessageDataRequestPastRequestsClientModel) GetEntitlementsOk() ([]map[s
 }
 
 // SetEntitlements sets field value
-func (o *MessageDataRequestPastRequestsClientModel) SetEntitlements(v []map[string]interface{}) {
+func (o *MessageDataRequestPastRequestsClientModel) SetEntitlements(v []AccessRequestClientModel) {
 	o.Entitlements = v
 }
 
@@ -119,6 +121,30 @@ func (o *MessageDataRequestPastRequestsClientModel) SetRequiresApproval(v bool) 
 	o.RequiresApproval = v
 }
 
+// GetValidRequest returns the ValidRequest field value
+func (o *MessageDataRequestPastRequestsClientModel) GetValidRequest() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.ValidRequest
+}
+
+// GetValidRequestOk returns a tuple with the ValidRequest field value
+// and a boolean to check if the value has been set.
+func (o *MessageDataRequestPastRequestsClientModel) GetValidRequestOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.ValidRequest, true
+}
+
+// SetValidRequest sets field value
+func (o *MessageDataRequestPastRequestsClientModel) SetValidRequest(v bool) {
+	o.ValidRequest = v
+}
+
 func (o MessageDataRequestPastRequestsClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -132,6 +158,7 @@ func (o MessageDataRequestPastRequestsClientModel) ToMap() (map[string]interface
 	toSerialize["entitlements"] = o.Entitlements
 	toSerialize["justification"] = o.Justification
 	toSerialize["requires_approval"] = o.RequiresApproval
+	toSerialize["valid_request"] = o.ValidRequest
 	return toSerialize, nil
 }
 
@@ -143,6 +170,7 @@ func (o *MessageDataRequestPastRequestsClientModel) UnmarshalJSON(bytes []byte) 
 		"entitlements",
 		"justification",
 		"requires_approval",
+		"valid_request",
 	}
 
 	allProperties := make(map[string]interface{})

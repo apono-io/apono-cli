@@ -20,9 +20,10 @@ type AccessRequestsScopeModel string
 
 // List of AccessRequestsScopeModel
 const (
-	ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS       AccessRequestsScopeModel = "MyRequests"
-	ACCESSREQUESTSSCOPEMODEL_MY_TASKS          AccessRequestsScopeModel = "MyTasks"
-	ACCESSREQUESTSSCOPEMODEL_MY_HISTORIC_TASKS AccessRequestsScopeModel = "MyHistoricTasks"
+	ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS           AccessRequestsScopeModel = "MyRequests"
+	ACCESSREQUESTSSCOPEMODEL_MY_TASKS              AccessRequestsScopeModel = "MyTasks"
+	ACCESSREQUESTSSCOPEMODEL_MY_HISTORIC_TASKS     AccessRequestsScopeModel = "MyHistoricTasks"
+	ACCESSREQUESTSSCOPEMODEL_MY_DELEGATED_REQUESTS AccessRequestsScopeModel = "MyDelegatedRequests"
 )
 
 // All allowed values of AccessRequestsScopeModel enum
@@ -30,6 +31,7 @@ var AllowedAccessRequestsScopeModelEnumValues = []AccessRequestsScopeModel{
 	"MyRequests",
 	"MyTasks",
 	"MyHistoricTasks",
+	"MyDelegatedRequests",
 }
 
 func (v *AccessRequestsScopeModel) UnmarshalJSON(src []byte) error {
