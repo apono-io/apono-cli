@@ -2,15 +2,12 @@ package actions
 
 import (
 	"bufio"
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/apono-io/apono-cli/pkg/clientapi"
-	"io"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 
 	"github.com/spf13/cobra"
 
@@ -20,7 +17,6 @@ import (
 )
 
 const (
-	McpEndpointPath      = "/api/client/v1/mcp"
 	EmptyErrorStatusCode = 0
 	debugFlagName        = "debug"
 
@@ -86,17 +82,20 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 			continue
 		}
 
-		var requestData map[string]interface{}
-		if err := json.Unmarshal([]byte(line), &requestData); err == nil {
-			if method, ok := requestData["method"].(string); ok {
-				utils.McpLogf("Received request method: \"%s\"", method)
-				if debug {
-					utils.McpLogf("[Debug]: Request body: %s", line)
-				}
-			}
+		mcpRequest, method, err := parseMcpRequest(line)
+		if err != nil {
+			utils.McpLogf("[Error]: %v", err)
+			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to parse request")
+			fmt.Println(errorResponse)
+			continue
 		}
 
-		response, httpResponse, err := mcpClient.McpRequest(requestData).Execute()
+		utils.McpLogf("Received request method: \"%s\"", method)
+		if debug {
+			utils.McpLogf("[Debug]: Request body: %s", line)
+		}
+
+		response, httpResponse, err := mcpClient.McpRequest(mcpRequest).Execute()
 		if err != nil {
 			utils.McpLogf("[Error]: MCP client request failed: %v", err)
 			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
@@ -104,7 +103,6 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 			continue
 		}
 		statusCode := httpResponse.StatusCode
-		/*response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)*/
 
 		if statusCode == EmptyErrorStatusCode {
 			utils.McpLogf("[Error]: Failed to process request, sending error response")
@@ -113,7 +111,7 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 			continue
 		}
 
-		propagateResponseToStdout(response, statusCode)
+		propagateResponseToStdout(response)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -124,64 +122,35 @@ func runSTDIOServer(mcpClient clientapi.ApiHandleMcpMethodRequest, debug bool) e
 	return nil
 }
 
-func sendMcpRequest(endpoint string, httpClient *http.Client, request string, debug bool) (string, int) {
-	if debug {
-		utils.McpLogf("[Debug]: Sending request to endpoint: %s", endpoint)
-	}
-
-	httpReq, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer([]byte(request)))
-	if err != nil {
-		utils.McpLogf("[Error]: Failed to create HTTP request: %v", err)
-		return "", EmptyErrorStatusCode
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	resp, err := httpClient.Do(httpReq)
-	if err != nil {
-		utils.McpLogf("[Error]: Failed to send HTTP request: %v", err)
-		return "", EmptyErrorStatusCode
-	}
-	defer func(Body io.ReadCloser) {
-		closeErr := Body.Close()
-		if closeErr != nil {
-			utils.McpLogf("WARNING: Failed to close response body: %v", closeErr)
-		}
-	}(resp.Body)
-
-	utils.McpLogf("HTTP response status: %d", resp.StatusCode)
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		utils.McpLogf("[Error]: Authentication failed - Status: %d", resp.StatusCode)
-		errorResponse := createErrorResponse(ErrorCodeAuthenticationFailed, "Authentication failed", "Please run 'apono login' command to authenticate")
-		return errorResponse, resp.StatusCode
-	}
-
-	if resp.StatusCode == http.StatusForbidden {
-		utils.McpLogf("[Error]: Authorization failed - Status: %d", resp.StatusCode)
-		errorResponse := createErrorResponse(ErrorCodeAuthorizationFailed, "Authorization failed", "Access forbidden")
-		return errorResponse, resp.StatusCode
-	}
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		utils.McpLogf("[Error]: Failed to read response body: %v", err)
-		return "", resp.StatusCode
-	}
-
-	if debug {
-		utils.McpLogf("[Debug]: Response body: %s", string(responseBody))
-	}
-
-	response := string(responseBody)
-
-	return response, resp.StatusCode
-}
-
-func propagateResponseToStdout(response *clientapi.McpResponse, statusCode int) {
+func propagateResponseToStdout(response *clientapi.McpResponse) {
 	fmt.Println(response)
-	return
 }
 
 func createErrorResponse(errorCode int, message, data string) string {
 	return fmt.Sprintf(`{"jsonrpc":"2.0","id":null,"error":{"code":%d,"message":"%s","data":"%s"}}`, errorCode, message, data)
+}
+
+func parseMcpRequest(line string) (clientapi.McpRequest, string, error) {
+	var requestData map[string]interface{}
+	if err := json.Unmarshal([]byte(line), &requestData); err != nil {
+		return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request JSON: %w", err)
+	}
+
+	isStandardRequest := requestData["id"] != nil
+
+	if isStandardRequest {
+		var standardRequest clientapi.StandardMcpRequest
+		if err := json.Unmarshal([]byte(line), &standardRequest); err != nil {
+			return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request as StandardMcpRequest: %w", err)
+		}
+		mcpRequest := clientapi.StandardMcpRequestAsMcpRequest(&standardRequest)
+		return mcpRequest, standardRequest.Method, nil
+	} else {
+		var notificationRequest clientapi.NotificationMcpRequest
+		if err := json.Unmarshal([]byte(line), &notificationRequest); err != nil {
+			return clientapi.McpRequest{}, "", fmt.Errorf("failed to parse request as NotificationMcpRequest: %w", err)
+		}
+		mcpRequest := clientapi.NotificationMcpRequestAsMcpRequest(&notificationRequest)
+		return mcpRequest, notificationRequest.Method, nil
+	}
 }
