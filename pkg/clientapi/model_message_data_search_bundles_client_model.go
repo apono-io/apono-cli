@@ -20,9 +20,9 @@ var _ MappedNullable = &MessageDataSearchBundlesClientModel{}
 
 // MessageDataSearchBundlesClientModel struct for MessageDataSearchBundlesClientModel
 type MessageDataSearchBundlesClientModel struct {
-	Total   int32                    `json:"total"`
-	HasMore bool                     `json:"has_more"`
-	Data    []map[string]interface{} `json:"data"`
+	Total   int32               `json:"total"`
+	HasMore bool                `json:"has_more"`
+	Data    []BundleClientModel `json:"data"`
 }
 
 type _MessageDataSearchBundlesClientModel MessageDataSearchBundlesClientModel
@@ -31,7 +31,7 @@ type _MessageDataSearchBundlesClientModel MessageDataSearchBundlesClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataSearchBundlesClientModel(total int32, hasMore bool, data []map[string]interface{}) *MessageDataSearchBundlesClientModel {
+func NewMessageDataSearchBundlesClientModel(total int32, hasMore bool, data []BundleClientModel) *MessageDataSearchBundlesClientModel {
 	this := MessageDataSearchBundlesClientModel{}
 	this.Total = total
 	this.HasMore = hasMore
@@ -96,9 +96,9 @@ func (o *MessageDataSearchBundlesClientModel) SetHasMore(v bool) {
 }
 
 // GetData returns the Data field value
-func (o *MessageDataSearchBundlesClientModel) GetData() []map[string]interface{} {
+func (o *MessageDataSearchBundlesClientModel) GetData() []BundleClientModel {
 	if o == nil {
-		var ret []map[string]interface{}
+		var ret []BundleClientModel
 		return ret
 	}
 
@@ -107,7 +107,7 @@ func (o *MessageDataSearchBundlesClientModel) GetData() []map[string]interface{}
 
 // GetDataOk returns a tuple with the Data field value
 // and a boolean to check if the value has been set.
-func (o *MessageDataSearchBundlesClientModel) GetDataOk() ([]map[string]interface{}, bool) {
+func (o *MessageDataSearchBundlesClientModel) GetDataOk() ([]BundleClientModel, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -115,7 +115,7 @@ func (o *MessageDataSearchBundlesClientModel) GetDataOk() ([]map[string]interfac
 }
 
 // SetData sets field value
-func (o *MessageDataSearchBundlesClientModel) SetData(v []map[string]interface{}) {
+func (o *MessageDataSearchBundlesClientModel) SetData(v []BundleClientModel) {
 	o.Data = v
 }
 

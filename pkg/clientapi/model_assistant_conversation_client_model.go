@@ -21,10 +21,10 @@ var _ MappedNullable = &AssistantConversationClientModel{}
 
 // AssistantConversationClientModel struct for AssistantConversationClientModel
 type AssistantConversationClientModel struct {
-	Id     string `json:"id"`
-	Number int32  `json:"number"`
+	Id    string `json:"id"`
+	Title string `json:"title"`
 	// ISO 8601 formatted date-time
-	StartDate time.Time `json:"start_date"`
+	CreatedDate time.Time `json:"created_date"`
 	// ISO 8601 formatted date-time
 	LastMessageDate time.Time `json:"last_message_date"`
 }
@@ -35,11 +35,11 @@ type _AssistantConversationClientModel AssistantConversationClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAssistantConversationClientModel(id string, number int32, startDate time.Time, lastMessageDate time.Time) *AssistantConversationClientModel {
+func NewAssistantConversationClientModel(id string, title string, createdDate time.Time, lastMessageDate time.Time) *AssistantConversationClientModel {
 	this := AssistantConversationClientModel{}
 	this.Id = id
-	this.Number = number
-	this.StartDate = startDate
+	this.Title = title
+	this.CreatedDate = createdDate
 	this.LastMessageDate = lastMessageDate
 	return &this
 }
@@ -76,52 +76,52 @@ func (o *AssistantConversationClientModel) SetId(v string) {
 	o.Id = v
 }
 
-// GetNumber returns the Number field value
-func (o *AssistantConversationClientModel) GetNumber() int32 {
+// GetTitle returns the Title field value
+func (o *AssistantConversationClientModel) GetTitle() string {
 	if o == nil {
-		var ret int32
+		var ret string
 		return ret
 	}
 
-	return o.Number
+	return o.Title
 }
 
-// GetNumberOk returns a tuple with the Number field value
+// GetTitleOk returns a tuple with the Title field value
 // and a boolean to check if the value has been set.
-func (o *AssistantConversationClientModel) GetNumberOk() (*int32, bool) {
+func (o *AssistantConversationClientModel) GetTitleOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Number, true
+	return &o.Title, true
 }
 
-// SetNumber sets field value
-func (o *AssistantConversationClientModel) SetNumber(v int32) {
-	o.Number = v
+// SetTitle sets field value
+func (o *AssistantConversationClientModel) SetTitle(v string) {
+	o.Title = v
 }
 
-// GetStartDate returns the StartDate field value
-func (o *AssistantConversationClientModel) GetStartDate() time.Time {
+// GetCreatedDate returns the CreatedDate field value
+func (o *AssistantConversationClientModel) GetCreatedDate() time.Time {
 	if o == nil {
 		var ret time.Time
 		return ret
 	}
 
-	return o.StartDate
+	return o.CreatedDate
 }
 
-// GetStartDateOk returns a tuple with the StartDate field value
+// GetCreatedDateOk returns a tuple with the CreatedDate field value
 // and a boolean to check if the value has been set.
-func (o *AssistantConversationClientModel) GetStartDateOk() (*time.Time, bool) {
+func (o *AssistantConversationClientModel) GetCreatedDateOk() (*time.Time, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.StartDate, true
+	return &o.CreatedDate, true
 }
 
-// SetStartDate sets field value
-func (o *AssistantConversationClientModel) SetStartDate(v time.Time) {
-	o.StartDate = v
+// SetCreatedDate sets field value
+func (o *AssistantConversationClientModel) SetCreatedDate(v time.Time) {
+	o.CreatedDate = v
 }
 
 // GetLastMessageDate returns the LastMessageDate field value
@@ -159,8 +159,8 @@ func (o AssistantConversationClientModel) MarshalJSON() ([]byte, error) {
 func (o AssistantConversationClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
-	toSerialize["number"] = o.Number
-	toSerialize["start_date"] = o.StartDate
+	toSerialize["title"] = o.Title
+	toSerialize["created_date"] = o.CreatedDate
 	toSerialize["last_message_date"] = o.LastMessageDate
 	return toSerialize, nil
 }
@@ -171,8 +171,8 @@ func (o *AssistantConversationClientModel) UnmarshalJSON(bytes []byte) (err erro
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"id",
-		"number",
-		"start_date",
+		"title",
+		"created_date",
 		"last_message_date",
 	}
 

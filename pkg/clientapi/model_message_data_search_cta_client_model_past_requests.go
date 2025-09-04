@@ -20,9 +20,9 @@ var _ MappedNullable = &MessageDataSearchCTAClientModelPastRequests{}
 
 // MessageDataSearchCTAClientModelPastRequests struct for MessageDataSearchCTAClientModelPastRequests
 type MessageDataSearchCTAClientModelPastRequests struct {
-	Total   int32                    `json:"total"`
-	HasMore bool                     `json:"has_more"`
-	Data    []map[string]interface{} `json:"data"`
+	Total   int32                      `json:"total"`
+	HasMore bool                       `json:"has_more"`
+	Data    []AccessRequestClientModel `json:"data"`
 }
 
 type _MessageDataSearchCTAClientModelPastRequests MessageDataSearchCTAClientModelPastRequests
@@ -31,7 +31,7 @@ type _MessageDataSearchCTAClientModelPastRequests MessageDataSearchCTAClientMode
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataSearchCTAClientModelPastRequests(total int32, hasMore bool, data []map[string]interface{}) *MessageDataSearchCTAClientModelPastRequests {
+func NewMessageDataSearchCTAClientModelPastRequests(total int32, hasMore bool, data []AccessRequestClientModel) *MessageDataSearchCTAClientModelPastRequests {
 	this := MessageDataSearchCTAClientModelPastRequests{}
 	this.Total = total
 	this.HasMore = hasMore
@@ -96,9 +96,9 @@ func (o *MessageDataSearchCTAClientModelPastRequests) SetHasMore(v bool) {
 }
 
 // GetData returns the Data field value
-func (o *MessageDataSearchCTAClientModelPastRequests) GetData() []map[string]interface{} {
+func (o *MessageDataSearchCTAClientModelPastRequests) GetData() []AccessRequestClientModel {
 	if o == nil {
-		var ret []map[string]interface{}
+		var ret []AccessRequestClientModel
 		return ret
 	}
 
@@ -107,7 +107,7 @@ func (o *MessageDataSearchCTAClientModelPastRequests) GetData() []map[string]int
 
 // GetDataOk returns a tuple with the Data field value
 // and a boolean to check if the value has been set.
-func (o *MessageDataSearchCTAClientModelPastRequests) GetDataOk() ([]map[string]interface{}, bool) {
+func (o *MessageDataSearchCTAClientModelPastRequests) GetDataOk() ([]AccessRequestClientModel, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -115,7 +115,7 @@ func (o *MessageDataSearchCTAClientModelPastRequests) GetDataOk() ([]map[string]
 }
 
 // SetData sets field value
-func (o *MessageDataSearchCTAClientModelPastRequests) SetData(v []map[string]interface{}) {
+func (o *MessageDataSearchCTAClientModelPastRequests) SetData(v []AccessRequestClientModel) {
 	o.Data = v
 }
 

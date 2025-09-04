@@ -20,9 +20,10 @@ var _ MappedNullable = &MessageDataRequestCTAClientModelResourcesRequest{}
 
 // MessageDataRequestCTAClientModelResourcesRequest struct for MessageDataRequestCTAClientModelResourcesRequest
 type MessageDataRequestCTAClientModelResourcesRequest struct {
-	Entitlements     []map[string]interface{} `json:"entitlements"`
-	Justification    string                   `json:"justification"`
-	RequiresApproval bool                     `json:"requires_approval"`
+	Entitlements     []AccessUnitClientModel `json:"entitlements"`
+	Justification    string                  `json:"justification"`
+	RequiresApproval bool                    `json:"requires_approval"`
+	ValidRequest     bool                    `json:"valid_request"`
 }
 
 type _MessageDataRequestCTAClientModelResourcesRequest MessageDataRequestCTAClientModelResourcesRequest
@@ -31,11 +32,12 @@ type _MessageDataRequestCTAClientModelResourcesRequest MessageDataRequestCTAClie
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataRequestCTAClientModelResourcesRequest(entitlements []map[string]interface{}, justification string, requiresApproval bool) *MessageDataRequestCTAClientModelResourcesRequest {
+func NewMessageDataRequestCTAClientModelResourcesRequest(entitlements []AccessUnitClientModel, justification string, requiresApproval bool, validRequest bool) *MessageDataRequestCTAClientModelResourcesRequest {
 	this := MessageDataRequestCTAClientModelResourcesRequest{}
 	this.Entitlements = entitlements
 	this.Justification = justification
 	this.RequiresApproval = requiresApproval
+	this.ValidRequest = validRequest
 	return &this
 }
 
@@ -48,9 +50,9 @@ func NewMessageDataRequestCTAClientModelResourcesRequestWithDefaults() *MessageD
 }
 
 // GetEntitlements returns the Entitlements field value
-func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlements() []map[string]interface{} {
+func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlements() []AccessUnitClientModel {
 	if o == nil {
-		var ret []map[string]interface{}
+		var ret []AccessUnitClientModel
 		return ret
 	}
 
@@ -59,7 +61,7 @@ func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlements() []m
 
 // GetEntitlementsOk returns a tuple with the Entitlements field value
 // and a boolean to check if the value has been set.
-func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlementsOk() ([]map[string]interface{}, bool) {
+func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlementsOk() ([]AccessUnitClientModel, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -67,7 +69,7 @@ func (o *MessageDataRequestCTAClientModelResourcesRequest) GetEntitlementsOk() (
 }
 
 // SetEntitlements sets field value
-func (o *MessageDataRequestCTAClientModelResourcesRequest) SetEntitlements(v []map[string]interface{}) {
+func (o *MessageDataRequestCTAClientModelResourcesRequest) SetEntitlements(v []AccessUnitClientModel) {
 	o.Entitlements = v
 }
 
@@ -119,6 +121,30 @@ func (o *MessageDataRequestCTAClientModelResourcesRequest) SetRequiresApproval(v
 	o.RequiresApproval = v
 }
 
+// GetValidRequest returns the ValidRequest field value
+func (o *MessageDataRequestCTAClientModelResourcesRequest) GetValidRequest() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.ValidRequest
+}
+
+// GetValidRequestOk returns a tuple with the ValidRequest field value
+// and a boolean to check if the value has been set.
+func (o *MessageDataRequestCTAClientModelResourcesRequest) GetValidRequestOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.ValidRequest, true
+}
+
+// SetValidRequest sets field value
+func (o *MessageDataRequestCTAClientModelResourcesRequest) SetValidRequest(v bool) {
+	o.ValidRequest = v
+}
+
 func (o MessageDataRequestCTAClientModelResourcesRequest) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -132,6 +158,7 @@ func (o MessageDataRequestCTAClientModelResourcesRequest) ToMap() (map[string]in
 	toSerialize["entitlements"] = o.Entitlements
 	toSerialize["justification"] = o.Justification
 	toSerialize["requires_approval"] = o.RequiresApproval
+	toSerialize["valid_request"] = o.ValidRequest
 	return toSerialize, nil
 }
 
@@ -143,6 +170,7 @@ func (o *MessageDataRequestCTAClientModelResourcesRequest) UnmarshalJSON(bytes [
 		"entitlements",
 		"justification",
 		"requires_approval",
+		"valid_request",
 	}
 
 	allProperties := make(map[string]interface{})

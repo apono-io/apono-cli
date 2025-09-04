@@ -22,6 +22,7 @@ var _ MappedNullable = &AccessRequestClientModel{}
 type AccessRequestClientModel struct {
 	Id                    string                                    `json:"id"`
 	Requestor             UserClientModel                           `json:"requestor"`
+	Grantee               NullableAccessRequestClientModelGrantee   `json:"grantee,omitempty"`
 	CreationTime          float64                                   `json:"creation_time"`
 	RevocationTime        NullableFloat64                           `json:"revocation_time,omitempty"`
 	Status                RequestStatusClientModel                  `json:"status"`
@@ -105,6 +106,49 @@ func (o *AccessRequestClientModel) GetRequestorOk() (*UserClientModel, bool) {
 // SetRequestor sets field value
 func (o *AccessRequestClientModel) SetRequestor(v UserClientModel) {
 	o.Requestor = v
+}
+
+// GetGrantee returns the Grantee field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetGrantee() AccessRequestClientModelGrantee {
+	if o == nil || IsNil(o.Grantee.Get()) {
+		var ret AccessRequestClientModelGrantee
+		return ret
+	}
+	return *o.Grantee.Get()
+}
+
+// GetGranteeOk returns a tuple with the Grantee field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetGranteeOk() (*AccessRequestClientModelGrantee, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Grantee.Get(), o.Grantee.IsSet()
+}
+
+// HasGrantee returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasGrantee() bool {
+	if o != nil && o.Grantee.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetGrantee gets a reference to the given NullableAccessRequestClientModelGrantee and assigns it to the Grantee field.
+func (o *AccessRequestClientModel) SetGrantee(v AccessRequestClientModelGrantee) {
+	o.Grantee.Set(&v)
+}
+
+// SetGranteeNil sets the value for Grantee to be an explicit nil
+func (o *AccessRequestClientModel) SetGranteeNil() {
+	o.Grantee.Set(nil)
+}
+
+// UnsetGrantee ensures that no value is present for Grantee, not even an explicit nil
+func (o *AccessRequestClientModel) UnsetGrantee() {
+	o.Grantee.Unset()
 }
 
 // GetCreationTime returns the CreationTime field value
@@ -525,6 +569,9 @@ func (o AccessRequestClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
 	toSerialize["requestor"] = o.Requestor
+	if o.Grantee.IsSet() {
+		toSerialize["grantee"] = o.Grantee.Get()
+	}
 	toSerialize["creation_time"] = o.CreationTime
 	if o.RevocationTime.IsSet() {
 		toSerialize["revocation_time"] = o.RevocationTime.Get()

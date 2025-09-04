@@ -20,9 +20,9 @@ var _ MappedNullable = &MessageDataSearchCTAClientModelBundles{}
 
 // MessageDataSearchCTAClientModelBundles struct for MessageDataSearchCTAClientModelBundles
 type MessageDataSearchCTAClientModelBundles struct {
-	Total   int32                    `json:"total"`
-	HasMore bool                     `json:"has_more"`
-	Data    []map[string]interface{} `json:"data"`
+	Total   int32               `json:"total"`
+	HasMore bool                `json:"has_more"`
+	Data    []BundleClientModel `json:"data"`
 }
 
 type _MessageDataSearchCTAClientModelBundles MessageDataSearchCTAClientModelBundles
@@ -31,7 +31,7 @@ type _MessageDataSearchCTAClientModelBundles MessageDataSearchCTAClientModelBund
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMessageDataSearchCTAClientModelBundles(total int32, hasMore bool, data []map[string]interface{}) *MessageDataSearchCTAClientModelBundles {
+func NewMessageDataSearchCTAClientModelBundles(total int32, hasMore bool, data []BundleClientModel) *MessageDataSearchCTAClientModelBundles {
 	this := MessageDataSearchCTAClientModelBundles{}
 	this.Total = total
 	this.HasMore = hasMore
@@ -96,9 +96,9 @@ func (o *MessageDataSearchCTAClientModelBundles) SetHasMore(v bool) {
 }
 
 // GetData returns the Data field value
-func (o *MessageDataSearchCTAClientModelBundles) GetData() []map[string]interface{} {
+func (o *MessageDataSearchCTAClientModelBundles) GetData() []BundleClientModel {
 	if o == nil {
-		var ret []map[string]interface{}
+		var ret []BundleClientModel
 		return ret
 	}
 
@@ -107,7 +107,7 @@ func (o *MessageDataSearchCTAClientModelBundles) GetData() []map[string]interfac
 
 // GetDataOk returns a tuple with the Data field value
 // and a boolean to check if the value has been set.
-func (o *MessageDataSearchCTAClientModelBundles) GetDataOk() ([]map[string]interface{}, bool) {
+func (o *MessageDataSearchCTAClientModelBundles) GetDataOk() ([]BundleClientModel, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -115,7 +115,7 @@ func (o *MessageDataSearchCTAClientModelBundles) GetDataOk() ([]map[string]inter
 }
 
 // SetData sets field value
-func (o *MessageDataSearchCTAClientModelBundles) SetData(v []map[string]interface{}) {
+func (o *MessageDataSearchCTAClientModelBundles) SetData(v []BundleClientModel) {
 	o.Data = v
 }
 

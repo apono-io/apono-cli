@@ -473,9 +473,11 @@ type ApiListAccessRequestsRequest struct {
 	ApiService       *AccessRequestsAPIService
 	scope            *AccessRequestsScopeModel
 	favoriteOnly     *bool
+	granteeIds       *[]string
 	includeAutogrant *bool
 	limit            *int32
 	requestIds       *[]string
+	requestorIds     *[]string
 	skip             *int32
 	statuses         *[]string
 }
@@ -487,6 +489,11 @@ func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiL
 
 func (r ApiListAccessRequestsRequest) FavoriteOnly(favoriteOnly bool) ApiListAccessRequestsRequest {
 	r.favoriteOnly = &favoriteOnly
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) GranteeIds(granteeIds []string) ApiListAccessRequestsRequest {
+	r.granteeIds = &granteeIds
 	return r
 }
 
@@ -502,6 +509,11 @@ func (r ApiListAccessRequestsRequest) Limit(limit int32) ApiListAccessRequestsRe
 
 func (r ApiListAccessRequestsRequest) RequestIds(requestIds []string) ApiListAccessRequestsRequest {
 	r.requestIds = &requestIds
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) RequestorIds(requestorIds []string) ApiListAccessRequestsRequest {
+	r.requestorIds = &requestorIds
 	return r
 }
 
@@ -563,6 +575,17 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 		var defaultValue bool = false
 		r.favoriteOnly = &defaultValue
 	}
+	if r.granteeIds != nil {
+		t := *r.granteeIds
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "grantee_ids", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "grantee_ids", t, "multi")
+		}
+	}
 	if r.includeAutogrant != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "include_autogrant", r.includeAutogrant, "")
 	} else {
@@ -586,6 +609,17 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 			parameterAddToHeaderOrQuery(localVarQueryParams, "request_ids", t, "multi")
 		}
 	}
+	if r.requestorIds != nil {
+		t := *r.requestorIds
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "requestor_ids", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "requestor_ids", t, "multi")
+		}
+	}
 	parameterAddToHeaderOrQuery(localVarQueryParams, "scope", r.scope, "")
 	if r.skip != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "skip", r.skip, "")
@@ -602,6 +636,124 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 			}
 		} else {
 			parameterAddToHeaderOrQuery(localVarQueryParams, "statuses", t, "multi")
+		}
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiListAccessRequestsUnitsRequest struct {
+	ctx        context.Context
+	ApiService *AccessRequestsAPIService
+	requestId  *[]string
+}
+
+func (r ApiListAccessRequestsUnitsRequest) RequestId(requestId []string) ApiListAccessRequestsUnitsRequest {
+	r.requestId = &requestId
+	return r
+}
+
+func (r ApiListAccessRequestsUnitsRequest) Execute() ([]AccessRequestUnitClientModel, *http.Response, error) {
+	return r.ApiService.ListAccessRequestsUnitsExecute(r)
+}
+
+/*
+ListAccessRequestsUnits list access requests units by request IDs or friendly IDs
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiListAccessRequestsUnitsRequest
+*/
+func (a *AccessRequestsAPIService) ListAccessRequestsUnits(ctx context.Context) ApiListAccessRequestsUnitsRequest {
+	return ApiListAccessRequestsUnitsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return []AccessRequestUnitClientModel
+func (a *AccessRequestsAPIService) ListAccessRequestsUnitsExecute(r ApiListAccessRequestsUnitsRequest) ([]AccessRequestUnitClientModel, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue []AccessRequestUnitClientModel
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.ListAccessRequestsUnits")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-requests/access_units"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.requestId == nil {
+		return localVarReturnValue, nil, reportError("requestId is required and must be specified")
+	}
+
+	{
+		t := *r.requestId
+		if reflect.TypeOf(t).Kind() == reflect.Slice {
+			s := reflect.ValueOf(t)
+			for i := 0; i < s.Len(); i++ {
+				parameterAddToHeaderOrQuery(localVarQueryParams, "request_id", s.Index(i).Interface(), "multi")
+			}
+		} else {
+			parameterAddToHeaderOrQuery(localVarQueryParams, "request_id", t, "multi")
 		}
 	}
 	// to determine the Content-Type header

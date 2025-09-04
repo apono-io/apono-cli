@@ -24,6 +24,7 @@ type UserSettingsClientModel struct {
 	MfaEnabledForAccount            bool                      `json:"mfa_enabled_for_account"`
 	RequestCustomFields             []RequestCustomFieldModel `json:"request_custom_fields"`
 	LogoutRedirectUrl               NullableString            `json:"logout_redirect_url,omitempty"`
+	DisableApproverReason           NullableBool              `json:"disable_approver_reason,omitempty"`
 }
 
 type _UserSettingsClientModel UserSettingsClientModel
@@ -163,6 +164,49 @@ func (o *UserSettingsClientModel) UnsetLogoutRedirectUrl() {
 	o.LogoutRedirectUrl.Unset()
 }
 
+// GetDisableApproverReason returns the DisableApproverReason field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *UserSettingsClientModel) GetDisableApproverReason() bool {
+	if o == nil || IsNil(o.DisableApproverReason.Get()) {
+		var ret bool
+		return ret
+	}
+	return *o.DisableApproverReason.Get()
+}
+
+// GetDisableApproverReasonOk returns a tuple with the DisableApproverReason field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *UserSettingsClientModel) GetDisableApproverReasonOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.DisableApproverReason.Get(), o.DisableApproverReason.IsSet()
+}
+
+// HasDisableApproverReason returns a boolean if a field has been set.
+func (o *UserSettingsClientModel) HasDisableApproverReason() bool {
+	if o != nil && o.DisableApproverReason.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetDisableApproverReason gets a reference to the given NullableBool and assigns it to the DisableApproverReason field.
+func (o *UserSettingsClientModel) SetDisableApproverReason(v bool) {
+	o.DisableApproverReason.Set(&v)
+}
+
+// SetDisableApproverReasonNil sets the value for DisableApproverReason to be an explicit nil
+func (o *UserSettingsClientModel) SetDisableApproverReasonNil() {
+	o.DisableApproverReason.Set(nil)
+}
+
+// UnsetDisableApproverReason ensures that no value is present for DisableApproverReason, not even an explicit nil
+func (o *UserSettingsClientModel) UnsetDisableApproverReason() {
+	o.DisableApproverReason.Unset()
+}
+
 func (o UserSettingsClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -178,6 +222,9 @@ func (o UserSettingsClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize["request_custom_fields"] = o.RequestCustomFields
 	if o.LogoutRedirectUrl.IsSet() {
 		toSerialize["logout_redirect_url"] = o.LogoutRedirectUrl.Get()
+	}
+	if o.DisableApproverReason.IsSet() {
+		toSerialize["disable_approver_reason"] = o.DisableApproverReason.Get()
 	}
 	return toSerialize, nil
 }

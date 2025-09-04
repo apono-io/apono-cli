@@ -44,6 +44,9 @@
       "name": "Inventory"
     },
     {
+      "name": "MCP Server"
+    },
+    {
       "name": "User Session"
     }
   ],
@@ -382,6 +385,17 @@
             }
           },
           {
+            "name": "grantee_ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
             "name": "include_autogrant",
             "in": "query",
             "schema": {
@@ -400,6 +414,17 @@
           },
           {
             "name": "request_ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true
+            }
+          },
+          {
+            "name": "requestor_ids",
             "in": "query",
             "schema": {
               "type": "array",
@@ -481,6 +506,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AccessRequestSubmittedClientResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/access_units": {
+      "get": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "list access requests units by request IDs or friendly IDs",
+        "operationId": "listAccessRequestsUnits",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccessRequestUnitClientModel"
+                  }
                 }
               }
             }
@@ -1253,6 +1315,78 @@
         }
       }
     },
+    "/api/client/v1/filters/options": {
+      "get": {
+        "tags": [
+          "Filters"
+        ],
+        "summary": "List filter options",
+        "operationId": "listFilterOptions",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AccessRequestsScopeModel"
+                },
+                {
+                  "default": "MyRequests"
+                }
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelFilterOptionClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/inventory/access-units": {
       "get": {
         "tags": [
@@ -1427,11 +1561,11 @@
         "tags": [
           "Inventory"
         ],
-        "summary": "List grantees",
+        "summary": "List grantees resolvable for given user",
         "operationId": "listGrantees",
         "parameters": [
           {
-            "name": "filter_type",
+            "name": "grantee_type",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1983,37 +2117,6 @@
         }
       }
     },
-    "/api/client/v1/assistant": {
-      "post": {
-        "tags": [
-          "Inventory"
-        ],
-        "summary": "Post Message to assistant",
-        "operationId": "postMessageToAssistant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssistantMessageRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssistantMessageResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/client/v1/assistant/chat": {
       "post": {
         "tags": [
@@ -2050,7 +2153,7 @@
         "tags": [
           "Access Assistant"
         ],
-        "summary": "Search all conversations",
+        "summary": "List all conversations",
         "operationId": "listAssistantConversations",
         "parameters": [
           {
@@ -2086,10 +2189,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AssistantConversationClientModel"
-                  }
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAssistantConversationClientModel"
                 }
               }
             }
@@ -2144,15 +2244,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponse"
-                }
-              }
-            }
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -2198,10 +2291,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AssistantMessageClientModel"
-                  }
+                  "$ref": "#/components/schemas/PaginatedClientResponseModelAssistantMessageClientModel"
                 }
               }
             }
@@ -2258,40 +2348,28 @@
         }
       }
     },
-    "/api/client/v1/assistant/prompts": {
-      "get": {
-        "tags": [
-          "Inventory"
-        ],
-        "summary": "Get all system prompts latest versions",
-        "operationId": "listAllSystemPrompts",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SystemPromptClientModel"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
+    "/api/client/v1/mcp": {
       "post": {
         "tags": [
-          "Inventory"
+          "MCP Server"
         ],
-        "summary": "Create a new version of a system prompt",
-        "operationId": "createPromptVersion",
+        "summary": "Handle MCP method calls via JsonRPC",
+        "operationId": "handleMcpMethod",
+        "parameters": [
+          {
+            "name": "User-Agent",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreatePromptVersionRequest"
+                "$ref": "#/components/schemas/McpRequest"
               }
             }
           },
@@ -2303,120 +2381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SystemPromptClientModel"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/client/v1/assistant/prompts/{id}/versions": {
-      "get": {
-        "tags": [
-          "Inventory"
-        ],
-        "summary": "Get all versions of a system prompt",
-        "operationId": "getPromptVersions",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SystemPromptClientModel"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/client/v1/assistant/prompts/{id}/versions/{version}": {
-      "get": {
-        "tags": [
-          "Inventory"
-        ],
-        "summary": "Get a specific version of a system prompt",
-        "operationId": "getPromptVersion",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "version",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SystemPromptClientModel"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/client/v1/assistant/prompts/{id}/versions/{version}/content": {
-      "get": {
-        "tags": [
-          "Inventory"
-        ],
-        "summary": "Get the prompt content as plain text",
-        "description": "Retrieves just the prompt content as plain text/markdown without JSON escaping for easy copying",
-        "operationId": "getPromptContent",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "version",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Instant"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/McpResponse"
                 }
               }
             }
@@ -2514,6 +2479,15 @@
           },
           "requestor": {
             "$ref": "#/components/schemas/UserClientModel"
+          },
+          "grantee": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GranteeClientModel"
+              }
+            ],
+            "nullable": true
           },
           "creation_time": {
             "$ref": "#/components/schemas/Instant"
@@ -2655,6 +2629,24 @@
         ],
         "type": "string"
       },
+      "AccessRequestUnitClientModel": {
+        "required": [
+          "id",
+          "access_units"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "access_units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessUnitClientModel"
+            }
+          }
+        }
+      },
       "AccessRequestsAffectedByMfa": {
         "required": [
           "total",
@@ -2678,7 +2670,8 @@
         "enum": [
           "MyRequests",
           "MyTasks",
-          "MyHistoricTasks"
+          "MyHistoricTasks",
+          "MyDelegatedRequests"
         ],
         "type": "string"
       },
@@ -3057,6 +3050,10 @@
           "run_pre_approval_validations": {
             "type": "boolean",
             "nullable": true
+          },
+          "grantee_id": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -3199,6 +3196,38 @@
             "items": {
               "$ref": "#/components/schemas/DryRunAccessRequestError"
             }
+          }
+        }
+      },
+      "FilterOptionClientModel": {
+        "required": [
+          "id",
+          "type",
+          "source_id",
+          "display_name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IconsConfigClientModel"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -3418,6 +3447,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BundleClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelFilterOptionClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOptionClientModel"
             }
           },
           "pagination": {
@@ -3948,6 +3995,10 @@
           "logout_redirect_url": {
             "type": "string",
             "nullable": true
+          },
+          "disable_approver_reason": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       },
@@ -3956,20 +4007,11 @@
         "description": "ISO 8601 formatted date-time",
         "type": "string"
       },
-      "AssistantAccessRequestClientModel": {
-        "type": "object"
-      },
-      "AssistantAccessUnitClientModel": {
-        "type": "object"
-      },
-      "AssistantBundleClientModel": {
-        "type": "object"
-      },
       "AssistantConversationClientModel": {
         "required": [
           "id",
-          "number",
-          "start_date",
+          "title",
+          "created_date",
           "last_message_date"
         ],
         "type": "object",
@@ -3977,11 +4019,10 @@
           "id": {
             "type": "string"
           },
-          "number": {
-            "format": "int32",
-            "type": "integer"
+          "title": {
+            "type": "string"
           },
-          "start_date": {
+          "created_date": {
             "$ref": "#/components/schemas/ApiInstant"
           },
           "last_message_date": {
@@ -4012,25 +4053,10 @@
           }
         }
       },
-      "AssistantLogEntryModel": {
-        "required": [
-          "message",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        }
-      },
       "AssistantMessageClientModel": {
         "required": [
           "id",
-          "number",
+          "message_ordinal",
           "role",
           "created_date",
           "data"
@@ -4040,7 +4066,7 @@
           "id": {
             "type": "string"
           },
-          "number": {
+          "message_ordinal": {
             "format": "int32",
             "type": "integer"
           },
@@ -4114,25 +4140,6 @@
           }
         }
       },
-      "AssistantMessageRequest": {
-        "required": [
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "system_prompt_id": {
-            "type": "string",
-            "nullable": true
-          },
-          "conversation_id": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
       "AssistantMessageRequestModel": {
         "required": [
           "type",
@@ -4156,24 +4163,6 @@
           }
         }
       },
-      "AssistantMessageResponse": {
-        "required": [
-          "message",
-          "logs"
-        ],
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "logs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AssistantLogEntryModel"
-            }
-          }
-        }
-      },
       "AssistantMessageResponseClientModel": {
         "required": [
           "conversation_id",
@@ -4193,25 +4182,6 @@
             "items": {
               "$ref": "#/components/schemas/AssistantConversationSuggestionClientModel"
             }
-          }
-        }
-      },
-      "CreatePromptVersionRequest": {
-        "required": [
-          "id",
-          "description",
-          "prompt"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "prompt": {
-            "type": "string"
           }
         }
       },
@@ -4241,20 +4211,24 @@
         "required": [
           "entitlements",
           "justification",
-          "requires_approval"
+          "requires_approval",
+          "valid_request"
         ],
         "type": "object",
         "properties": {
           "entitlements": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantBundleClientModel"
+              "$ref": "#/components/schemas/BundleClientModel"
             }
           },
           "justification": {
             "type": "string"
           },
           "requires_approval": {
+            "type": "boolean"
+          },
+          "valid_request": {
             "type": "boolean"
           }
         }
@@ -4295,20 +4269,24 @@
         "required": [
           "entitlements",
           "justification",
-          "requires_approval"
+          "requires_approval",
+          "valid_request"
         ],
         "type": "object",
         "properties": {
           "entitlements": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantAccessRequestClientModel"
+              "$ref": "#/components/schemas/AccessRequestClientModel"
             }
           },
           "justification": {
             "type": "string"
           },
           "requires_approval": {
+            "type": "boolean"
+          },
+          "valid_request": {
             "type": "boolean"
           }
         }
@@ -4317,20 +4295,24 @@
         "required": [
           "entitlements",
           "justification",
-          "requires_approval"
+          "requires_approval",
+          "valid_request"
         ],
         "type": "object",
         "properties": {
           "entitlements": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantAccessUnitClientModel"
+              "$ref": "#/components/schemas/AccessUnitClientModel"
             }
           },
           "justification": {
             "type": "string"
           },
           "requires_approval": {
+            "type": "boolean"
+          },
+          "valid_request": {
             "type": "boolean"
           }
         }
@@ -4353,7 +4335,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantBundleClientModel"
+              "$ref": "#/components/schemas/BundleClientModel"
             }
           }
         }
@@ -4408,7 +4390,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantAccessRequestClientModel"
+              "$ref": "#/components/schemas/AccessRequestClientModel"
             }
           }
         }
@@ -4417,7 +4399,8 @@
         "required": [
           "total",
           "has_more",
-          "data"
+          "data",
+          "filters"
         ],
         "type": "object",
         "properties": {
@@ -4433,33 +4416,164 @@
             "items": {
               "$ref": "#/components/schemas/ResourceClientModel"
             }
+          },
+          "filters": {
+            "$ref": "#/components/schemas/MessageDataSearchResourcesFiltersClientModel"
           }
         }
       },
-      "SystemPromptClientModel": {
+      "MessageDataSearchResourcesFiltersClientModel": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "nullable": true
+          },
+          "resource_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "PaginatedClientResponseModelAssistantConversationClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantConversationClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "PaginatedClientResponseModelAssistantMessageClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantMessageClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationClientInfoModel"
+          }
+        }
+      },
+      "McpError": {
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "McpRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StandardMcpRequest"
+          },
+          {
+            "$ref": "#/components/schemas/NotificationMcpRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "id",
+          "mapping": {
+            "StandardMcpRequest": "#/components/schemas/StandardMcpRequest",
+            "NotificationMcpRequest": "#/components/schemas/NotificationMcpRequest"
+          }
+        }
+      },
+      "StandardMcpRequest": {
         "required": [
           "id",
-          "name",
-          "description",
-          "version",
-          "is_default"
+          "jsonrpc",
+          "method"
         ],
         "type": "object",
         "properties": {
           "id": {
             "type": "string"
           },
-          "name": {
+          "params": {
+            "type": "object",
+            "nullable": true
+          },
+          "jsonrpc": {
             "type": "string"
           },
-          "description": {
+          "method": {
+            "type": "string"
+          }
+        }
+      },
+      "NotificationMcpRequest": {
+        "required": [
+          "jsonrpc",
+          "method"
+        ],
+        "type": "object",
+        "properties": {
+          "jsonrpc": {
             "type": "string"
           },
-          "version": {
-            "$ref": "#/components/schemas/Instant"
+          "method": {
+            "type": "string"
           },
-          "is_default": {
-            "type": "boolean"
+          "params": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "McpResponse": {
+        "required": [
+          "jsonrpc",
+          "id",
+          "result"
+        ],
+        "type": "object",
+        "properties": {
+          "jsonrpc": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "result": {},
+          "error": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/McpError"
+              }
+            ],
+            "nullable": true
           }
         }
       }

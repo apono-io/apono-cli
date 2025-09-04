@@ -31,6 +31,7 @@ type CreateAccessRequestClientModel struct {
 	DurationInSec             NullableInt32     `json:"duration_in_sec,omitempty"`
 	CustomFields              map[string]string `json:"custom_fields,omitempty"`
 	RunPreApprovalValidations NullableBool      `json:"run_pre_approval_validations,omitempty"`
+	GranteeId                 NullableString    `json:"grantee_id,omitempty"`
 }
 
 type _CreateAccessRequestClientModel CreateAccessRequestClientModel
@@ -389,6 +390,49 @@ func (o *CreateAccessRequestClientModel) UnsetRunPreApprovalValidations() {
 	o.RunPreApprovalValidations.Unset()
 }
 
+// GetGranteeId returns the GranteeId field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *CreateAccessRequestClientModel) GetGranteeId() string {
+	if o == nil || IsNil(o.GranteeId.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.GranteeId.Get()
+}
+
+// GetGranteeIdOk returns a tuple with the GranteeId field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *CreateAccessRequestClientModel) GetGranteeIdOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.GranteeId.Get(), o.GranteeId.IsSet()
+}
+
+// HasGranteeId returns a boolean if a field has been set.
+func (o *CreateAccessRequestClientModel) HasGranteeId() bool {
+	if o != nil && o.GranteeId.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetGranteeId gets a reference to the given NullableString and assigns it to the GranteeId field.
+func (o *CreateAccessRequestClientModel) SetGranteeId(v string) {
+	o.GranteeId.Set(&v)
+}
+
+// SetGranteeIdNil sets the value for GranteeId to be an explicit nil
+func (o *CreateAccessRequestClientModel) SetGranteeIdNil() {
+	o.GranteeId.Set(nil)
+}
+
+// UnsetGranteeId ensures that no value is present for GranteeId, not even an explicit nil
+func (o *CreateAccessRequestClientModel) UnsetGranteeId() {
+	o.GranteeId.Unset()
+}
+
 func (o CreateAccessRequestClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -417,6 +461,9 @@ func (o CreateAccessRequestClientModel) ToMap() (map[string]interface{}, error) 
 	}
 	if o.RunPreApprovalValidations.IsSet() {
 		toSerialize["run_pre_approval_validations"] = o.RunPreApprovalValidations.Get()
+	}
+	if o.GranteeId.IsSet() {
+		toSerialize["grantee_id"] = o.GranteeId.Get()
 	}
 	return toSerialize, nil
 }
