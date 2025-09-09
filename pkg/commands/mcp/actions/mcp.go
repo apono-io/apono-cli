@@ -99,6 +99,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
+	var hostname string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -113,10 +114,24 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 				if debug {
 					utils.McpLogf("[Debug]: Request body: %s", line)
 				}
+
+				if method == "initialize" {
+					var params map[string]interface{}
+					if params, ok = requestData["params"].(map[string]interface{}); ok {
+						var clientInfo map[string]interface{}
+						if clientInfo, ok = params["clientInfo"].(map[string]interface{}); ok {
+							var name string
+							if name, ok = clientInfo["name"].(string); ok {
+								hostname = name
+								utils.McpLogf("Client hostname set to: %s", hostname)
+							}
+						}
+					}
+				}
 			}
 		}
 
-		response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)
+		response, statusCode := sendMcpRequest(endpoint, httpClient, line, hostname, debug)
 
 		if statusCode == EmptyErrorStatusCode {
 			utils.McpLogf("[Error]: Failed to process request, sending error response")
@@ -136,7 +151,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	return nil
 }
 
-func sendMcpRequest(endpoint string, httpClient *http.Client, request string, debug bool) (string, int) {
+func sendMcpRequest(endpoint string, httpClient *http.Client, request string, userAgent string, debug bool) (string, int) {
 	if debug {
 		utils.McpLogf("[Debug]: Sending request to endpoint: %s", endpoint)
 	}
@@ -148,6 +163,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, de
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if userAgent != "" {
+		httpReq.Header.Set("User-Agent", userAgent)
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		utils.McpLogf("[Error]: Failed to send HTTP request: %v", err)
