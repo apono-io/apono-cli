@@ -123,7 +123,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 							var name string
 							if name, ok = clientInfo["name"].(string); ok {
 								clientName = name
-								utils.McpLogf("Client clientName set to: %s", clientName)
+								utils.McpLogf("Client name set to: %s", clientName)
 							}
 						}
 					}
