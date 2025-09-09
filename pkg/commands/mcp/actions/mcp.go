@@ -99,7 +99,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
-	var hostname string
+	var clientName string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -122,8 +122,8 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 						if clientInfo, ok = params["clientInfo"].(map[string]interface{}); ok {
 							var name string
 							if name, ok = clientInfo["name"].(string); ok {
-								hostname = name
-								utils.McpLogf("Client hostname set to: %s", hostname)
+								clientName = name
+								utils.McpLogf("Client clientName set to: %s", clientName)
 							}
 						}
 					}
@@ -131,7 +131,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 			}
 		}
 
-		response, statusCode := sendMcpRequest(endpoint, httpClient, line, hostname, debug)
+		response, statusCode := sendMcpRequest(endpoint, httpClient, line, clientName, debug)
 
 		if statusCode == EmptyErrorStatusCode {
 			utils.McpLogf("[Error]: Failed to process request, sending error response")
