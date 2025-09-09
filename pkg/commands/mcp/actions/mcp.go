@@ -115,17 +115,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 					utils.McpLogf("[Debug]: Request body: %s", line)
 				}
 
-				if method == "initialize" {
-					var params map[string]interface{}
-					if params, ok = requestData["params"].(map[string]interface{}); ok {
-						var clientInfo map[string]interface{}
-						if clientInfo, ok = params["clientInfo"].(map[string]interface{}); ok {
-							var name string
-							if name, ok = clientInfo["name"].(string); ok {
-								clientName = name
-								utils.McpLogf("Client name set to: %s", clientName)
-							}
-						}
+				if strings.ToLower(method) == "initialize" {
+					name := extractClientName(requestData)
+					if name != "" {
+						clientName = name
+						utils.McpLogf("Client name set to: %s", clientName)
 					}
 				}
 			}
@@ -149,6 +143,19 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	}
 
 	return nil
+}
+
+func extractClientName(requestData map[string]interface{}) string {
+	if params, ok := requestData["params"].(map[string]interface{}); ok {
+		var clientInfo map[string]interface{}
+		if clientInfo, ok = params["clientInfo"].(map[string]interface{}); ok {
+			var name string
+			if name, ok = clientInfo["name"].(string); ok {
+				return name
+			}
+		}
+	}
+	return ""
 }
 
 func sendMcpRequest(endpoint string, httpClient *http.Client, request string, userAgent string, debug bool) (string, int) {
