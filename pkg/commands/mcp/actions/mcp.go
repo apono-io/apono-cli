@@ -30,6 +30,14 @@ const (
 	ErrorCodeInternalError        = -32603
 )
 
+type InitializeClientParams struct {
+	Params struct {
+		ClientInfo struct {
+			Name string `json:"name"`
+		} `json:"clientInfo"`
+	} `json:"params"`
+}
+
 func MCP() *cobra.Command {
 	var debug bool
 
@@ -116,8 +124,11 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 				}
 
 				if strings.ToLower(method) == "initialize" {
-					name := extractClientName(requestData)
-					if name != "" {
+					var name string
+					name, err = extractClientName(requestData)
+					if err != nil {
+						utils.McpLogf("[Error]: Failed to extract client name: %v", err)
+					} else if name != "" {
 						clientName = name
 						utils.McpLogf("Client name set to: %s", clientName)
 					}
@@ -145,17 +156,16 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	return nil
 }
 
-func extractClientName(requestData map[string]interface{}) string {
-	if params, ok := requestData["params"].(map[string]interface{}); ok {
-		var clientInfo map[string]interface{}
-		if clientInfo, ok = params["clientInfo"].(map[string]interface{}); ok {
-			var name string
-			if name, ok = clientInfo["name"].(string); ok {
-				return name
-			}
-		}
+func extractClientName(requestData map[string]interface{}) (string, error) {
+	data, err := json.Marshal(requestData)
+	if err != nil {
+		return "", err
 	}
-	return ""
+	var params InitializeClientParams
+	if err = json.Unmarshal(data, &params); err != nil {
+		return "", err
+	}
+	return params.Params.ClientInfo.Name, nil
 }
 
 func sendMcpRequest(endpoint string, httpClient *http.Client, request string, userAgent string, debug bool) (string, int) {
