@@ -24,6 +24,7 @@ const (
 	McpEndpointPath      = "/api/client/v1/mcp"
 	EmptyErrorStatusCode = 0
 	debugFlagName        = "debug"
+	mcpMethodInitialize  = "initialize"
 
 	ErrorCodeAuthenticationFailed = -32001
 	ErrorCodeAuthorizationFailed  = -32003
@@ -123,9 +124,9 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 					utils.McpLogf("[Debug]: Request body: %s", line)
 				}
 
-				if strings.ToLower(method) == "initialize" {
+				if strings.ToLower(method) == mcpMethodInitialize {
 					var name string
-					name, err = extractClientName(requestData)
+					name, err = extractClientNameFromInitializeRequest(requestData)
 					if err != nil {
 						utils.McpLogf("[Error]: Failed to extract client name: %v", err)
 					} else if name != "" {
@@ -156,7 +157,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	return nil
 }
 
-func extractClientName(requestData map[string]interface{}) (string, error) {
+func extractClientNameFromInitializeRequest(requestData map[string]interface{}) (string, error) {
 	data, err := json.Marshal(requestData)
 	if err != nil {
 		return "", err
