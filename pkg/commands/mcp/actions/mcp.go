@@ -24,11 +24,20 @@ const (
 	McpEndpointPath      = "/api/client/v1/mcp"
 	EmptyErrorStatusCode = 0
 	debugFlagName        = "debug"
+	mcpMethodInitialize  = "initialize"
 
 	ErrorCodeAuthenticationFailed = -32001
 	ErrorCodeAuthorizationFailed  = -32003
 	ErrorCodeInternalError        = -32603
 )
+
+type InitializeClientParams struct {
+	Params struct {
+		ClientInfo struct {
+			Name string `json:"name"`
+		} `json:"clientInfo"`
+	} `json:"params"`
+}
 
 func MCP() *cobra.Command {
 	var debug bool
@@ -99,6 +108,7 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
+	var clientName string
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -113,10 +123,21 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 				if debug {
 					utils.McpLogf("[Debug]: Request body: %s", line)
 				}
+
+				if strings.ToLower(method) == mcpMethodInitialize {
+					var name string
+					name, err = extractClientNameFromInitializeRequest(requestData)
+					if err != nil {
+						utils.McpLogf("[Error]: Failed to extract client name: %v", err)
+					} else if name != "" {
+						clientName = name
+						utils.McpLogf("Client name set to: %s", clientName)
+					}
+				}
 			}
 		}
 
-		response, statusCode := sendMcpRequest(endpoint, httpClient, line, debug)
+		response, statusCode := sendMcpRequest(endpoint, httpClient, line, clientName, debug)
 
 		if statusCode == EmptyErrorStatusCode {
 			utils.McpLogf("[Error]: Failed to process request, sending error response")
@@ -136,7 +157,19 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 	return nil
 }
 
-func sendMcpRequest(endpoint string, httpClient *http.Client, request string, debug bool) (string, int) {
+func extractClientNameFromInitializeRequest(requestData map[string]interface{}) (string, error) {
+	data, err := json.Marshal(requestData)
+	if err != nil {
+		return "", err
+	}
+	var params InitializeClientParams
+	if err = json.Unmarshal(data, &params); err != nil {
+		return "", err
+	}
+	return params.Params.ClientInfo.Name, nil
+}
+
+func sendMcpRequest(endpoint string, httpClient *http.Client, request string, userAgent string, debug bool) (string, int) {
 	if debug {
 		utils.McpLogf("[Debug]: Sending request to endpoint: %s", endpoint)
 	}
@@ -148,6 +181,9 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, de
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if userAgent != "" {
+		httpReq.Header.Set("User-Agent", userAgent)
+	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
 		utils.McpLogf("[Error]: Failed to send HTTP request: %v", err)
