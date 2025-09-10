@@ -118,19 +118,19 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 
 	var clientName string
 
-	lineInput := make(chan string)
-	errs := make(chan error, 1)
+	lineCh := make(chan string)
+	errsCh := make(chan error, 1)
 
 	go func() {
-		defer close(lineInput)
+		defer close(lineCh)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
-			lineInput <- line
+			lineCh <- line
 		}
 		if err := scanner.Err(); err != nil {
-			errs <- fmt.Errorf("error reading stdin: %w", err)
+			errsCh <- fmt.Errorf("error reading stdin: %w", err)
 		}
-		close(errs)
+		close(errsCh)
 	}()
 
 	for {
@@ -138,14 +138,14 @@ func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error 
 		case <-ctx.Done():
 			return nil
 
-		case err := <-errs:
+		case err := <-errsCh:
 			if err != nil {
 				utils.McpLogf("[Error]: Scanner error: %v", err)
 				return err
 			}
 			return nil
 
-		case line, ok := <-lineInput:
+		case line, ok := <-lineCh:
 			if !ok {
 				return nil
 			}
