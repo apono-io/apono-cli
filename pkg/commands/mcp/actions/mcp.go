@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -106,55 +108,83 @@ func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 
 func runSTDIOServer(endpoint string, httpClient *http.Client, debug bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	utils.McpLogf("=== STDIO Server Started, waiting for input ===")
+	defer func() {
+		utils.McpLogf("=== STDIO Server shutting down ===")
+	}()
+
 	var clientName string
 
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
+	lineCh := make(chan string)
+	errsCh := make(chan error, 1)
+
+	go func() {
+		defer close(lineCh)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			lineCh <- line
 		}
+		if err := scanner.Err(); err != nil {
+			errsCh <- fmt.Errorf("error reading stdin: %w", err)
+		}
+		close(errsCh)
+	}()
 
-		var requestData map[string]interface{}
-		if err := json.Unmarshal([]byte(line), &requestData); err == nil {
-			if method, ok := requestData["method"].(string); ok {
-				utils.McpLogf("Received request method: \"%s\"", method)
-				if debug {
-					utils.McpLogf("[Debug]: Request body: %s", line)
-				}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
 
-				if strings.ToLower(method) == mcpMethodInitialize {
-					var name string
-					name, err = extractClientNameFromInitializeRequest(requestData)
-					if err != nil {
-						utils.McpLogf("[Error]: Failed to extract client name: %v", err)
-					} else if name != "" {
-						clientName = name
-						utils.McpLogf("Client name set to: %s", clientName)
+		case err := <-errsCh:
+			if err != nil {
+				utils.McpLogf("[Error]: Scanner error: %v", err)
+				return err
+			}
+			return nil
+
+		case line, ok := <-lineCh:
+			if !ok {
+				return nil
+			}
+			if line == "" {
+				continue
+			}
+
+			var requestData map[string]interface{}
+			if err := json.Unmarshal([]byte(line), &requestData); err == nil {
+				if method, ok := requestData["method"].(string); ok {
+					utils.McpLogf("Received request method: %q", method)
+					if debug {
+						utils.McpLogf("[Debug]: Request body: %s", line)
+					}
+					if strings.ToLower(method) == mcpMethodInitialize {
+						var name string
+						name, err = extractClientNameFromInitializeRequest(requestData)
+						if err != nil {
+							utils.McpLogf("[Error]: Failed to extract client name: %v", err)
+						} else if name != "" {
+							clientName = name
+							utils.McpLogf("Client name set to: %s", clientName)
+						}
 					}
 				}
 			}
+
+			response, statusCode := sendMcpRequest(endpoint, httpClient, line, clientName, debug)
+
+			if statusCode == EmptyErrorStatusCode {
+				utils.McpLogf("[Error]: Failed to process request, sending error response")
+				errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
+				fmt.Println(errorResponse)
+				continue
+			}
+
+			propagateResponseToStdout(response, statusCode)
 		}
-
-		response, statusCode := sendMcpRequest(endpoint, httpClient, line, clientName, debug)
-
-		if statusCode == EmptyErrorStatusCode {
-			utils.McpLogf("[Error]: Failed to process request, sending error response")
-			errorResponse := createErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
-			fmt.Println(errorResponse)
-			continue
-		}
-
-		propagateResponseToStdout(response, statusCode)
 	}
-
-	if err := scanner.Err(); err != nil {
-		utils.McpLogf("[Error]: Scanner error: %v", err)
-		return fmt.Errorf("error reading stdin: %w", err)
-	}
-
-	return nil
 }
 
 func extractClientNameFromInitializeRequest(requestData map[string]interface{}) (string, error) {
