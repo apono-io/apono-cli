@@ -37,7 +37,10 @@ type SessionConfig struct {
 	AppURL        string       `json:"app_url"`
 	PortalURL     string       `json:"portal_url"`
 	AccountID     string       `json:"account_id"`
+	AccountName   string       `json:"account_name"`
 	UserID        string       `json:"user_id"`
+	UserName      string       `json:"user_name"`
+	UserEmail     string       `json:"user_email"`
 	Token         oauth2.Token `json:"token"`
 	CreatedAt     time.Time    `json:"created_at"`
 	PersonalToken string       `json:"personal_token"`
