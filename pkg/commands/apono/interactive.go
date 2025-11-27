@@ -1,17 +1,22 @@
 package apono
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/banner"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	requestloader "github.com/apono-io/apono-cli/pkg/interactive/inputs/request_loader"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
+	"github.com/apono-io/apono-cli/pkg/version"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -22,6 +27,10 @@ const (
 )
 
 func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
+	if err := displayBanner(cmd); err != nil {
+		// Log but don't fail - banner is non-critical
+	}
+
 	mainAction, err := selectors.RunMainActionSelector()
 	if err != nil {
 		return err
@@ -91,4 +100,86 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	return flows.RunUseSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
+}
+
+func displayBanner(cmd *cobra.Command) error {
+	ctx := cmd.Context()
+
+	versionInfo, err := version.GetVersion(ctx)
+	if err != nil || versionInfo == nil {
+		versionInfo = &version.VersionInfo{
+			Version:   "unknown",
+			Commit:    "unknown",
+			BuildDate: "unknown",
+		}
+	}
+
+	profileName, _ := cmd.Flags().GetString("profile")
+	if profileName == "" {
+		cfg, err := config.Get()
+		if err == nil && cfg.Auth.ActiveProfile != "" {
+			profileName = string(cfg.Auth.ActiveProfile)
+		} else {
+			profileName = "default"
+		}
+	}
+
+	sessionInfo, err := fetchSessionInfo(ctx, cmd)
+	if err != nil {
+		if isAuthError(err) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "\n%s Authentication expired. Please run: %s\n\n",
+				color.Yellow.Sprint("⚠"),
+				color.Cyan.Sprint("apono login"))
+		}
+		sessionInfo = getCachedSessionInfo(ctx)
+	}
+
+	return banner.Display(cmd.OutOrStdout(), versionInfo, sessionInfo, profileName)
+}
+
+func fetchSessionInfo(ctx context.Context, cmd *cobra.Command) (*banner.UserSessionInfo, error) {
+	client, err := aponoapi.GetClient(ctx)
+	if err != nil || client == nil {
+		return nil, fmt.Errorf("no client available")
+	}
+
+	userSession, resp, err := client.ClientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return &banner.UserSessionInfo{
+		AccountID:   userSession.Account.Id,
+		AccountName: userSession.Account.Name,
+		UserID:      userSession.User.Id,
+		UserName:    userSession.User.Name,
+		UserEmail:   userSession.User.Email,
+	}, nil
+}
+
+func getCachedSessionInfo(ctx context.Context) *banner.UserSessionInfo {
+	profile, err := config.GetCurrentProfile(ctx)
+	if err != nil || profile == nil {
+		return nil
+	}
+
+	return &banner.UserSessionInfo{
+		AccountID:   profile.AccountID,
+		AccountName: profile.AccountName,
+		UserID:      profile.UserID,
+		UserName:    profile.UserName,
+		UserEmail:   profile.UserEmail,
+	}
+}
+
+func isAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "401") ||
+		strings.Contains(errMsg, "unauthorized") ||
+		strings.Contains(errMsg, "authentication") ||
+		strings.Contains(errMsg, "forbidden")
 }

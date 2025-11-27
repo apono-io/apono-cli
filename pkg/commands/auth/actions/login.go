@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -20,7 +21,10 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/apono-io/apono-cli/pkg/banner"
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/version"
 )
 
 const (
@@ -159,14 +163,24 @@ func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL st
 		return fmt.Errorf("could not store access oauthToken: %w", err)
 	}
 
-	if session.AccountName != "" && session.UserEmail != "" {
-		fmt.Printf("You successfully logged in to %s as %s (%s)\n",
-			session.AccountName, session.UserName, session.UserEmail)
-	} else {
-		fmt.Printf("You successfully logged in to account %s as %s\n",
-			session.AccountID, session.UserID)
+	fmt.Println("\nLogin successful!")
+	fmt.Println()
+
+	versionInfo := &version.VersionInfo{
+		Version:   build.Version,
+		Commit:    build.Commit,
+		BuildDate: build.Date,
 	}
-	return nil
+
+	sessionInfo := &banner.UserSessionInfo{
+		AccountID:   session.AccountID,
+		AccountName: session.AccountName,
+		UserID:      session.UserID,
+		UserName:    session.UserName,
+		UserEmail:   session.UserEmail,
+	}
+
+	return banner.Display(os.Stdout, versionInfo, sessionInfo, profileName)
 }
 
 func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) (*config.SessionConfig, error) {
