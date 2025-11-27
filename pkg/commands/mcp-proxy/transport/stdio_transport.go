@@ -3,12 +3,14 @@ package transport
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
 
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/auditor"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
@@ -18,6 +20,7 @@ type STDIOProxyConfig struct {
 	Args    []string
 	Env     map[string]string
 	Debug   bool
+	Auditor auditor.Auditor
 }
 
 // RunSTDIOProxy runs a simple STDIO<->STDIO MCP proxy with subprocess
@@ -76,6 +79,46 @@ func RunSTDIOProxy(config STDIOProxyConfig) error {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			line := scanner.Text()
+
+			// Audit the request
+			if config.Auditor != nil {
+				auditReq, auditErr := auditor.ExtractRequestContent(line, "", "stdio")
+				if auditErr != nil {
+					utils.McpLogf("[Warning]: Failed to extract request content: %v", auditErr)
+				} else {
+					if err := config.Auditor.AuditRequest(*auditReq); err != nil {
+						// Request blocked by security policy
+						utils.McpLogf("[BLOCKED]: %v", err)
+
+						// Extract request ID for proper response
+						requestID := auditReq.RequestID
+						if requestID == nil {
+							requestID = 0 // fallback
+						}
+
+						// Send error response back to client instead of forwarding
+						var errorResp struct {
+							Jsonrpc string      `json:"jsonrpc"`
+							ID      interface{} `json:"id"`
+							Error   struct {
+								Code    int    `json:"code"`
+								Message string `json:"message"`
+								Data    string `json:"data"`
+							} `json:"error"`
+						}
+						errorResp.Jsonrpc = "2.0"
+						errorResp.ID = requestID
+						errorResp.Error.Code = -32000 // BlockedByPolicy
+						errorResp.Error.Message = "Request blocked by security policy"
+						errorResp.Error.Data = err.Error()
+
+						errorJSON, _ := json.Marshal(errorResp)
+						fmt.Println(string(errorJSON))
+						continue // Don't forward to subprocess
+					}
+				}
+			}
+
 			if config.Debug {
 				utils.McpLogf("[Client→Subprocess]: %s", line)
 			}

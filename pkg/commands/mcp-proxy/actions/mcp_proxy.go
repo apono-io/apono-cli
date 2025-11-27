@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/auditor"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/transport"
 	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -89,6 +90,25 @@ func MCPProxy() *cobra.Command {
 			}
 			defer utils.CloseMcpLogFile()
 
+			// Initialize base auditor
+			baseAud, err := auditor.NewAuditor(auditor.AuditorConfig{
+				Type: "file",
+				// FilePath will use default if empty
+			})
+			if err != nil {
+				return fmt.Errorf("failed to initialize auditor: %w", err)
+			}
+			defer baseAud.Close()
+
+			// Add risk detection
+			riskConfig := auditor.DefaultRiskConfig()
+			riskConfig.BlockOnRisk = true
+			riskDetector := auditor.NewPatternRiskDetector(riskConfig)
+
+			// Wrap with risk-aware auditor
+			aud := auditor.NewRiskAwareAuditor(baseAud, riskDetector, true)
+			utils.McpLogf("Auditor with risk detection initialized successfully")
+
 			utils.McpLogf("=== MCP Proxy Server Starting ===")
 			utils.McpLogf("Mode: %s", mode)
 
@@ -103,6 +123,7 @@ func MCPProxy() *cobra.Command {
 					Args:    config.Args,
 					Env:     config.Env,
 					Debug:   debug,
+					Auditor: aud,
 				})
 			}
 
@@ -116,6 +137,7 @@ func MCPProxy() *cobra.Command {
 				HTTPClient:      &http.Client{},
 				RequestModifier: &ProxyRequestModifier{headers: config.Headers},
 				Debug:           debug,
+				Auditor:         aud,
 			})
 		},
 	}

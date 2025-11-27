@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/auditor"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
@@ -20,7 +21,8 @@ const (
 	EmptyErrorStatusCode = 0
 	mcpMethodInitialize  = "initialize"
 
-	ErrorCodeInternalError = -32603
+	ErrorCodeInternalError   = -32603
+	ErrorCodeBlockedByPolicy = -32000
 )
 
 // RequestModifier allows customizing HTTP requests and error handling
@@ -39,6 +41,7 @@ type STDIOServerConfig struct {
 	HTTPClient      *http.Client
 	RequestModifier RequestModifier
 	Debug           bool
+	Auditor         auditor.Auditor
 }
 
 // InitializeClientParams represents the initialize request structure
@@ -107,6 +110,34 @@ func RunSTDIOServer(config STDIOServerConfig) error {
 						utils.McpLogf("[Debug]: Request body: %s", line)
 					}
 
+			// Audit the request
+			if config.Auditor != nil {
+				auditReq, auditErr := auditor.ExtractRequestContent(line, clientName, "http")
+				if auditErr != nil {
+					utils.McpLogf("[Warning]: Failed to extract request content: %v", auditErr)
+				} else {
+					if err := config.Auditor.AuditRequest(*auditReq); err != nil {
+						// Request blocked by security policy
+						utils.McpLogf("[BLOCKED]: %v", err)
+
+						// Extract request ID for proper response
+						requestID := auditReq.RequestID
+						if requestID == nil {
+							requestID = 0 // fallback
+						}
+
+						errorResponse := CreateErrorResponse(
+							requestID,
+							ErrorCodeBlockedByPolicy,
+							"Request blocked by security policy",
+							err.Error(),
+						)
+						fmt.Println(errorResponse)
+						continue // Don't forward the request
+					}
+				}
+			}
+
 					// Extract client name from initialize
 					if strings.ToLower(method) == mcpMethodInitialize {
 						name, err := ExtractClientNameFromInitialize(requestData)
@@ -130,13 +161,13 @@ func RunSTDIOServer(config STDIOServerConfig) error {
 				config.Debug,
 			)
 
-			// Handle errors
-			if statusCode == EmptyErrorStatusCode {
-				utils.McpLogf("[Error]: Failed to process request, sending error response")
-				errorResponse := CreateErrorResponse(ErrorCodeInternalError, "Internal error", "Failed to process request")
-				fmt.Println(errorResponse)
-				continue
-			}
+		// Handle errors
+		if statusCode == EmptyErrorStatusCode {
+			utils.McpLogf("[Error]: Failed to process request, sending error response")
+			errorResponse := CreateErrorResponse(nil, ErrorCodeInternalError, "Internal error", "Failed to process request")
+			fmt.Println(errorResponse)
+			continue
+		}
 
 			// Output response
 			PropagateResponseToStdout(response, statusCode)
@@ -234,9 +265,10 @@ func PropagateResponseToStdout(response string, statusCode int) {
 }
 
 // CreateErrorResponse creates a JSON-RPC error response
-func CreateErrorResponse(errorCode int, message, data string) string {
+func CreateErrorResponse(requestID interface{}, errorCode int, message, data string) string {
+	idJSON, _ := json.Marshal(requestID)
 	return fmt.Sprintf(
-		`{"jsonrpc":"2.0","id":null,"error":{"code":%d,"message":"%s","data":"%s"}}`,
-		errorCode, message, data,
+		`{"jsonrpc":"2.0","id":%s,"error":{"code":%d,"message":"%s","data":"%s"}}`,
+		string(idJSON), errorCode, message, data,
 	)
 }
