@@ -32,7 +32,7 @@ inst: ## go install tools
 	$(call print-target)
 	go install github.com/client9/misspell/cmd/misspell@v0.3.4
 	go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 	go install github.com/goreleaser/goreleaser@v1.17.2
 
 .PHONY: gen
