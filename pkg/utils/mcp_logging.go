@@ -18,8 +18,15 @@ const (
 
 var mcpLogFile *os.File
 
-func InitMcpLogFile() error {
-	logFilePath := path.Join(config.DirPath, McpLogFileName)
+func InitMcpLogFile(fileName ...string) error {
+	var logFileName string
+	if len(fileName) > 0 {
+		logFileName = fileName[0]
+	} else {
+		logFileName = McpLogFileName
+	}
+
+	logFilePath := path.Join(config.DirPath, logFileName)
 
 	if mcpLogFile != nil {
 		err := mcpLogFile.Close()
