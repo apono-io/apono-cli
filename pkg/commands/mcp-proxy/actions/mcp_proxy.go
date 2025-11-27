@@ -6,27 +6,20 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/approval"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/auditor"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/config"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/notifier"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp-proxy/transport"
 	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 const (
-	debugFlagName = "debug"
-	modeFlagName  = "mode"
+	debugFlagName  = "debug"
+	modeFlagName   = "mode"
+	configFlagName = "config"
 )
-
-// ProxyConfig represents downstream MCP configuration
-type ProxyConfig struct {
-	Name     string
-	Endpoint string
-	Headers  map[string]string
-	// Fields for subprocess mode
-	Command string
-	Args    []string
-	Env     map[string]string
-}
 
 // ProxyRequestModifier implements transport.RequestModifier for generic proxying
 type ProxyRequestModifier struct {
@@ -44,40 +37,10 @@ func (m *ProxyRequestModifier) HandleErrorResponse(statusCode int) (string, bool
 	return "", false
 }
 
-// getHardcodedProxyConfig returns the MVP hardcoded configuration for HTTP mode
-func getHardcodedProxyConfig() ProxyConfig {
-	return ProxyConfig{
-		Name:     "Apono Proxy MCP",
-		Endpoint: "http://localhost:3000/mcp",
-		Headers: map[string]string{
-			"Authorization": "Bearer ABC",
-		},
-	}
-}
-
-// getHardcodedSTDIOConfig returns the hardcoded configuration for STDIO subprocess mode
-func getHardcodedSTDIOConfig() ProxyConfig {
-	return ProxyConfig{
-		Name:    "Postgres MCP",
-		Command: "docker",
-		Args: []string{
-			"run",
-			"-i",
-			"--rm",
-			"-e",
-			"DATABASE_URI",
-			"crystaldba/postgres-mcp",
-			"--access-mode=unrestricted",
-		},
-		Env: map[string]string{
-			"DATABASE_URI": "postgresql://postgres:postgres@localhost:5432/agentic-poc",
-		},
-	}
-}
-
 func MCPProxy() *cobra.Command {
 	var debug bool
 	var mode string
+	var configFile string
 
 	cmd := &cobra.Command{
 		Use:               "mcp-proxy",
@@ -90,6 +53,12 @@ func MCPProxy() *cobra.Command {
 			}
 			defer utils.CloseMcpLogFile()
 
+			// Load configuration
+			cfg, err := config.LoadConfig(configFile)
+			if err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
+			}
+
 			// Initialize base auditor
 			baseAud, err := auditor.NewAuditor(auditor.AuditorConfig{
 				Type: "file",
@@ -100,42 +69,90 @@ func MCPProxy() *cobra.Command {
 			}
 			defer baseAud.Close()
 
-			// Add risk detection
-			riskConfig := auditor.DefaultRiskConfig()
-			riskConfig.BlockOnRisk = true
+			// Initialize risk detector
+			var riskConfig auditor.RiskConfig
+			if cfg.Risk.Enabled {
+				riskConfig = cfg.ToRiskConfig()
+			} else {
+				riskConfig = auditor.DefaultRiskConfig()
+			}
 			riskDetector := auditor.NewPatternRiskDetector(riskConfig)
 
+			// Initialize approval workflow based on notification type
+			var approvalMgr auditor.ApprovalManager
+			var useApprovalFlow bool
+
+			// Set up approval workflow based on notification type
+			if cfg.Slack.Enabled {
+				utils.McpLogf("Initializing Slack approval workflow...")
+
+				// Create approval store
+				approvalStore := approval.NewInMemoryApprovalStore()
+
+				// Create Slack notifier
+				slackNotifier := notifier.NewSlackNotifier(cfg.Slack.BotToken, cfg.Slack.ChannelID, cfg.Slack.UserID)
+
+				// Create callback handler
+				callbackHandler := notifier.NewCallbackHandler(cfg.Slack.SigningSecret, cfg.Slack.SkipVerification, approvalStore)
+
+				// Start callback server in background
+				go func() {
+					utils.McpLogf("Starting Slack callback server on port %d", cfg.Slack.CallbackPort)
+					if err := notifier.StartCallbackServer(cfg.Slack.CallbackPort, callbackHandler); err != nil {
+						utils.McpLogf("Slack callback server error: %v", err)
+					}
+				}()
+
+				// Create approval manager
+				approvalMgr = approval.NewApprovalManager(approvalStore, slackNotifier, cfg.Slack.Timeout)
+				utils.McpLogf("Slack approval workflow initialized on port %d", cfg.Slack.CallbackPort)
+				useApprovalFlow = true
+			}
+
 			// Wrap with risk-aware auditor
-			aud := auditor.NewRiskAwareAuditor(baseAud, riskDetector, true)
+			aud := auditor.NewRiskAwareAuditor(baseAud, riskDetector, riskConfig.BlockOnRisk, approvalMgr, useApprovalFlow)
 			utils.McpLogf("Auditor with risk detection initialized successfully")
 
 			utils.McpLogf("=== MCP Proxy Server Starting ===")
-			utils.McpLogf("Mode: %s", mode)
 
-			if mode == "stdio" {
-				// STDIO subprocess mode
-				config := getHardcodedSTDIOConfig()
-				utils.McpLogf("Proxying to subprocess: %s (command: %s)", config.Name, config.Command)
+			// Determine mode: if no mode flag is provided, auto-detect from config
+			// If Command is set in config, use STDIO mode; otherwise use HTTP mode
+			effectiveMode := mode
+			if effectiveMode == "http" && cfg.Proxy.Command != "" {
+				effectiveMode = "stdio"
+			}
+			utils.McpLogf("Mode: %s", effectiveMode)
+
+			if effectiveMode == "stdio" {
+				// STDIO subprocess mode - use config from file
+				if cfg.Proxy.Command == "" {
+					return fmt.Errorf("STDIO mode requires 'proxy.command' in config file")
+				}
+
+				utils.McpLogf("Proxying to subprocess: %s (command: %s)", cfg.Proxy.Name, cfg.Proxy.Command)
 				utils.McpLogf("Ready to receive requests...")
 
 				return transport.RunSTDIOProxy(transport.STDIOProxyConfig{
-					Command: config.Command,
-					Args:    config.Args,
-					Env:     config.Env,
+					Command: cfg.Proxy.Command,
+					Args:    cfg.Proxy.Args,
+					Env:     cfg.Proxy.Env,
 					Debug:   debug,
 					Auditor: aud,
 				})
 			}
 
-			// HTTP mode (default)
-			config := getHardcodedProxyConfig()
-			utils.McpLogf("Proxying to: %s (%s)", config.Name, config.Endpoint)
+			// HTTP mode - use config from file
+			if cfg.Proxy.Endpoint == "" {
+				return fmt.Errorf("HTTP mode requires 'proxy.endpoint' in config file")
+			}
+
+			utils.McpLogf("Proxying to: %s (%s)", cfg.Proxy.Name, cfg.Proxy.Endpoint)
 			utils.McpLogf("Ready to receive requests...")
 
 			return transport.RunSTDIOServer(transport.STDIOServerConfig{
-				Endpoint:        config.Endpoint,
+				Endpoint:        cfg.Proxy.Endpoint,
 				HTTPClient:      &http.Client{},
-				RequestModifier: &ProxyRequestModifier{headers: config.Headers},
+				RequestModifier: &ProxyRequestModifier{headers: cfg.Proxy.Headers},
 				Debug:           debug,
 				Auditor:         aud,
 			})
@@ -145,6 +162,7 @@ func MCPProxy() *cobra.Command {
 	flags := cmd.Flags()
 	flags.BoolVar(&debug, debugFlagName, false, "Enable debug logging for request/response bodies")
 	flags.StringVar(&mode, modeFlagName, "http", "Proxy mode: 'http' for HTTP endpoint, 'stdio' for subprocess")
+	flags.StringVar(&configFile, configFlagName, "", "Path to configuration file (YAML)")
 
 	return cmd
 }

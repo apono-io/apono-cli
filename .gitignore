@@ -210,3 +210,6 @@ $RECYCLE.BIN/
 # GoReleaser
 dist/
 contrib
+
+mcp-proxy-config.yaml
+main

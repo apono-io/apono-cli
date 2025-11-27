@@ -21,6 +21,12 @@ type RequestAudit struct {
 	RequestID  interface{}            `json:"request_id,omitempty"`
 	Risk       *RiskDetectionResult   `json:"risk,omitempty"`
 	Blocked    bool                   `json:"blocked,omitempty"`
+
+	// Approval tracking fields
+	ApprovalRequested bool      `json:"approval_requested,omitempty"`
+	Approved          bool      `json:"approved,omitempty"`
+	ApprovedBy        string    `json:"approved_by,omitempty"`
+	ApprovedAt        time.Time `json:"approved_at,omitempty"`
 }
 
 // AuditorConfig holds configuration for creating an auditor

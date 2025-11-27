@@ -1,0 +1,94 @@
+# Example MCP Proxy Configuration File
+# Copy this file and customize for your environment
+# Run with: apono-cli mcp-proxy --config mcp-proxy-config.yaml
+
+# Slack integration for approval workflow
+slack:
+  enabled: true
+  # Bot token from Slack app (starts with xoxb-)
+  # Can be set via environment variable: SLACK_BOT_TOKEN
+  bot_token: ${SLACK_BOT_TOKEN}
+
+  # Choose ONE of the following:
+  # Option 1: Send to a channel (Channel ID starts with C)
+  channel_id: C1234567890
+  # Option 2: Send DM to a specific user (User ID starts with U) - takes precedence over channel_id
+  # user_id: U1234567890
+
+  # Signing secret from Slack app for request verification
+  # Can be set via environment variable: SLACK_SIGNING_SECRET
+  signing_secret: ${SLACK_SIGNING_SECRET}
+  # Optional: Skip signature verification (useful for debugging, NOT recommended for production)
+  # skip_verification: false
+  # Port for Slack callback server to receive button clicks
+  callback_port: 8011
+  # Timeout for approval requests (e.g., 5m, 10m, 1h)
+  timeout: 5m
+
+# Risk detection configuration
+risk:
+  enabled: true
+  # If false, will use approval workflow instead of blocking
+  block_on_risk: false
+  # Method name patterns that are considered risky
+  risky_methods:
+    - delete
+    - remove
+    - destroy
+    - drop
+    - truncate
+    - execute
+    - exec
+    - run
+  # Keywords in parameters that indicate risky operations
+  risky_keywords:
+    - "DROP TABLE"
+    - "DROP DATABASE"
+    - "DELETE FROM"
+    - "TRUNCATE"
+    - "ALTER TABLE"
+    - "DROP INDEX"
+    - "DROP SCHEMA"
+    - "rm -rf"
+    - "rm -r"
+    - "unlink"
+    - "format"
+    - "exec("
+    - "system("
+    - "shell_exec"
+  # Whitelist of safe methods (checked first)
+  allowed_methods:
+    - initialize
+    - list
+    - read
+    - get
+    - search
+    - resources/list
+    - resources/read
+    - tools/list
+    - prompts/list
+
+# Proxy configuration - REQUIRED
+# Choose ONE of the following modes:
+
+# Option 1: HTTP Mode - Proxy to an HTTP endpoint
+# proxy:
+#   name: "MCP HTTP Proxy"
+#   endpoint: "http://localhost:3000/mcp"
+#   headers:
+#     Authorization: "Bearer ${API_TOKEN}"
+
+# Option 2: STDIO Mode - Proxy to a subprocess command
+proxy:
+  name: "Postgres MCP"
+  command: "docker"
+  args:
+    - run
+    - -i
+    - --rm
+    - -e
+    - DATABASE_URI
+    - crystaldba/postgres-mcp
+    - --access-mode=unrestricted
+  env:
+    DATABASE_URI: "postgresql://postgres:postgres@localhost:5432/agentic-poc"
