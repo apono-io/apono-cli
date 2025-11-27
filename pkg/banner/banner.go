@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/apono-io/apono-cli/pkg/version"
 	"github.com/gookit/color"
+
+	"github.com/apono-io/apono-cli/pkg/version"
 )
 
 const logo = `

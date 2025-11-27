@@ -27,9 +27,7 @@ const (
 )
 
 func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	if err := displayBanner(cmd); err != nil {
-		// Log but don't fail - banner is non-critical
-	}
+	_ = displayBanner(cmd) // Ignore error - banner is non-critical
 
 	mainAction, err := selectors.RunMainActionSelector()
 	if err != nil {
@@ -93,7 +91,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return nil
 	}
 
-	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf(newAccessRequest.Id))
+	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf("%s", newAccessRequest.Id))
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), accessGrantedMsg)
 	if err != nil {
 		return err
@@ -116,18 +114,18 @@ func displayBanner(cmd *cobra.Command) error {
 
 	profileName, _ := cmd.Flags().GetString("profile")
 	if profileName == "" {
-		cfg, err := config.Get()
-		if err == nil && cfg.Auth.ActiveProfile != "" {
+		cfg, cfgErr := config.Get()
+		if cfgErr == nil && cfg.Auth.ActiveProfile != "" {
 			profileName = string(cfg.Auth.ActiveProfile)
 		} else {
 			profileName = "default"
 		}
 	}
 
-	sessionInfo, err := fetchSessionInfo(ctx, cmd)
+	sessionInfo, err := fetchSessionInfo(ctx)
 	if err != nil {
 		if isAuthError(err) {
-			fmt.Fprintf(cmd.ErrOrStderr(), "\n%s Authentication expired. Please run: %s\n\n",
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "\n%s Authentication expired. Please run: %s\n\n",
 				color.Yellow.Sprint("⚠"),
 				color.Cyan.Sprint("apono login"))
 		}
@@ -137,7 +135,7 @@ func displayBanner(cmd *cobra.Command) error {
 	return banner.Display(cmd.OutOrStdout(), versionInfo, sessionInfo, profileName)
 }
 
-func fetchSessionInfo(ctx context.Context, cmd *cobra.Command) (*banner.UserSessionInfo, error) {
+func fetchSessionInfo(ctx context.Context) (*banner.UserSessionInfo, error) {
 	client, err := aponoapi.GetClient(ctx)
 	if err != nil || client == nil {
 		return nil, fmt.Errorf("no client available")
@@ -147,7 +145,7 @@ func fetchSessionInfo(ctx context.Context, cmd *cobra.Command) (*banner.UserSess
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return &banner.UserSessionInfo{
 		AccountID:   userSession.Account.Id,
