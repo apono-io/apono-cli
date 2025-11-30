@@ -24,7 +24,7 @@ func GetProfiles() *cobra.Command {
 			table := uitable.New()
 			table.MaxColWidth = 50
 
-			table.AddRow("CURRENT", "NAME", "ACCOUNT ID", "USER ID", "CREATED")
+			table.AddRow("CURRENT", "NAME", "ACCOUNT", "USER", "CREATED")
 			if authConfig.Profiles != nil {
 				for name, profile := range authConfig.Profiles {
 					var currentMark string
@@ -32,7 +32,18 @@ func GetProfiles() *cobra.Command {
 						currentMark = "*"
 					}
 
-					table.AddRow(currentMark, name, profile.AccountID, profile.UserID, profile.CreatedAt)
+					// Show names if available, fall back to IDs
+					accountDisplay := profile.AccountName
+					if accountDisplay == "" {
+						accountDisplay = profile.AccountID
+					}
+
+					userDisplay := profile.UserEmail
+					if userDisplay == "" {
+						userDisplay = profile.UserID
+					}
+
+					table.AddRow(currentMark, name, accountDisplay, userDisplay, profile.CreatedAt)
 				}
 			}
 

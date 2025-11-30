@@ -159,7 +159,13 @@ func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL st
 		return fmt.Errorf("could not store access oauthToken: %w", err)
 	}
 
-	fmt.Println("You successfully logged in to account", session.AccountID, "as", session.UserID)
+	if session.AccountName != "" && session.UserEmail != "" {
+		fmt.Printf("You successfully logged in to %s as %s (%s)\n",
+			session.AccountName, session.UserName, session.UserEmail)
+	} else {
+		fmt.Printf("You successfully logged in to account %s as %s\n",
+			session.AccountID, session.UserID)
+	}
 	return nil
 }
 
@@ -183,8 +189,8 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		jwt.RegisteredClaims
 	}
 
-	var accountID string
-	var userID string
+	var accountID, accountName string
+	var userID, userName, userEmail string
 
 	if oauthToken != nil {
 		claims := new(aponoClaims)
@@ -194,6 +200,22 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		}
 		accountID = claims.AccountID
 		userID = claims.UserID
+
+		endpointURL, urlParseErr := url.Parse(apiURL)
+		if urlParseErr != nil {
+			return nil, fmt.Errorf("failed parsing url %s with error: %w", apiURL, urlParseErr)
+		}
+
+		httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken))
+		clientAPI := aponoapi.CreateClientAPI(endpointURL, httpClient)
+		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
+		if userSessionErr != nil {
+			log.Printf("Warning: failed to fetch user session details: %v", userSessionErr)
+		} else {
+			userName = userSession.User.Name
+			userEmail = userSession.User.Email
+			accountName = userSession.Account.Name
+		}
 	} else {
 		endpointURL, urlParseErr := url.Parse(apiURL)
 		if urlParseErr != nil {
@@ -205,7 +227,10 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 			return nil, fmt.Errorf("failed fetching user session with error: %w", userSessionErr)
 		}
 		accountID = userSession.Account.Id
+		accountName = userSession.Account.Name
 		userID = userSession.User.Id
+		userName = userSession.User.Name
+		userEmail = userSession.User.Email
 	}
 
 	if cfg.Auth.Profiles == nil {
@@ -218,7 +243,10 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		AppURL:        appURL,
 		PortalURL:     portalURL,
 		AccountID:     accountID,
+		AccountName:   accountName,
 		UserID:        userID,
+		UserName:      userName,
+		UserEmail:     userEmail,
 		CreatedAt:     time.Now(),
 		PersonalToken: personalToken,
 	}
