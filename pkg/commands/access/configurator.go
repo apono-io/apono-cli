@@ -15,5 +15,7 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	accessCmd.AddCommand(actions.AccessList())
 	accessCmd.AddCommand(actions.AccessDetails())
 	accessCmd.AddCommand(actions.AccessReset())
+	accessCmd.AddCommand(actions.AccessSaveCreds())
+	accessCmd.AddCommand(actions.AccessSetupMCP())
 	return nil
 }

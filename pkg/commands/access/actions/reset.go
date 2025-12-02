@@ -30,7 +30,7 @@ func AccessReset() *cobra.Command {
 
 			sessionID := args[0]
 
-			_, _, err = client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(cmd.Context(), sessionID).Execute()
+			_, err = client.ResetAccessSessionCredentialsWithUserID(cmd.Context(), sessionID)
 			if err != nil {
 				return err
 			}
@@ -42,7 +42,7 @@ func AccessReset() *cobra.Command {
 
 			startTime := time.Now()
 			for {
-				session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+				session, _, err := client.GetAccessSessionWithUserID(cmd.Context(), sessionID)
 				if err != nil {
 					return fmt.Errorf("access session with id %s not found", sessionID)
 				}
