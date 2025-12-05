@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	userIDEnvVar = "APONO_USER_ID"
+	userIDEnvVar = "APONO_GRANTEE_ID"
 )
 
 // GetAccessSessionAccessDetailsWithUserID fetches access session details and includes userId as a query parameter.
 // The userId is taken from (in order of priority):
-// 1. APONO_USER_ID environment variable
+// 1. APONO_GRANTEE_ID environment variable
 // 2. The userId from the client session (from profile config)
 func (c *AponoClient) GetAccessSessionAccessDetailsWithUserID(ctx context.Context, sessionID string) (*clientapi.AccessSessionDetailsClientModel, *http.Response, error) {
 	// Determine userId to use
@@ -54,7 +54,7 @@ func (c *AponoClient) GetAccessSessionAccessDetailsWithUserID(ctx context.Contex
 	}
 
 	q := u.Query()
-	q.Add("user_id", userID)
+	q.Add("grantee_id", userID)
 	u.RawQuery = q.Encode()
 
 	// Create HTTP request
@@ -96,7 +96,7 @@ func (c *AponoClient) GetAccessSessionAccessDetailsWithUserID(ctx context.Contex
 
 // ListAccessSessionsWithUserID fetches access sessions list and includes userId as a query parameter.
 // The userId is taken from (in order of priority):
-// 1. APONO_USER_ID environment variable
+// 1. APONO_GRANTEE_ID environment variable
 // 2. The userId from the client session (from profile config)
 func (c *AponoClient) ListAccessSessionsWithUserID(ctx context.Context, skip int32, bundleID, integrationID, requestID []string) (*clientapi.PaginatedClientResponseModelAccessSessionClientModel, *http.Response, error) {
 	// Determine userId to use
@@ -141,7 +141,7 @@ func (c *AponoClient) ListAccessSessionsWithUserID(ctx context.Context, skip int
 	}
 
 	q := u.Query()
-	q.Add("user_id", userID)
+	q.Add("grantee_id", userID)
 	q.Add("skip", strconv.Itoa(int(skip)))
 
 	// Add optional filters
@@ -202,7 +202,7 @@ func (c *AponoClient) ListAccessSessionsWithUserID(ctx context.Context, skip int
 
 // GetAccessSessionWithUserID fetches a single access session and includes userId as a query parameter.
 // The userId is taken from (in order of priority):
-// 1. APONO_USER_ID environment variable
+// 1. APONO_GRANTEE_ID environment variable
 // 2. The userId from the client session (from profile config)
 func (c *AponoClient) GetAccessSessionWithUserID(ctx context.Context, sessionID string) (*clientapi.AccessSessionClientModel, *http.Response, error) {
 	// Determine userId to use
@@ -237,7 +237,7 @@ func (c *AponoClient) GetAccessSessionWithUserID(ctx context.Context, sessionID 
 	}
 
 	q := u.Query()
-	q.Add("user_id", userID)
+	q.Add("grantee_id", userID)
 	u.RawQuery = q.Encode()
 
 	// Create HTTP request
@@ -279,7 +279,7 @@ func (c *AponoClient) GetAccessSessionWithUserID(ctx context.Context, sessionID 
 
 // ResetAccessSessionCredentialsWithUserID resets credentials for an access session and includes userId as a query parameter.
 // The userId is taken from (in order of priority):
-// 1. APONO_USER_ID environment variable
+// 1. APONO_GRANTEE_ID environment variable
 // 2. The userId from the client session (from profile config)
 func (c *AponoClient) ResetAccessSessionCredentialsWithUserID(ctx context.Context, sessionID string) (*http.Response, error) {
 	// Determine userId to use
@@ -315,7 +315,7 @@ func (c *AponoClient) ResetAccessSessionCredentialsWithUserID(ctx context.Contex
 	}
 
 	q := u.Query()
-	q.Add("user_id", userID)
+	q.Add("grantee_id", userID)
 	u.RawQuery = q.Encode()
 
 	// Create HTTP request (POST method)
