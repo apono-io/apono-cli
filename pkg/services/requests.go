@@ -181,7 +181,7 @@ func ListRequests(ctx context.Context, client *aponoapi.AponoClient, daysOffset 
 	for {
 		resp, _, err := client.ClientAPI.AccessRequestsAPI.ListAccessRequests(ctx).
 			Scope(clientapi.ACCESSREQUESTSSCOPEMODEL_MY_REQUESTS).
-			Skip(int32(skip)).
+			Skip(int32(skip)). //nolint:gosec // skip is pagination offset, will never overflow int32
 			Execute()
 		if err != nil {
 			return nil, err

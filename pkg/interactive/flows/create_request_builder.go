@@ -220,7 +220,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi.CreateAccessRequestClientModel, models *CreateAccessRequestWithFullModels) error {
 	if len(request.FilterBundleIds) != 0 {
 		var bundleFlagValue string
-		if models.Bundles != nil && len(models.Bundles) == 1 {
+		if len(models.Bundles) == 1 {
 			bundleFlagValue = models.Bundles[0].Name
 		} else {
 			bundleFlagValue = request.FilterBundleIds[0]
@@ -230,7 +230,7 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 	}
 
 	var integrationFlagValue string
-	if models.Integrations != nil && len(models.Integrations) == 1 {
+	if len(models.Integrations) == 1 {
 		integrationFlagValue = fmt.Sprintf("%s/%s", models.Integrations[0].Type, models.Integrations[0].Name)
 	} else {
 		integrationFlagValue = request.FilterIntegrationIds[0]
