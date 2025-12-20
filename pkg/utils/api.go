@@ -19,7 +19,7 @@ func GetAllPages[T any](
 
 	skip := 0
 	for {
-		resp, pagination, err := nextPageFunc(ctx, client, int32(skip))
+		resp, pagination, err := nextPageFunc(ctx, client, int32(skip)) //nolint:gosec // skip is pagination offset, will never overflow int32
 		if err != nil {
 			return nil, err
 		}

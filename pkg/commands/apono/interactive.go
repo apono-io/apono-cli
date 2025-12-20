@@ -84,7 +84,7 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		return nil
 	}
 
-	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf(newAccessRequest.Id))
+	accessGrantedMsg := fmt.Sprintf("\nAccess request %s granted\n", color.Green.Sprintf("%s", newAccessRequest.Id))
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), accessGrantedMsg)
 	if err != nil {
 		return err
