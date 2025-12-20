@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/interactive/assist"
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -32,7 +33,8 @@ func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) 
 		return RunFullRequestInteractiveFlow(cmd, client)
 	case selectors.ConnectOption:
 		return flows.RunUseSessionInteractiveFlow(cmd, client, "")
-
+	case selectors.AssistOption:
+		return assist.RunAssistant(cmd.Context(), client)
 	default:
 		return fmt.Errorf("unknown option selected: %s", mainAction)
 	}

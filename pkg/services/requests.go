@@ -35,6 +35,9 @@ const (
 	AccessRequestWaitingForApprovalStatus = "Pending Approval"
 	AccessRequestWaitingForMFAStatus      = "Pending MFA"
 
+	AccessRequestPollingTimeout  = 90 * time.Second
+	AccessRequestPollingInterval = 1 * time.Second
+
 	dryRunFieldMissionCode               = "FIELD_MISSING"
 	dryRunJustificationFieldName         = "justification"
 	dryRunInvalidDurationCode            = "INVALID_DURATION"
@@ -401,4 +404,69 @@ func ListResourceFiltersFromResourcesIDs(resourcesIDs []string) []clientapi.Reso
 	}
 
 	return resourceFilters
+}
+
+func CreateAccessRequest(ctx context.Context, client *aponoapi.AponoClient, req *clientapi.CreateAccessRequestClientModel) (string, error) {
+	createResp, resp, err := client.ClientAPI.AccessRequestsAPI.
+		CreateUserAccessRequest(ctx).
+		CreateAccessRequestClientModel(*req).
+		Execute()
+	if err != nil {
+		apiError := utils.ReturnAPIResponseError(resp)
+		if apiError != nil {
+			return "", apiError
+		}
+		return "", err
+	}
+
+	if len(createResp.RequestIds) == 0 {
+		return "", fmt.Errorf("no request IDs returned from API")
+	}
+
+	return createResp.RequestIds[0], nil
+}
+
+func PollAccessRequestStatus(ctx context.Context, client *aponoapi.AponoClient, requestID string, timeout time.Duration, pollInterval time.Duration) (*clientapi.AccessRequestClientModel, error) {
+	startTime := time.Now()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		if time.Since(startTime) > timeout {
+			return nil, fmt.Errorf("timeout waiting for request status")
+		}
+
+		accessRequest, err := GetRequestByID(ctx, client, requestID)
+		if err != nil {
+			return nil, err
+		}
+
+		if ShouldStopWaitingForRequest(accessRequest) {
+			return accessRequest, nil
+		}
+
+		select {
+		case <-time.After(pollInterval):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+}
+
+func ShouldStopWaitingForRequest(request *clientapi.AccessRequestClientModel) bool {
+	switch request.Status.Status {
+	case AccessRequestActiveStatus, AccessRequestFailedStatus, AccessRequestRejectedStatus:
+		return true
+	case AccessRequestPendingStatus:
+		if IsRequestWaitingForHumanApproval(request) {
+			return true
+		}
+	case AccessRequestPendingMFAStatus:
+		return true
+	}
+	return false
 }
