@@ -332,7 +332,7 @@ func renderResourceCard(index int, r clientapi.ResourceClientModel) string {
 
 	card.WriteString("    ")
 	card.WriteString(resourceLabelStyle.Render("Path: "))
-	card.WriteString(resourceValueStyle.Render(r.SourceId))
+	card.WriteString(resourceValueStyle.Render(r.Path))
 	card.WriteString("\n")
 
 	typeInfo := r.Type.Name
@@ -395,10 +395,10 @@ func renderRequestCTA(cta clientapi.AssistantMessageDataClientModelClientRequest
 				inner.WriteString(resourceValueStyle.Render(resource.Type.Name))
 			}
 
-			if resource.SourceId != "" {
+			if resource.Path != "" {
 				inner.WriteString("\n")
 				inner.WriteString(resourceLabelStyle.Render("Path:          "))
-				inner.WriteString(resourceValueStyle.Render(resource.SourceId))
+				inner.WriteString(resourceValueStyle.Render(resource.Path))
 			}
 
 			inner.WriteString("\n")

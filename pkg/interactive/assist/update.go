@@ -802,7 +802,7 @@ func buildCTAItems(cta *clientapi.AssistantMessageDataClientModelClientSearchCta
 				Type:             CTAItemTypeResource,
 				ID:               r.Id,
 				Name:             r.Name,
-				Path:             r.SourceId,
+				Path:             r.Path,
 				ResourceType:     r.Type.Name,
 				ResourceTypePath: r.Type.DisplayPath,
 				IntegrationName:  r.Integration.Name,
