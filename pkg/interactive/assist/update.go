@@ -540,11 +540,24 @@ func (m Model) buildAccessRequestFromCTA() *clientapi.CreateAccessRequestClientM
 
 	if m.activeRequestCTA.HasResourcesRequest() {
 		resReq := m.activeRequestCTA.GetResourcesRequest()
+		entitlements := resReq.GetEntitlements()
 		var accessUnitIDs []string
-		for _, e := range resReq.GetEntitlements() {
+		for _, e := range entitlements {
 			accessUnitIDs = append(accessUnitIDs, e.Id)
 		}
 		req.FilterAccessUnitIds = accessUnitIDs
+
+		// TODO: Remove this block once the server bug is fixed.
+		// This is a temporary workaround - the server should derive these IDs from the access unit ID,
+		// but currently requires them to be passed explicitly for single entitlement requests.
+		if len(entitlements) == 1 {
+			resource := entitlements[0].GetResource()
+			req.FilterIntegrationIds = []string{resource.Integration.Id}
+			req.FilterResourceTypeIds = []string{resource.Type.Id}
+			req.FilterResourceIds = []string{resource.Id}
+			req.FilterPermissionIds = []string{entitlements[0].GetPermission().Id}
+		}
+
 		justification = resReq.Justification
 	}
 
