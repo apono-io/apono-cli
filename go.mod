@@ -13,6 +13,7 @@ require (
 	github.com/gosuri/uitable v0.0.4
 	github.com/int128/oauth2cli v1.14.0
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
+	github.com/muesli/reflow v0.3.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
