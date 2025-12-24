@@ -411,11 +411,6 @@ func renderRequestCTA(cta clientapi.AssistantMessageDataClientModelClientRequest
 			inner.WriteString(resourceLabelStyle.Render("Justification: "))
 			inner.WriteString(resourceValueStyle.Render(req.Justification))
 		}
-
-		if req.RequiresApproval {
-			inner.WriteString("\n")
-			inner.WriteString(ctaWarningStyle.Render("⚠ Requires Approval"))
-		}
 	}
 
 	if cta.HasBundlesRequest() {
@@ -429,11 +424,6 @@ func renderRequestCTA(cta clientapi.AssistantMessageDataClientModelClientRequest
 			inner.WriteString("\n")
 			inner.WriteString(resourceLabelStyle.Render("Justification: "))
 			inner.WriteString(resourceValueStyle.Render(req.Justification))
-		}
-
-		if req.RequiresApproval {
-			inner.WriteString("\n")
-			inner.WriteString(ctaWarningStyle.Render("⚠ Requires Approval"))
 		}
 	}
 
