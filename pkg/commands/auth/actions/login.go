@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -20,7 +21,10 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/apono-io/apono-cli/pkg/banner"
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/version"
 )
 
 const (
