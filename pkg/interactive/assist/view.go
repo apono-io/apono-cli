@@ -234,8 +234,7 @@ func (m Model) renderRequestCTA() string {
 	content.WriteString("\n\n")
 
 	options := []string{
-		"Submit",
-		"Submit & Wait",
+		"Submit Access Request",
 		"Edit justification",
 	}
 

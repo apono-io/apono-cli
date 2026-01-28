@@ -357,11 +357,10 @@ func (m Model) submitCustomCTAResponse(text string) (tea.Model, tea.Cmd) {
 }
 
 const (
-	requestCTASubmit        = 0
-	requestCTASubmitAndWait = 1
-	requestCTAEditJustify   = 2
-	requestCTAOtherIndex    = 3
-	requestCTATotalOptions  = 4
+	requestCTASubmit       = 0
+	requestCTAEditJustify  = 1
+	requestCTAOtherIndex   = 2
+	requestCTATotalOptions = 3
 )
 
 func (m Model) handleRequestCTAKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -418,8 +417,6 @@ func (m Model) handleRequestCTAKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case keyEnter:
 		switch m.requestButtonCursor {
 		case requestCTASubmit:
-			return m.submitAccessRequest(false)
-		case requestCTASubmitAndWait:
 			return m.submitAccessRequest(true)
 		case requestCTAEditJustify:
 			return m.enterEditJustification()
