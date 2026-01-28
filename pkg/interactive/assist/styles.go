@@ -5,12 +5,15 @@ import (
 )
 
 var (
-	// Colors
-	primaryColor = lipgloss.Color("#4AA8C7") // Apono cyan/teal brand color
-	mutedColor   = lipgloss.Color("244")     // Gray
-	errorColor   = lipgloss.Color("196")     // Red
-	selectColor  = lipgloss.Color("6")       // Cyan - matches existing interactive mode
-	borderColor  = lipgloss.Color("240")     // Border gray
+	// Adaptive colors - automatically switch between light/dark terminal backgrounds
+	primaryColor = lipgloss.AdaptiveColor{Light: "#007599", Dark: "#4AA8C7"} // Apono cyan/teal brand color
+	mutedColor   = lipgloss.AdaptiveColor{Light: "241", Dark: "244"}         // Gray
+	errorColor   = lipgloss.AdaptiveColor{Light: "160", Dark: "196"}         // Red
+	selectColor  = lipgloss.AdaptiveColor{Light: "30", Dark: "6"}            // Cyan - matches existing interactive mode
+	borderColor  = lipgloss.AdaptiveColor{Light: "250", Dark: "240"}         // Border gray
+	textColor    = lipgloss.AdaptiveColor{Light: "232", Dark: "15"}          // Primary text
+	userColor    = lipgloss.AdaptiveColor{Light: "22", Dark: "114"}          // Green for user label
+	warningColor = lipgloss.AdaptiveColor{Light: "172", Dark: "214"}         // Orange/yellow for warnings
 
 	// Header styles
 	headerStyle = lipgloss.NewStyle().
@@ -20,7 +23,7 @@ var (
 
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("15"))
+			Foreground(textColor)
 
 	subtitleStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
@@ -28,7 +31,7 @@ var (
 	// Message styles
 	userLabelStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("114")) // Green - contrasts with assistant cyan
+			Foreground(userColor) // Green - contrasts with assistant cyan
 
 	assistantLabelStyle = lipgloss.NewStyle().
 				Bold(true).
@@ -54,7 +57,7 @@ var (
 
 	// Conversation list styles (matches existing interactive mode)
 	convItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("15"))
+			Foreground(textColor)
 
 	convItemSelectedStyle = lipgloss.NewStyle().
 				Foreground(selectColor)
@@ -87,7 +90,7 @@ var (
 			Foreground(selectColor)
 
 	ctaItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("15"))
+			Foreground(textColor)
 
 	ctaItemSelectedStyle = lipgloss.NewStyle().
 				Foreground(selectColor).
@@ -97,7 +100,7 @@ var (
 			Foreground(mutedColor)
 
 	ctaWarningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")) // Orange/yellow for warning
+			Foreground(warningColor)
 
 	// Resource card styles (for chat message display)
 	resourceNameStyle = lipgloss.NewStyle().
@@ -108,7 +111,7 @@ var (
 				Foreground(mutedColor)
 
 	resourceValueStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("15"))
+				Foreground(textColor)
 
 	// Request CTA box style (like Claude Code plan display)
 	requestBoxStyle = lipgloss.NewStyle().
