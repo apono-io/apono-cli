@@ -43,10 +43,9 @@ func MCP() *cobra.Command {
 	var debug bool
 
 	cmd := &cobra.Command{
-		Use:               "mcp",
-		Short:             "MCP server and tools for managing database access",
-		GroupID:           groups.OtherCommandsGroup.ID,
-		PersistentPreRunE: func(_ *cobra.Command, _ []string) error { return nil },
+		Use:     "mcp",
+		Short:   "MCP server and tools for managing database access",
+		GroupID: groups.OtherCommandsGroup.ID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := utils.InitMcpLogFile(); err != nil {
 				return fmt.Errorf("failed to initialize MCP log file: %w", err)
@@ -55,9 +54,9 @@ func MCP() *cobra.Command {
 
 			utils.McpLogf("=== Apono MCP STDIO Server Starting ===")
 
-			client, err := createAponoClient(cmd)
+			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("failed to setup MCP server: %w", err)
+				return fmt.Errorf("failed to get API client from context: %w", err)
 			}
 
 			utils.McpLogf("Ready to receive requests...")
@@ -73,19 +72,6 @@ func MCP() *cobra.Command {
 	cmd.AddCommand(MCPTest())
 
 	return cmd
-}
-
-func createAponoClient(cmd *cobra.Command) (*aponoapi.AponoClient, error) {
-	utils.McpLogf("=== Starting Setup ===")
-
-	client, err := aponoapi.CreateClient(cmd.Context(), "")
-	if err != nil {
-		utils.McpLogf("[Error]: Couldn't create API client: %v", err)
-		return nil, fmt.Errorf("failed to create API client: %w", err)
-	}
-
-	utils.McpLogf("=== Setup Finished ===")
-	return client, nil
 }
 
 func runLocalSTDIOServer(client *aponoapi.AponoClient, debug bool) error {

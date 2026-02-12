@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/services"
 )
 
@@ -29,13 +30,14 @@ WHAT IT RETURNS:
 - status: Current status (Active, Pending, Granting, etc.)
 - created_at: When the request was created
 - expires_at: When the access will expire
-- integrations: List of integrations this request grants access to
 - access_groups: Detailed breakdown of what resources and permissions you have
   - Each access_group contains:
     - integration_name: Name of the integration (e.g., "local-postgres")
     - integration_type: Type (e.g., "postgresql")
-    - resources: Specific resources granted (databases, schemas, tables)
-    - permissions: What you can do (READ, WRITE, ADMIN, etc.)
+    - resource_names: List of resource names (e.g., ["postgres", "apono", "users_db"])
+    - permissions: List of permissions granted (e.g., ["READ", "WRITE", "ADMIN"])
+    - resource_count: Total number of resources in this access group
+    - has_more: true if there are more than 10 resources (only first 10 names shown)
 
 🎯 USE THIS TO VERIFY YOUR ACCESS:
 After requesting access and still getting errors, use this tool to check:
@@ -80,16 +82,13 @@ type RequestDetailsResponse struct {
 }
 
 type AccessGroupDetails struct {
-	IntegrationName string            `json:"integration_name"`
-	IntegrationType string            `json:"integration_type"`
-	Resources       []ResourceDetails `json:"resources,omitempty"`
-	Description     string            `json:"description"`
-}
-
-type ResourceDetails struct {
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Permissions []string `json:"permissions,omitempty"`
+	IntegrationName string   `json:"integration_name"`
+	IntegrationType string   `json:"integration_type"`
+	ResourceNames   []string `json:"resource_names"`
+	Permissions     []string `json:"permissions"`
+	ResourceCount   int      `json:"resource_count"`
+	HasMore         bool     `json:"has_more"`
+	Description     string   `json:"description"`
 }
 
 func (t *GetRequestDetailsTool) Execute(ctx context.Context, client *aponoapi.AponoClient, arguments json.RawMessage) (interface{}, error) {
@@ -125,24 +124,65 @@ func (t *GetRequestDetailsTool) Execute(ctx context.Context, client *aponoapi.Ap
 		response.Justification = *request.Justification.Get()
 	}
 
+	// Get access units to see actual resources
+	accessUnits, err := services.ListAccessRequestAccessUnits(ctx, client, args.RequestID)
+	if err != nil {
+		fmt.Printf("[DEBUG] Warning: Failed to get access units: %v\n", err)
+		accessUnits = []clientapi.AccessUnitClientModel{}
+	}
+
+	// Group access units by access group
+	accessGroupUnits := make(map[string][]clientapi.AccessUnitClientModel)
+	for _, unit := range accessUnits {
+		accessGroupUnits[unit.Resource.Integration.Id] = append(accessGroupUnits[unit.Resource.Integration.Id], unit)
+	}
+
 	// Parse access groups to extract meaningful information
 	var summaryParts []string
+	const maxResourcesPerGroup = 10
+
 	for _, accessGroup := range request.AccessGroups {
 		groupDetails := AccessGroupDetails{
 			IntegrationName: accessGroup.Integration.Name,
 			IntegrationType: accessGroup.Integration.Type,
+			ResourceNames:   []string{},
+			Permissions:     []string{},
 		}
 
-		// Build description based on what's in the access group
-		description := fmt.Sprintf("Access to %s (%s)", accessGroup.Integration.Name, accessGroup.Integration.Type)
+		// Get units for this access group
+		units := accessGroupUnits[accessGroup.Integration.Id]
+		groupDetails.ResourceCount = len(units)
+		groupDetails.HasMore = len(units) > maxResourcesPerGroup
 
-		// Add resource types if available
-		if len(accessGroup.ResourceTypes) > 0 {
-			var resourceTypeNames []string
-			for _, rt := range accessGroup.ResourceTypes {
-				resourceTypeNames = append(resourceTypeNames, rt.Name)
+		// Collect unique resource names and permissions
+		resourceNameSet := make(map[string]bool)
+		permissionSet := make(map[string]bool)
+
+		for i, unit := range units {
+			if i >= maxResourcesPerGroup {
+				break
 			}
-			description = fmt.Sprintf("%s - Resource types: %s", description, joinStrings(resourceTypeNames, ", "))
+			resourceNameSet[unit.Resource.Name] = true
+			permissionSet[unit.Permission.Name] = true
+		}
+
+		// Convert sets to slices
+		for name := range resourceNameSet {
+			groupDetails.ResourceNames = append(groupDetails.ResourceNames, name)
+		}
+		for perm := range permissionSet {
+			groupDetails.Permissions = append(groupDetails.Permissions, perm)
+		}
+
+		// Build description
+		description := fmt.Sprintf("Access to %s (%s)", accessGroup.Integration.Name, accessGroup.Integration.Type)
+		if groupDetails.ResourceCount > 0 {
+			description = fmt.Sprintf("%s - %d resource(s)", description, groupDetails.ResourceCount)
+			if groupDetails.HasMore {
+				description = fmt.Sprintf("%s (showing first %d)", description, maxResourcesPerGroup)
+			}
+		} else {
+			description = fmt.Sprintf("%s - All resources", description)
 		}
 
 		groupDetails.Description = description

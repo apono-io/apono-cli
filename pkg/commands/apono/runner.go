@@ -3,6 +3,7 @@ package apono
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/analytics"
@@ -120,6 +121,10 @@ func createRootCommand(versionInfo version.VersionInfo) *cobra.Command {
 	c.PersistentFlags().String("profile", "", "profile name")
 	c.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		profileName, _ := cmd.Flags().GetString("profile")
+		// If --profile flag not set, check APONO_PROFILE env var
+		if profileName == "" {
+			profileName = os.Getenv("APONO_PROFILE")
+		}
 		client, err := aponoapi.CreateClient(cmd.Context(), profileName)
 		if err != nil {
 			return err

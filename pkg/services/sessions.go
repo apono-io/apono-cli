@@ -57,7 +57,18 @@ func generateSessionsTable(sessions []clientapi.AccessSessionClientModel) *uitab
 
 func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integrationIds []string, bundleIds []string, requestIds []string) ([]clientapi.AccessSessionClientModel, error) {
 	return utils.GetAllPages(ctx, client, func(ctx context.Context, client *aponoapi.AponoClient, skip int32) ([]clientapi.AccessSessionClientModel, *clientapi.PaginationClientInfoModel, error) {
-		resp, _, err := client.ListAccessSessionsWithUserID(ctx, skip, bundleIds, integrationIds, requestIds)
+		listSessionsRequest := client.ClientAPI.AccessSessionsAPI.ListAccessSessions(ctx).Skip(skip)
+		if integrationIds != nil {
+			listSessionsRequest = listSessionsRequest.IntegrationId(integrationIds)
+		}
+		if bundleIds != nil {
+			listSessionsRequest = listSessionsRequest.BundleId(bundleIds)
+		}
+		if requestIds != nil {
+			listSessionsRequest = listSessionsRequest.RequestId(requestIds)
+		}
+
+		resp, _, err := listSessionsRequest.Execute()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -75,7 +86,7 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return fmt.Errorf("session %s does not support cli access", session.Id)
 	}
 
-	accessDetails, _, err := client.GetAccessSessionAccessDetailsWithUserID(cobraCmd.Context(), session.Id)
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).Execute()
 	if err != nil {
 		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
 	}
@@ -108,7 +119,7 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 }
 
 func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, CustomInstructionMessage, error) {
-	accessDetails, _, err := client.GetAccessSessionAccessDetailsWithUserID(ctx, sessionID)
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).Execute()
 	if err != nil {
 		return "", "", err
 	}

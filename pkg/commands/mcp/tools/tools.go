@@ -29,8 +29,10 @@ func NewToolRegistry() *ToolRegistry {
 
 	// Register all tools
 	registry.Register(&ListAvailableResourcesTool{})
-	registry.Register(&SetupDatabaseMCPTool{})
-	registry.Register(&RequestAccessTool{})
+	// SetupDatabaseMCPTool is deprecated - keeping code but not registering
+	// registry.Register(&SetupDatabaseMCPTool{})
+	// SetupDatabaseMCPV2Tool is now implemented directly in proxy - not exposing to avoid duplicates
+	// registry.Register(&SetupDatabaseMCPV2Tool{})
 	registry.Register(&AskAccessAssistantTool{})
 	registry.Register(&CreateAccessRequestTool{})
 	registry.Register(&GetRequestDetailsTool{})

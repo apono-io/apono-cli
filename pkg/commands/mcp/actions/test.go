@@ -20,7 +20,7 @@ func MCPTest() *cobra.Command {
 
 	cmd.AddCommand(testListAvailableResources())
 	cmd.AddCommand(testSetupDatabaseMCP())
-	cmd.AddCommand(testRequestAccess())
+	cmd.AddCommand(testSetupDatabaseMCPV2())
 	cmd.AddCommand(testAskAccessAssistant())
 	cmd.AddCommand(testCreateAccessRequest())
 	cmd.AddCommand(testGetRequestDetails())
@@ -99,15 +99,15 @@ func testSetupDatabaseMCP() *cobra.Command {
 	return cmd
 }
 
-func testRequestAccess() *cobra.Command {
-	var integrationID string
+func testSetupDatabaseMCPV2() *cobra.Command {
+	var sessionID string
 
 	cmd := &cobra.Command{
-		Use:   "request-access",
-		Short: "Test the request_access tool",
+		Use:   "setup-database-mcp-v2",
+		Short: "Test the setup_database_mcp_v2 tool",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if integrationID == "" {
-				return fmt.Errorf("--integration-id is required")
+			if sessionID == "" {
+				return fmt.Errorf("--session-id is required")
 			}
 
 			client, err := aponoapi.CreateClient(cmd.Context(), "")
@@ -115,9 +115,9 @@ func testRequestAccess() *cobra.Command {
 				return fmt.Errorf("failed to create client: %w", err)
 			}
 
-			tool := &tools.RequestAccessTool{}
+			tool := &tools.SetupDatabaseMCPV2Tool{}
 			arguments, _ := json.Marshal(map[string]string{
-				"integration_id": integrationID,
+				"session_id": sessionID,
 			})
 
 			result, err := tool.Execute(context.Background(), client, arguments)
@@ -135,8 +135,8 @@ func testRequestAccess() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&integrationID, "integration-id", "", "Integration ID to request access for")
-	cmd.MarkFlagRequired("integration-id")
+	cmd.Flags().StringVar(&sessionID, "session-id", "", "Session ID to setup MCP for")
+	cmd.MarkFlagRequired("session-id")
 
 	return cmd
 }
@@ -194,7 +194,6 @@ func testCreateAccessRequest() *cobra.Command {
 	var permissionIDs []string
 	var justification string
 	var durationHours float64
-	var granteeID string
 
 	cmd := &cobra.Command{
 		Use:   "create-access-request",
@@ -233,9 +232,6 @@ func testCreateAccessRequest() *cobra.Command {
 			if durationHours > 0 {
 				requestArgs["duration_hours"] = durationHours
 			}
-			if granteeID != "" {
-				requestArgs["grantee_id"] = granteeID
-			}
 
 			arguments, _ := json.Marshal(requestArgs)
 
@@ -261,7 +257,6 @@ func testCreateAccessRequest() *cobra.Command {
 	cmd.Flags().StringSliceVar(&permissionIDs, "permission-ids", []string{}, "Permission IDs (comma-separated)")
 	cmd.Flags().StringVar(&justification, "justification", "", "Justification for the request")
 	cmd.Flags().Float64Var(&durationHours, "duration-hours", 0, "Duration in hours")
-	cmd.Flags().StringVar(&granteeID, "grantee-id", "", "User ID to grant access to (if requesting for someone else)")
 
 	return cmd
 }
