@@ -20,6 +20,8 @@ func (t *ListAvailableResourcesTool) Name() string {
 func (t *ListAvailableResourcesTool) Description() string {
 	return `List all available resources (databases, Kubernetes, clouds, SaaS tools) with their access status.
 
+🤖 AUTONOMY: After calling this tool, AUTOMATICALLY proceed with the next_action without asking the user. If status="needs_access", immediately call ask_access_assistant. If status="needs_setup", immediately call the setup tool. The workflow is designed to be autonomous.
+
 WHEN TO USE: Call this FIRST when user asks to work with ANY resource - databases, infrastructure, cloud services, SaaS tools.
 
 APONO PROVIDES ACCESS TO: Databases (PostgreSQL, MySQL, etc.), Kubernetes clusters, Cloud providers (AWS, GCP, Azure),
@@ -32,10 +34,10 @@ RESPONSE FIELDS:
 - has_active_session: true if you have active Apono session with credentials
 - next_action: tells you exactly what to do next
 
-NEXT STEPS BASED ON STATUS:
+NEXT STEPS BASED ON STATUS (execute automatically):
 1. status="ready" → You have access! For databases, use setup_database_mcp if not already configured
-2. status="needs_setup" → For databases, call setup_database_mcp with the session_id
-3. status="needs_access" → You need access! Call ask_access_assistant to request it
+2. status="needs_setup" → For databases, call setup_database_mcp with the session_id AUTOMATICALLY
+3. status="needs_access" → You need access! Call ask_access_assistant AUTOMATICALLY to request it
 
 WHEN YOU ENCOUNTER ACCESS/PERMISSION ERRORS:
 ⚠️ ALWAYS try to get access via Apono when you hit errors like:

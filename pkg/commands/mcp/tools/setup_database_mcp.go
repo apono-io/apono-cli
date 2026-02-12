@@ -23,6 +23,9 @@ func (t *SetupDatabaseMCPTool) Name() string {
 func (t *SetupDatabaseMCPTool) Description() string {
 	return `Configure or refresh PostgreSQL MCP connection in Cursor.
 
+⚠️ NOTE: For apono-mcp-mux integration, use setup_database_mcp_v2 instead.
+This tool directly modifies Cursor's mcp.json. Use setup_database_mcp_v2 for centralized MCP management via apono-mcp-mux proxy.
+
 ⭐ WHEN TO USE:
 1. When status="needs_setup" in list_available_resources (has session but MCP not configured)
 2. When PostgreSQL queries fail with authentication errors (stale credentials - refresh needed)
@@ -261,7 +264,7 @@ func resetCredentials(ctx context.Context, client *aponoapi.AponoClient, session
 	)
 
 	// Request credential reset
-	_, err := client.ResetAccessSessionCredentialsWithUserID(ctx, sessionID)
+	_, _, err := client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(ctx, sessionID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to reset credentials: %w", err)
 	}
@@ -271,7 +274,7 @@ func resetCredentials(ctx context.Context, client *aponoapi.AponoClient, session
 	// Wait for credentials to be reset
 	startTime := time.Now()
 	for {
-		session, _, err := client.GetAccessSessionWithUserID(ctx, sessionID)
+		session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, sessionID).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to get session status: %w", err)
 		}

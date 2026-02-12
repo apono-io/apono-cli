@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -19,6 +18,8 @@ func (t *CreateAccessRequestTool) Name() string {
 
 func (t *CreateAccessRequestTool) Description() string {
 	return `Submit an access request to get access to ANY resource via Apono.
+
+🤖 AUTONOMY: Call this tool AUTOMATICALLY without asking the user for permission when you have entitlements from ask_access_assistant. The access request workflow is designed to be autonomous - submit requests immediately when you know what access is needed.
 
 ⭐ WHEN TO USE: After ask_access_assistant returns has_request_cta=true with entitlements.
 
@@ -43,7 +44,6 @@ REQUEST TYPES:
    - integration_id + resource_type_id + resource_ids + permission_ids
    - justification (may be required)
    - duration_hours (may be required)
-   - grantee_id (optional - defaults to APONO_GRANTEE_ID env var if set, otherwise authenticated user)
 
 RESPONSE:
 - success: true/false
@@ -66,8 +66,20 @@ Always call ask_access_assistant to get help building the correct request struct
 
 AFTER SUCCESS:
 - Access request is submitted and will be auto-approved (or require approval)
+- The response includes request_ids array (e.g., ["AR-00123"])
+- IMPORTANT: Call get_request_details with the request_id to verify what was granted:
+  - Check resource_names to ensure you got access to the RIGHT resources
+  - Check permissions to ensure you have the right level of access (READ vs WRITE)
+  - If you got the wrong resource, request again with more specific details
 - Call list_available_resources again - status will change to "ready" when approved
-- You can then use the resource (query database, access cluster, etc.)`
+- You can then use the resource (query database, access cluster, etc.)
+
+⚠️ VERIFY YOUR ACCESS:
+After requesting access, if you still get permission errors:
+1. Call get_request_details to see EXACTLY what resources you were granted
+2. Check if the resource_names list includes what you need
+3. If not, you may have requested the wrong resource - call ask_access_assistant again with more specific details`
+
 }
 
 func (t *CreateAccessRequestTool) InputSchema() map[string]interface{} {
@@ -104,10 +116,6 @@ func (t *CreateAccessRequestTool) InputSchema() map[string]interface{} {
 				"type":        "number",
 				"description": "Duration in hours for the access (may be required based on policy)",
 			},
-			"grantee_id": map[string]interface{}{
-				"type":        "string",
-				"description": "User ID to grant access to. If not provided, uses APONO_GRANTEE_ID environment variable. If neither is set, access is granted to the authenticated user.",
-			},
 		},
 	}
 }
@@ -120,7 +128,6 @@ type CreateAccessRequestArgs struct {
 	PermissionIDs  []string `json:"permission_ids,omitempty"`
 	Justification  string   `json:"justification,omitempty"`
 	DurationHours  float64  `json:"duration_hours,omitempty"`
-	GranteeID      string   `json:"grantee_id,omitempty"`
 }
 
 func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.AponoClient, arguments json.RawMessage) (interface{}, error) {
@@ -200,16 +207,6 @@ func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.
 	if args.DurationHours > 0 {
 		durationSec := int32(args.DurationHours * 3600)
 		request.DurationInSec.Set(&durationSec)
-	}
-
-	// Use grantee_id from args, or fall back to APONO_GRANTEE_ID env var
-	granteeID := args.GranteeID
-	if granteeID == "" {
-		granteeID = os.Getenv("APONO_GRANTEE_ID")
-	}
-	if granteeID != "" {
-		fmt.Printf("[DEBUG] Setting grantee_id: %s\n", granteeID)
-		request.GranteeId.Set(&granteeID)
 	}
 
 	// Debug: Show what we're about to send

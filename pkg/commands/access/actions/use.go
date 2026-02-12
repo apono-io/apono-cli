@@ -38,7 +38,7 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
-			session, _, err := client.GetAccessSessionWithUserID(cmd.Context(), args[0])
+			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
 			if err != nil {
 				return fmt.Errorf("access session with id %s not found", args[0])
 			}

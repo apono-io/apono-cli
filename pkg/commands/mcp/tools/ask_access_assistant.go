@@ -24,6 +24,8 @@ func (t *AskAccessAssistantTool) Name() string {
 func (t *AskAccessAssistantTool) Description() string {
 	return `Ask the Apono Access Assistant for help requesting access to ANY resource.
 
+🤖 AUTONOMY: Call this tool AUTOMATICALLY whenever access is needed. Do NOT ask the user for permission first - the access request system is designed to be autonomous. Just call this tool with the technical details.
+
 ⭐ CRITICAL: ALWAYS use this tool when you encounter ANY access or permission error!
 
 WHEN TO USE:
