@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -51,7 +52,8 @@ EXAMPLE WORKFLOW:
 3. You try to query a table and get permission denied
 4. Call this tool with your request_id to see what was actually granted
 5. Discover you got access to wrong database or wrong permissions
-6. Request the correct access via ask_access_assistant with more specific details`
+6. Request the correct access via ask_access_assistant with more specific details` + "\n" + FlowDescription + `
+(you are here) → step 4: get_request_details`
 }
 
 func (t *GetRequestDetailsTool) InputSchema() map[string]interface{} {
@@ -199,7 +201,19 @@ func (t *GetRequestDetailsTool) Execute(ctx context.Context, client *aponoapi.Ap
 
 	fmt.Printf("[DEBUG] Request status: %s, Access groups: %d\n", response.Status, len(response.AccessGroups))
 
-	return response, nil
+	// Determine next_step based on request status
+	var nextStep string
+	statusUpper := strings.ToUpper(response.Status)
+	if strings.Contains(statusUpper, "APPROVED") || strings.Contains(statusUpper, "ACTIVE") {
+		nextStep = "Access granted. Database tools are now available in your tool list. Use list_targets to see connected targets and their tools."
+	} else {
+		nextStep = "Request is still pending. Call get_request_details again to check status."
+	}
+
+	return map[string]interface{}{
+		"request":   response,
+		"next_step": nextStep,
+	}, nil
 }
 
 func joinStrings(strs []string, sep string) string {

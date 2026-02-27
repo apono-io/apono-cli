@@ -101,7 +101,8 @@ ERROR RECOVERY:
 ⚠️ If create_access_request fails with validation errors:
 1. ALWAYS call this tool again explaining what went wrong
 2. Example: "The access request failed with error: justification required. What should I provide?"
-3. The assistant will help you fix the request parameters`
+3. The assistant will help you fix the request parameters` + "\n" + FlowDescription + `
+(you are here) → step 2: ask_access_assistant`
 }
 
 func (t *AskAccessAssistantTool) InputSchema() map[string]interface{} {
@@ -284,6 +285,8 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 		}
 		result["suggestions"] = suggestionTexts
 	}
+
+	result["next_step"] = "Use create_access_request with the recommended scope to request access."
 
 	return result, nil
 }

@@ -16,6 +16,15 @@ type MCPTool interface {
 	Execute(ctx context.Context, client *aponoapi.AponoClient, arguments json.RawMessage) (interface{}, error)
 }
 
+const FlowDescription = `
+Typical workflow:
+1. list_available_resources - see what integrations exist and their access status
+2. ask_access_assistant - describe your task to get scoped access recommendations
+3. create_access_request - request access with the recommended scope
+4. get_request_details - check if your request was approved
+Once access is granted, database tools automatically become available via tools/list_changed.
+5. list_targets - see connected targets and their available tools`
+
 // ToolRegistry manages all available MCP tools
 type ToolRegistry struct {
 	tools map[string]MCPTool

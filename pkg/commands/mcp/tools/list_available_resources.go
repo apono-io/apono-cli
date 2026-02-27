@@ -54,8 +54,8 @@ WHEN YOU ENCOUNTER ACCESS/PERMISSION ERRORS:
   - What operation you were trying
 
 Example: "I need write access to the 'access_requests' table in the 'apono' database"
-NOT just "I need database access"`
-
+NOT just "I need database access"` + "\n" + FlowDescription + `
+(you are here) → step 1: list_available_resources`
 }
 
 func (t *ListAvailableResourcesTool) InputSchema() map[string]interface{} {
@@ -171,6 +171,7 @@ func (t *ListAvailableResourcesTool) Execute(ctx context.Context, client *aponoa
 		"ready_count":        readyCount,
 		"needs_setup_count":  needsSetupCount,
 		"needs_access_count": needsAccessCount,
+		"next_step":          "Use ask_access_assistant with a description of your task to determine what access to request.",
 	}, nil
 }
 

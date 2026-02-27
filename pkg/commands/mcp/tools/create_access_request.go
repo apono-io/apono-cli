@@ -78,8 +78,8 @@ AFTER SUCCESS:
 After requesting access, if you still get permission errors:
 1. Call get_request_details to see EXACTLY what resources you were granted
 2. Check if the resource_names list includes what you need
-3. If not, you may have requested the wrong resource - call ask_access_assistant again with more specific details`
-
+3. If not, you may have requested the wrong resource - call ask_access_assistant again with more specific details` + "\n" + FlowDescription + `
+(you are here) → step 3: create_access_request`
 }
 
 func (t *CreateAccessRequestTool) InputSchema() map[string]interface{} {
@@ -307,6 +307,7 @@ func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.
 
 	// Provide next steps
 	result["next_steps"] = "Request submitted. Check request status with `apono requests list` or wait for approval notification."
+	result["next_step"] = "Use get_request_details with the request_id to check approval status. Once approved, database tools will automatically become available."
 
 	return result, nil
 }
