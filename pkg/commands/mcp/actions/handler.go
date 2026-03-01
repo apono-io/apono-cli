@@ -120,7 +120,8 @@ func (h *MCPHandler) handleInitialize(ctx context.Context, params json.RawMessag
 	return map[string]interface{}{
 		"protocolVersion": MCPVersion,
 		"capabilities": map[string]interface{}{
-			"tools": toolsCap,
+			"tools":   toolsCap,
+			"logging": map[string]interface{}{},
 		},
 		"serverInfo": map[string]interface{}{
 			"name":    ServerName,
