@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -233,6 +234,16 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 		utils.McpLogf("Risk action: deny (risky ops blocked)")
 	}
 
+	// Mutex-protected stdout writer for concurrent notification writes.
+	// Both the main loop (responses) and background goroutines (tools_changed, approval notifications)
+	// write to stdout — this prevents interleaved output.
+	var stdoutMu sync.Mutex
+	writeStdout := func(line string) {
+		stdoutMu.Lock()
+		defer stdoutMu.Unlock()
+		fmt.Println(line)
+	}
+
 	// Create proxy manager
 	pm := proxy.NewLocalProxyManager(proxy.LocalProxyManagerConfig{
 		MCPRegistry:     mcpReg,
@@ -242,6 +253,18 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 		APIBaseURL:      apiBaseURL,
 		HTTPClient:      apiCfg.HTTPClient,
 		TargetsFilePath: targetsFilePath,
+		Notifier: func(level, message string) {
+			notification, _ := json.Marshal(map[string]interface{}{
+				"jsonrpc": "2.0",
+				"method":  "notifications/message",
+				"params": map[string]interface{}{
+					"level": level,
+					"data":  message,
+				},
+			})
+			writeStdout(string(notification))
+			utils.McpLogf("Sent notifications/message: level=%s msg=%s", level, message)
+		},
 	})
 	defer pm.Close()
 
@@ -256,7 +279,7 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 	// Wire tools/list_changed notification
 	pm.SetToolsChangedCallback(func() {
 		notification := `{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`
-		fmt.Println(notification)
+		writeStdout(notification)
 		utils.McpLogf("Sent notifications/tools/list_changed")
 	})
 
@@ -322,7 +345,7 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 
 			if response != "" {
 				utils.McpLogf("[STDIO] << %s (response len=%d)", peek.Method, len(response))
-				fmt.Println(response)
+				writeStdout(response)
 			}
 		}
 	}
