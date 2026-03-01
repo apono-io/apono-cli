@@ -168,25 +168,6 @@ func runLocalSTDIOServer(client *aponoapi.AponoClient, debug bool) error {
 	}
 }
 
-// DefaultMCPRegistry returns the built-in default MCP server registry
-func DefaultMCPRegistry() *registry.MCPServersConfig {
-	return &registry.MCPServersConfig{
-		Servers: []registry.MCPServerDefinition{
-			{
-				ID:               "postgres",
-				Name:             "PostgreSQL MCP",
-				IntegrationTypes: []string{"postgresql", "postgres", "rds-postgresql"},
-				Command:          "npx",
-				Args:             []string{"-y", "@modelcontextprotocol/server-postgres"},
-				CredentialBuilder: map[string]string{
-					"database_url": "postgresql://{{.username}}:{{urlEncode .password}}@{{.host}}:{{.port}}/{{.db_name}}?sslmode=require",
-				},
-				ArgMapping: []string{"database_url"},
-			},
-		},
-	}
-}
-
 func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targetsFilePath string, allIntegrations bool, riskAction string, mcpServersFile string) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -216,7 +197,7 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 	loadedReg, err := registry.LoadMCPServersConfig(mcpServersFile)
 	if err != nil {
 		utils.McpLogf("Could not load MCP servers config from %s: %v, using built-in defaults", mcpServersFile, err)
-		mcpReg = DefaultMCPRegistry()
+		mcpReg = registry.DefaultConfig()
 	} else {
 		utils.McpLogf("Loaded MCP servers config from %s (%d servers)", mcpServersFile, len(loadedReg.Servers))
 		mcpReg = loadedReg
