@@ -44,36 +44,6 @@ func (h *BuiltinToolsHandler) GetTools() []Tool {
 			BackendID: BuiltinBackendID,
 		},
 		{
-			Name:        "init_target",
-			Description: "Initialize a target MCP server. Spawns a subprocess MCP server with credentials from your active Apono session or targets.yaml. If the target needs access, it will automatically request access and wait for approval. After initialization, the target's tools will appear in tools/list with the target ID as prefix.",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"target_id": map[string]interface{}{
-						"type":        "string",
-						"description": "The ID of the target to initialize (from list_targets)",
-					},
-				},
-				"required": []string{"target_id"},
-			},
-			BackendID: BuiltinBackendID,
-		},
-		{
-			Name:        "stop_target",
-			Description: "Stop a running target MCP server and release its resources.",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"target_id": map[string]interface{}{
-						"type":        "string",
-						"description": "The ID of the target to stop",
-					},
-				},
-				"required": []string{"target_id"},
-			},
-			BackendID: BuiltinBackendID,
-		},
-		{
 			Name:        "setup_database",
 			Description: "Setup a database MCP target from an active Apono session. Fetches credentials and automatically initializes the target.",
 			InputSchema: map[string]interface{}{
@@ -103,10 +73,6 @@ func (h *BuiltinToolsHandler) HandleToolCall(ctx context.Context, toolName strin
 	switch toolName {
 	case "list_targets":
 		return h.handleListTargets(ctx)
-	case "init_target":
-		return h.handleInitTarget(ctx, args)
-	case "stop_target":
-		return h.handleStopTarget(ctx, args)
 	case "setup_database":
 		return h.handleSetupDatabase(ctx, args)
 	default:
@@ -115,103 +81,48 @@ func (h *BuiltinToolsHandler) HandleToolCall(ctx context.Context, toolName strin
 }
 
 func (h *BuiltinToolsHandler) handleListTargets(ctx context.Context) (interface{}, error) {
-	targets, err := h.manager.ListTargets(ctx)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error listing targets: %s", err.Error())},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	targetsJSON, err := json.MarshalIndent(targets, "", "  ")
+	targetList, err := h.manager.ListTargets(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return ToolCallResult{
-		Content: []ContentItem{
-			{Type: "text", Text: string(targetsJSON)},
-		},
-	}, nil
-}
+	connectedTargets := make([]map[string]interface{}, 0)
+	pendingRequests := make([]map[string]interface{}, 0)
 
-func (h *BuiltinToolsHandler) handleInitTarget(ctx context.Context, args map[string]interface{}) (interface{}, error) {
-	targetID, _ := args["target_id"].(string)
-	if targetID == "" {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: target_id is required"},
-			},
-			IsError: true,
-		}, nil
+	for _, t := range targetList {
+		if t.Initialized {
+			toolNames := make([]string, 0)
+			if inst := h.manager.getInstance(t.ID); inst != nil {
+				tools, err := inst.Backend.ListTools(ctx)
+				if err == nil {
+					for _, tool := range tools {
+						toolNames = append(toolNames, PrefixToolName(t.ID, tool.Name))
+					}
+				}
+			}
+			connectedTargets = append(connectedTargets, map[string]interface{}{
+				"name":            t.Name,
+				"type":            t.Type,
+				"status":          "connected",
+				"available_tools": toolNames,
+			})
+		} else if t.Status == targets.TargetStatusNeedsAccess {
+			pendingRequests = append(pendingRequests, map[string]interface{}{
+				"name":   t.Name,
+				"status": string(t.Status),
+			})
+		}
 	}
 
-	utils.McpLogf("[BuiltinTools] Initializing target: %s", targetID)
-
-	if err := h.manager.InitTarget(ctx, targetID); err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error initializing target: %s", err.Error())},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Get available tools from the newly initialized target
-	tools, err := h.manager.ListToolsForUser(ctx)
+	responseJSON, err := json.MarshalIndent(map[string]interface{}{
+		"connected_targets": connectedTargets,
+		"pending_requests":  pendingRequests,
+		"next_step":         "You can now use the tools listed above directly.",
+	}, "", "  ")
 	if err != nil {
-		tools = []Tool{}
+		return nil, err
 	}
 
-	toolNames := make([]string, len(tools))
-	for i, t := range tools {
-		toolNames[i] = PrefixToolName(t.BackendID, t.Name)
-	}
-
-	responseData := map[string]interface{}{
-		"success":         true,
-		"target_id":       targetID,
-		"available_tools": toolNames,
-		"message":         fmt.Sprintf("Target '%s' initialized successfully. Tools are now available with prefix '%s__'.", targetID, targetID),
-	}
-
-	responseJSON, _ := json.MarshalIndent(responseData, "", "  ")
-	return ToolCallResult{
-		Content: []ContentItem{
-			{Type: "text", Text: string(responseJSON)},
-		},
-	}, nil
-}
-
-func (h *BuiltinToolsHandler) handleStopTarget(ctx context.Context, args map[string]interface{}) (interface{}, error) {
-	targetID, _ := args["target_id"].(string)
-	if targetID == "" {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: target_id is required"},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	if err := h.manager.StopTarget(ctx, targetID); err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error stopping target: %s", err.Error())},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	responseData := map[string]interface{}{
-		"success":   true,
-		"target_id": targetID,
-		"message":   "Target stopped successfully",
-	}
-
-	responseJSON, _ := json.MarshalIndent(responseData, "", "  ")
 	return ToolCallResult{
 		Content: []ContentItem{
 			{Type: "text", Text: string(responseJSON)},
