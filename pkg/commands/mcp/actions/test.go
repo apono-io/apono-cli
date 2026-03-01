@@ -361,6 +361,8 @@ func testApproveFlow() *cobra.Command {
 	var toolName string
 	var reason string
 	var timeoutMinutes int
+	var intentStr string
+	var suggestedPattern string
 
 	cmd := &cobra.Command{
 		Use:   "approve-flow",
@@ -455,27 +457,31 @@ func testApproveFlow() *cobra.Command {
 			baseURL := fmt.Sprintf("%s://%s", cfg.Scheme, cfg.Host)
 			approver := approval.NewAponoActionApprover(baseURL, cfg.HTTPClient, client.Session.UserID, timeout)
 			req := approval.ApprovalRequest{
-				ToolName:      toolName,
-				Arguments:     map[string]interface{}{"sql": "DROP TABLE users"},
-				Reason:        reason,
-				RiskLevel:     "high",
-				TargetID:      targetID,
-				IntegrationID: integrationID,
+				ToolName:         toolName,
+				Arguments:        map[string]interface{}{"sql": "DROP TABLE users"},
+				Reason:           reason,
+				RiskLevel:        "high",
+				TargetID:         targetID,
+				IntegrationID:    integrationID,
+				Intent:           intentStr,
+				SuggestedPattern: suggestedPattern,
 			}
 
 			fmt.Println("\nWaiting for approval (check Slack/Apono UI to approve or deny)...")
-			approved, err := approver.RequestApproval(ctx, req)
+			result, err := approver.RequestApproval(ctx, req)
 			if err != nil {
 				return fmt.Errorf("approval request failed: %w", err)
 			}
 
 			fmt.Println()
-			if approved {
+			if result.Approved {
 				fmt.Println("=== RESULT: APPROVED ===")
-				fmt.Println("The risky operation was approved.")
+				fmt.Printf("Mode: %s\n", result.Mode)
+				if result.Pattern != "" {
+					fmt.Printf("Pattern: %s\n", result.Pattern)
+				}
 			} else {
 				fmt.Println("=== RESULT: DENIED ===")
-				fmt.Println("The risky operation was denied.")
 			}
 
 			return nil
@@ -486,6 +492,8 @@ func testApproveFlow() *cobra.Command {
 	cmd.Flags().StringVar(&toolName, "tool-name", "query", "Simulated tool name for the approval request")
 	cmd.Flags().StringVar(&reason, "reason", "", "Reason for the approval request (default: test message)")
 	cmd.Flags().IntVar(&timeoutMinutes, "timeout", 5, "Timeout in minutes for waiting for approval")
+	cmd.Flags().StringVar(&intentStr, "intent", "", "Intent string for approval grouping (tests auto-approval)")
+	cmd.Flags().StringVar(&suggestedPattern, "suggested-pattern", "", "Suggested pattern for approval (e.g., query:CREATE*)")
 
 	return cmd
 }

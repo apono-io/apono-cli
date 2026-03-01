@@ -32,7 +32,7 @@ func InitMcpLogFile() error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	file, err := os.Create(filepath.Clean(logFilePath))
+	file, err := os.OpenFile(filepath.Clean(logFilePath), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to create MCP Server log file: %w", err)
 	}
@@ -61,7 +61,9 @@ func McpLogf(format string, args ...interface{}) {
 	_, err := mcpLogFile.WriteString(logEntry)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to write to MCP log file: %v\n", err)
+		return
 	}
+	_ = mcpLogFile.Sync()
 }
 
 func CloseMcpLogFile() {

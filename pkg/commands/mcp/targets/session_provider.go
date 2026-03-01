@@ -2,10 +2,14 @@ package targets
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
@@ -38,8 +42,11 @@ func isDatabaseIntegrationType(integrationType string) bool {
 
 // SessionTargetProvider discovers targets from Apono sessions and integrations
 type SessionTargetProvider struct {
-	client            *aponoapi.AponoClient
-	allIntegrations   bool
+	client          *aponoapi.AponoClient
+	allIntegrations bool
+	resetMu         sync.Mutex
+	resetSessions   map[string]bool              // tracks session IDs already reset
+	cachedCreds     map[string]map[string]string  // session ID -> cached unmasked credentials
 }
 
 // NewSessionTargetProvider creates a new session-based target provider.
@@ -48,6 +55,8 @@ func NewSessionTargetProvider(client *aponoapi.AponoClient, allIntegrations bool
 	return &SessionTargetProvider{
 		client:          client,
 		allIntegrations: allIntegrations,
+		resetSessions:   make(map[string]bool),
+		cachedCreds:     make(map[string]map[string]string),
 	}
 }
 
@@ -55,6 +64,7 @@ func NewSessionTargetProvider(client *aponoapi.AponoClient, allIntegrations bool
 type targetEntry struct {
 	session     *clientapi.AccessSessionClientModel
 	integration *clientapi.IntegrationClientModel
+	dbName      string // database name override (set when expanding single session to multi-db targets)
 }
 
 // sessionTargetMapping builds a consistent mapping of target IDs to sessions/integrations.
@@ -101,7 +111,26 @@ func (p *SessionTargetProvider) sessionTargetMapping(ctx context.Context) (map[s
 
 		sessionIndices, hasSessions := integrationSessions[integration.Id]
 		if hasSessions {
-			// One target per session
+			// For database integrations, try to expand a single session into per-database targets
+			if isDatabaseIntegrationType(integration.Type) && len(sessionIndices) == 1 {
+				databases := p.discoverDatabases(ctx, integration.Id)
+				if len(databases) >= 2 {
+					session := &sessions[sessionIndices[0]]
+					for _, dbName := range databases {
+						targetID := uniqueTargetID(sanitizeName(dbName), usedIDs)
+						usedIDs[targetID] = true
+						result[targetID] = &targetEntry{
+							session:     session,
+							integration: integration,
+							dbName:      dbName,
+						}
+						utils.McpLogf("[SessionProvider]   Target %q -> session %s, db=%s", targetID, session.Id, dbName)
+					}
+					continue
+				}
+			}
+
+			// Default: one target per session (no database expansion)
 			for _, idx := range sessionIndices {
 				session := &sessions[idx]
 				targetID := uniqueTargetID(sanitizeName(session.Name), usedIDs)
@@ -140,6 +169,40 @@ func uniqueTargetID(base string, used map[string]bool) string {
 	}
 }
 
+// discoverDatabases returns the names of databases accessible within an integration.
+// Returns nil if resource listing fails or no databases found (caller should fall back to single target).
+func (p *SessionTargetProvider) discoverDatabases(ctx context.Context, integrationID string) []string {
+	resourceTypes, err := services.ListResourceTypes(ctx, p.client, integrationID)
+	if err != nil {
+		utils.McpLogf("[SessionProvider] Failed to list resource types for %s: %v", integrationID, err)
+		return nil
+	}
+
+	if len(resourceTypes) == 0 {
+		utils.McpLogf("[SessionProvider] No resource types for integration %s", integrationID)
+		return nil
+	}
+
+	resourceTypeID := resourceTypes[0].Id
+	utils.McpLogf("[SessionProvider] Using resource type %q (%s) for integration %s", resourceTypes[0].Name, resourceTypeID, integrationID)
+
+	resources, err := services.ListResources(ctx, p.client, integrationID, resourceTypeID, nil)
+	if err != nil {
+		utils.McpLogf("[SessionProvider] Failed to list resources for %s: %v", integrationID, err)
+		return nil
+	}
+
+	names := make([]string, 0, len(resources))
+	for _, r := range resources {
+		// Use SourceId (actual database name in source system) not Name (Apono display name)
+		names = append(names, r.SourceId)
+		utils.McpLogf("[SessionProvider]   Resource: sourceId=%q name=%q path=%q", r.SourceId, r.Name, r.Path)
+	}
+
+	utils.McpLogf("[SessionProvider] Discovered %d databases in integration %s: %v", len(names), integrationID, names)
+	return names
+}
+
 // ListTargets returns all database-type integrations with their access status,
 // creating one target per active session
 func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, error) {
@@ -156,7 +219,11 @@ func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, 
 		}
 
 		if entry.session != nil {
-			info.Name = fmt.Sprintf("Apono: %s", entry.session.Name)
+			if entry.dbName != "" {
+				info.Name = fmt.Sprintf("Apono: %s / %s", entry.session.Name, entry.dbName)
+			} else {
+				info.Name = fmt.Sprintf("Apono: %s", entry.session.Name)
+			}
 			info.Status = TargetStatusReady
 		} else {
 			info.Name = fmt.Sprintf("Apono: %s", entry.integration.Name)
@@ -188,50 +255,29 @@ func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) 
 
 	session := entry.session
 
-	// Check if credentials need resetting
-	if session.Credentials.IsSet() {
-		creds := session.Credentials.Get()
-		if creds.Status != "new" && creds.CanReset {
-			utils.McpLogf("[SessionProvider] Resetting stale credentials for %s", targetID)
-			if err := p.resetCredentials(ctx, session.Id); err != nil {
-				utils.McpLogf("[SessionProvider] Failed to reset credentials: %v", err)
-			}
-		}
-	}
-
-	// Get full access details to extract credentials for this specific session
-	fullDetails, _, err := p.client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).Execute()
+	// Get credentials: try cache file → reset + poll for unmasked password
+	credentials, err := p.getCredentials(ctx, session, targetID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get access details: %w", err)
+		return nil, err
 	}
 
-	// Try JSON format first (structured credentials)
-	creds := fullDetails.Json
-	utils.McpLogf("[SessionProvider] JSON credentials for %s: %v", targetID, maskedCreds(creds))
+	// Override db_name if this target was expanded from a multi-database session
+	if entry.dbName != "" {
+		utils.McpLogf("[SessionProvider] Overriding db_name for %s: %q -> %q", targetID, credentials["db_name"], entry.dbName)
+		credentials["db_name"] = entry.dbName
+	}
 
-	var credentials map[string]string
-	if len(creds) > 0 && !hasOnlyMaskedPassword(creds) {
-		credentials = make(map[string]string)
-		for k, v := range creds {
-			credentials[k] = fmt.Sprintf("%v", v)
-		}
-	} else {
-		// JSON not available or password is masked — extract from instructions text
-		if hasOnlyMaskedPassword(creds) {
-			utils.McpLogf("[SessionProvider] JSON password is masked, falling back to instructions text")
-		} else {
-			utils.McpLogf("[SessionProvider] No JSON credentials, trying CLI/instructions format")
-		}
+	utils.McpLogf("[SessionProvider] Final credentials for %s: host=%s port=%s db_name=%s",
+		targetID, credentials["host"], credentials["port"], credentials["db_name"])
 
-		credentials, err = extractCredentialsFromText(entry.integration.Type, fullDetails)
-		if err != nil {
-			return nil, fmt.Errorf("no credentials available for target %q: %w", targetID, err)
-		}
+	targetName := fmt.Sprintf("Apono: %s", session.Name)
+	if entry.dbName != "" {
+		targetName = fmt.Sprintf("Apono: %s / %s", session.Name, entry.dbName)
 	}
 
 	return &TargetDefinition{
 		ID:            targetID,
-		Name:          fmt.Sprintf("Apono: %s", session.Name),
+		Name:          targetName,
 		Type:          mapIntegrationTypeToBackendType(entry.integration.Type),
 		Credentials:   credentials,
 		IntegrationID: entry.integration.Id,
@@ -318,12 +364,15 @@ func (p *SessionTargetProvider) waitForAccess(ctx context.Context, integrationID
 
 // resetCredentials resets credentials for a session and waits for fresh ones
 func (p *SessionTargetProvider) resetCredentials(ctx context.Context, sessionID string) error {
-	_, _, err := p.client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(ctx, sessionID).Execute()
+	utils.McpLogf("[SessionProvider] Calling ResetAccessSessionCredentials for session %s", sessionID)
+	_, httpResp, err := p.client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(ctx, sessionID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to reset credentials: %w", err)
 	}
+	if httpResp != nil {
+		utils.McpLogf("[SessionProvider] Reset API returned HTTP %d for session %s", httpResp.StatusCode, sessionID)
+	}
 
-	// Wait for fresh credentials
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		session, _, err := p.client.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, sessionID).Execute()
@@ -331,18 +380,132 @@ func (p *SessionTargetProvider) resetCredentials(ctx context.Context, sessionID 
 			return fmt.Errorf("failed to get session status: %w", err)
 		}
 
-		if session.Credentials.IsSet() && session.Credentials.Get().Status == "new" {
-			return nil
+		if session.Credentials.IsSet() {
+			status := session.Credentials.Get().Status
+			utils.McpLogf("[SessionProvider] Poll credential status for %s: %q", sessionID, status)
+			if strings.EqualFold(status, "new") {
+				utils.McpLogf("[SessionProvider] Credentials are fresh for session %s", sessionID)
+				return nil
+			}
+		} else {
+			utils.McpLogf("[SessionProvider] Credentials not set on session %s", sessionID)
 		}
 
 		select {
 		case <-ctx.Done():
+			utils.McpLogf("[SessionProvider] Context cancelled while waiting for reset of %s", sessionID)
 			return ctx.Err()
 		case <-time.After(time.Second):
 		}
 	}
 
 	return fmt.Errorf("timeout waiting for credentials reset")
+}
+
+// getCredentials returns credentials for a session.
+// The unmasked password is only available briefly after reset (while status is "new").
+// We cache it per session so all targets sharing a session reuse the same credentials.
+func (p *SessionTargetProvider) getCredentials(ctx context.Context, session *clientapi.AccessSessionClientModel, targetID string) (map[string]string, error) {
+	// Check if we already have cached unmasked credentials for this session
+	p.resetMu.Lock()
+	if cached, ok := p.cachedCreds[session.Id]; ok {
+		p.resetMu.Unlock()
+		// Return a copy so callers can modify (e.g., override db_name) without affecting cache
+		result := make(map[string]string, len(cached))
+		for k, v := range cached {
+			result[k] = v
+		}
+		utils.McpLogf("[SessionProvider] Using cached credentials for %s (session %s)", targetID, session.Id)
+		return result, nil
+	}
+	p.resetMu.Unlock()
+
+	// Fetch access details
+	fullDetails, _, err := p.client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get access details: %w", err)
+	}
+
+	credentials := p.extractJSON(fullDetails)
+	if credentials == nil {
+		return nil, fmt.Errorf("no credentials available for target %q", targetID)
+	}
+
+	// Password not masked — cache and return
+	if !hasOnlyMaskedPassword(fullDetails.Json) {
+		p.cacheCredentials(session.Id, credentials)
+		return credentials, nil
+	}
+
+	// Password is masked — try cache file first (fast, no rotation)
+	if password, cacheErr := readPasswordFromCLI(fullDetails); cacheErr == nil {
+		utils.McpLogf("[SessionProvider] Read password from cache file for %s (%d chars)", targetID, len(password))
+		credentials["password"] = password
+		p.cacheCredentials(session.Id, credentials)
+		return credentials, nil
+	}
+
+	// No cache file — reset credentials once per session, then poll for unmasked password
+	p.resetMu.Lock()
+	alreadyReset := p.resetSessions[session.Id]
+	if !alreadyReset {
+		p.resetSessions[session.Id] = true
+		p.resetMu.Unlock()
+		utils.McpLogf("[SessionProvider] Resetting credentials for session %s (target %s)", session.Id, targetID)
+		if resetErr := p.resetCredentials(ctx, session.Id); resetErr != nil {
+			utils.McpLogf("[SessionProvider] Failed to reset credentials: %v", resetErr)
+		}
+	} else {
+		p.resetMu.Unlock()
+	}
+
+	// Poll access details until password is unmasked (brief window after reset)
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		fullDetails, _, err = p.client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).Execute()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get access details after reset: %w", err)
+		}
+
+		if !hasOnlyMaskedPassword(fullDetails.Json) {
+			credentials = p.extractJSON(fullDetails)
+			utils.McpLogf("[SessionProvider] Got unmasked password for %s after reset", targetID)
+			p.cacheCredentials(session.Id, credentials)
+			return credentials, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
+	}
+
+	utils.McpLogf("[SessionProvider] WARNING: password still masked after reset for %s", targetID)
+	return credentials, nil
+}
+
+// cacheCredentials stores unmasked credentials for a session
+func (p *SessionTargetProvider) cacheCredentials(sessionID string, creds map[string]string) {
+	p.resetMu.Lock()
+	defer p.resetMu.Unlock()
+	cached := make(map[string]string, len(creds))
+	for k, v := range creds {
+		cached[k] = v
+	}
+	p.cachedCreds[sessionID] = cached
+}
+
+// extractJSON extracts JSON credentials from access details as a string map
+func (p *SessionTargetProvider) extractJSON(details *clientapi.AccessSessionDetailsClientModel) map[string]string {
+	if len(details.Json) == 0 {
+		return nil
+	}
+	credentials := make(map[string]string)
+	for k, v := range details.Json {
+		credentials[k] = fmt.Sprintf("%v", v)
+	}
+	return credentials
 }
 
 // mapIntegrationTypeToBackendType maps Apono integration types to backend type IDs.
@@ -436,6 +599,53 @@ func hasOnlyMaskedPassword(creds map[string]interface{}) bool {
 		}
 	}
 	return false
+}
+
+// readPasswordFromCLI extracts the real password from the local cache file referenced in the CLI field.
+// The CLI field contains commands like: PGPASSWORD=$(base64 -d -i ~/.apono/cache/<session>) pgcli ...
+// The password is stored base64-encoded in that cache file.
+func readPasswordFromCLI(details *clientapi.AccessSessionDetailsClientModel) (string, error) {
+	if !details.HasCli() {
+		return "", fmt.Errorf("no CLI field in access details")
+	}
+
+	cli := details.GetCli()
+
+	// Extract cache file path from patterns like:
+	//   base64 -d -i ~/.apono/cache/<name>
+	//   base64 --decode -i ~/.apono/cache/<name>
+	re := regexp.MustCompile(`base64\s+(?:-d|--decode)\s+-i\s+([~\w/.@-]+)`)
+	matches := re.FindStringSubmatch(cli)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("no cache file path found in CLI: %s", cli)
+	}
+
+	cachePath := matches[1]
+	// Expand ~ to home directory
+	if strings.HasPrefix(cachePath, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		cachePath = filepath.Join(home, cachePath[2:])
+	}
+
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read cache file %s: %w", cachePath, err)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(data)))
+	if err != nil {
+		return "", fmt.Errorf("failed to base64 decode cache file %s: %w", cachePath, err)
+	}
+
+	password := strings.TrimSpace(string(decoded))
+	if password == "" {
+		return "", fmt.Errorf("empty password in cache file %s", cachePath)
+	}
+
+	return password, nil
 }
 
 // maskedCreds returns a copy of creds with sensitive values masked for logging

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -225,11 +226,14 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 	}
 	delete(args, "intent")
 
+	// Extract suggested pattern for approval UI
+	suggestedPattern := approval.ExtractSuggestedPattern(toolName, args)
+
 	// Risk detection
 	if m.riskDetector != nil {
 		riskResult := m.riskDetector.DetectRisk(toolName, args)
 		if riskResult.IsRisky {
-			utils.McpLogf("[ProxyManager] Risk detected for %s: %s", name, riskResult.Reason)
+			utils.McpLogf("[ProxyManager] Risk detected for %s: %s (pattern=%s, intent=%q)", name, riskResult.Reason, suggestedPattern, intent)
 
 			if m.approver != nil {
 				// Look up integration ID from backend instance
@@ -238,19 +242,26 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 					integrationID = inst.IntegrationID
 				}
 
-				approved, err := m.approver.RequestApproval(ctx, approval.ApprovalRequest{
-					ToolName:      toolName,
-					Arguments:     args,
-					Reason:        riskResult.Reason,
-					RiskLevel:     riskLevelToString(riskResult.Level),
-					MatchedRule:   riskResult.MatchedRule,
-					TargetID:      backendID,
-					IntegrationID: integrationID,
+				approvalResult, err := m.approver.RequestApproval(ctx, approval.ApprovalRequest{
+					ToolName:         toolName,
+					Arguments:        args,
+					Reason:           riskResult.Reason,
+					RiskLevel:        riskLevelToString(riskResult.Level),
+					MatchedRule:      riskResult.MatchedRule,
+					TargetID:         backendID,
+					IntegrationID:    integrationID,
+					Intent:           intent,
+					SuggestedPattern: suggestedPattern,
 				})
 				if err != nil {
+					utils.McpLogf("[ProxyManager] Approval request failed for %s: %v", name, err)
 					return nil, fmt.Errorf("approval request failed: %w", err)
 				}
-				if !approved {
+
+				utils.McpLogf("[ProxyManager] Approval result for %s: approved=%v, mode=%s", name, approvalResult.Approved, approvalResult.Mode)
+
+				if !approvalResult.Approved {
+					utils.McpLogf("[ProxyManager] Operation blocked for %s: %s", name, riskResult.Reason)
 					return ToolCallResult{
 						Content: []ContentItem{
 							{Type: "text", Text: fmt.Sprintf("Operation blocked: %s (approval denied)", riskResult.Reason)},
@@ -271,8 +282,10 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 	}
 
 	// Route to backend
+	utils.McpLogf("[ProxyManager] Executing tool %s (backend=%s, tool=%s)", name, backendID, toolName)
 	backend, modifiedArgs, err := m.routeToolCall(ctx, backendID, args)
 	if err != nil {
+		utils.McpLogf("[ProxyManager] Route error for %s: %v", name, err)
 		return nil, fmt.Errorf("failed to route tool call: %w", err)
 	}
 
@@ -283,8 +296,10 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 		return nil, fmt.Errorf("failed to build tool call request: %w", err)
 	}
 
+	utils.McpLogf("[ProxyManager] Sending request to backend for %s", name)
 	respBytes, err := backend.Send(ctx, reqBytes)
 	if err != nil {
+		utils.McpLogf("[ProxyManager] Backend send error for %s: %v", name, err)
 		return nil, fmt.Errorf("backend error: %w", err)
 	}
 
@@ -295,6 +310,7 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 	}
 
 	if resp.Error != nil {
+		utils.McpLogf("[ProxyManager] Backend returned error for %s: code=%d msg=%s", name, resp.Error.Code, resp.Error.Message)
 		return ToolCallResult{
 			Content: []ContentItem{
 				{Type: "text", Text: fmt.Sprintf("Backend error: %s", resp.Error.Message)},
@@ -398,6 +414,12 @@ func (m *LocalProxyManager) InitTarget(ctx context.Context, targetID string) err
 		return fmt.Errorf("failed to build credentials for %s: %w", targetID, err)
 	}
 
+	// Log the built credentials (mask password in connection URLs)
+	for k, v := range creds {
+		masked := maskConnectionString(v)
+		utils.McpLogf("[ProxyManager] Built credential %s=%s for target %s", k, masked, targetID)
+	}
+
 	// Build environment variables from credentials
 	env := make(map[string]string)
 	for credKey, envVar := range serverDef.EnvMapping {
@@ -414,6 +436,8 @@ func (m *LocalProxyManager) InitTarget(ctx context.Context, targetID string) err
 			args = append(args, credValue)
 		}
 	}
+
+	utils.McpLogf("[ProxyManager] Spawning backend for %s: %s %v", targetID, serverDef.Command, args)
 
 	// Create and start backend
 	stdioBackend := NewSTDIOBackend(STDIOBackendConfig{
@@ -657,6 +681,34 @@ func (m *LocalProxyManager) supportedTypes() []string {
 		types = append(types, s.ID)
 	}
 	return types
+}
+
+// maskConnectionString masks the password in a PostgreSQL connection URL for logging
+func maskConnectionString(s string) string {
+	// Match postgresql://user:password@host
+	idx := strings.Index(s, "://")
+	if idx == -1 {
+		return s
+	}
+	atIdx := strings.Index(s[idx+3:], "@")
+	if atIdx == -1 {
+		return s
+	}
+	colonIdx := strings.Index(s[idx+3:idx+3+atIdx], ":")
+	if colonIdx == -1 {
+		return s
+	}
+	password := s[idx+3+colonIdx+1 : idx+3+atIdx]
+	return s[:idx+3+colonIdx+1] + fmt.Sprintf("***(%d chars)", len(password)) + s[idx+3+atIdx:]
+}
+
+// maskArgsPasswords masks passwords in args that look like connection URLs
+func maskArgsPasswords(args []string) []string {
+	masked := make([]string, len(args))
+	for i, a := range args {
+		masked[i] = maskConnectionString(a)
+	}
+	return masked
 }
 
 func riskLevelToString(level risk.RiskLevel) string {

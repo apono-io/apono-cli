@@ -224,8 +224,9 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 	case "approve":
 		// Risk detection + Apono action-approval API flow
 		riskDetector = risk.NewPatternRiskDetector(risk.DefaultRiskConfig())
-		approver = approval.NewAponoActionApprover(apiBaseURL, apiCfg.HTTPClient, client.Session.UserID, 5*time.Minute)
-		utils.McpLogf("Risk action: approve (risky ops require Apono approval)")
+		baseApprover := approval.NewAponoActionApprover(apiBaseURL, apiCfg.HTTPClient, client.Session.UserID, 5*time.Minute)
+		approver = approval.NewApprovalCache(baseApprover)
+		utils.McpLogf("Risk action: approve (risky ops require Apono approval, with intent/pattern caching)")
 	default: // "deny"
 		// Risk detection, block without approval
 		riskDetector = risk.NewPatternRiskDetector(risk.DefaultRiskConfig())
@@ -301,6 +302,14 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 				continue
 			}
 
+			// Always log the method of incoming requests
+			var peek struct {
+				Method string `json:"method"`
+			}
+			if json.Unmarshal([]byte(line), &peek) == nil && peek.Method != "" {
+				utils.McpLogf("[STDIO] >> %s", peek.Method)
+			}
+
 			if debug {
 				utils.McpLogf("[Debug]: Request: %s", line)
 			}
@@ -312,6 +321,7 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 			}
 
 			if response != "" {
+				utils.McpLogf("[STDIO] << %s (response len=%d)", peek.Method, len(response))
 				fmt.Println(response)
 			}
 		}

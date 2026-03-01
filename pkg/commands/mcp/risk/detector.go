@@ -10,6 +10,16 @@ type PatternRiskDetector struct {
 	config RiskConfig
 }
 
+// safeSQLPrefixes are SQL statement prefixes considered read-only and safe
+var safeQLPrefixes = []string{
+	"SELECT",
+	"SHOW",
+	"DESCRIBE",
+	"DESC",
+	"EXPLAIN",
+	"WITH",  // CTEs are typically used with SELECT
+}
+
 // DefaultRiskConfig returns sensible defaults
 func DefaultRiskConfig() RiskConfig {
 	return RiskConfig{
@@ -85,6 +95,10 @@ func (d *PatternRiskDetector) DetectRisk(toolName string, arguments map[string]i
 	// Check risky method patterns
 	for _, pattern := range d.config.RiskyMethods {
 		if strings.Contains(method, strings.ToLower(pattern)) {
+			// If params contain only read-only SQL, don't flag as risky
+			if d.isReadOnlySQL(arguments) {
+				return RiskDetectionResult{IsRisky: false, Level: RiskLevelNone}
+			}
 			return RiskDetectionResult{
 				IsRisky:     true,
 				Level:       RiskLevelHigh,
@@ -100,6 +114,26 @@ func (d *PatternRiskDetector) DetectRisk(toolName string, arguments map[string]i
 	}
 
 	return RiskDetectionResult{IsRisky: false, Level: RiskLevelNone}
+}
+
+// isReadOnlySQL checks if the arguments contain SQL that is read-only (e.g. SELECT)
+func (d *PatternRiskDetector) isReadOnlySQL(params map[string]interface{}) bool {
+	for _, v := range params {
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		trimmed := strings.TrimSpace(strings.ToUpper(s))
+		if trimmed == "" {
+			continue
+		}
+		for _, prefix := range safeQLPrefixes {
+			if strings.HasPrefix(trimmed, prefix) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // checkParams inspects parameters for dangerous keywords
