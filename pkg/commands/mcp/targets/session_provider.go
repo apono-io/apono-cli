@@ -3,7 +3,6 @@ package targets
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -163,9 +162,9 @@ func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) 
 
 	var credentials map[string]string
 	if len(creds) > 0 && !hasOnlyMaskedPassword(creds) {
-		credentials, err = buildCredentials(matchedIntegration.Type, creds)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build credentials: %w", err)
+		credentials = make(map[string]string)
+		for k, v := range creds {
+			credentials[k] = fmt.Sprintf("%v", v)
 		}
 	} else {
 		// JSON not available or password is masked — extract from instructions text
@@ -309,59 +308,6 @@ func (p *SessionTargetProvider) resetCredentials(ctx context.Context, sessionID 
 	return fmt.Errorf("timeout waiting for credentials reset")
 }
 
-// buildCredentials builds the credential map for a target based on integration type.
-// Uses substring matching to handle cloud-prefixed types like "azure-postgresql".
-func buildCredentials(integrationType string, creds map[string]interface{}) (map[string]string, error) {
-	lower := strings.ToLower(integrationType)
-	if strings.Contains(lower, "postgresql") {
-		return buildPostgresCredentials(creds)
-	}
-	if strings.Contains(lower, "mysql") || strings.Contains(lower, "mariadb") {
-		return buildMySQLCredentials(creds)
-	}
-	return buildGenericCredentials(creds)
-}
-
-func buildPostgresCredentials(creds map[string]interface{}) (map[string]string, error) {
-	host := fmt.Sprintf("%v", creds["host"])
-	port := fmt.Sprintf("%v", creds["port"])
-	dbName := fmt.Sprintf("%v", creds["db_name"])
-	username := fmt.Sprintf("%v", creds["username"])
-	password := fmt.Sprintf("%v", creds["password"])
-
-	encodedUsername := url.QueryEscape(username)
-	encodedPassword := url.QueryEscape(password)
-
-	connectionString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require", encodedUsername, encodedPassword, host, port, dbName)
-
-	return map[string]string{
-		"database_url": connectionString,
-	}, nil
-}
-
-func buildMySQLCredentials(creds map[string]interface{}) (map[string]string, error) {
-	host := fmt.Sprintf("%v", creds["host"])
-	port := fmt.Sprintf("%v", creds["port"])
-	dbName := fmt.Sprintf("%v", creds["db_name"])
-	username := fmt.Sprintf("%v", creds["username"])
-	password := fmt.Sprintf("%v", creds["password"])
-
-	connectionString := fmt.Sprintf("mysql://%s:%s@%s:%s/%s",
-		url.QueryEscape(username), url.QueryEscape(password), host, port, dbName)
-
-	return map[string]string{
-		"database_url": connectionString,
-	}, nil
-}
-
-func buildGenericCredentials(creds map[string]interface{}) (map[string]string, error) {
-	result := make(map[string]string)
-	for k, v := range creds {
-		result[k] = fmt.Sprintf("%v", v)
-	}
-	return result, nil
-}
-
 // mapIntegrationTypeToBackendType maps Apono integration types to backend type IDs.
 // Handles cloud-prefixed types like "azure-postgresql", "aws-rds-mysql", etc.
 func mapIntegrationTypeToBackendType(integrationType string) string {
@@ -408,16 +354,20 @@ func extractCredentialsFromText(integrationType string, details *clientapi.Acces
 	}
 
 	if host != "" && user != "" {
-		if port == "" {
-			port = "5432"
-		}
-		connStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require",
-			url.QueryEscape(user), url.QueryEscape(strings.TrimSpace(pass)), host, port, dbname)
-		utils.McpLogf("[SessionProvider] Built connection URL from parsed fields (host=%s, port=%s, user=%s, db=%s)",
+		utils.McpLogf("[SessionProvider] Extracted credential fields from text (host=%s, port=%s, user=%s, db=%s)",
 			host, port, user, dbname)
-		return map[string]string{
-			"database_url": connStr,
-		}, nil
+		result := map[string]string{
+			"host":     host,
+			"username": user,
+			"password": strings.TrimSpace(pass),
+		}
+		if port != "" {
+			result["port"] = port
+		}
+		if dbname != "" {
+			result["db_name"] = dbname
+		}
+		return result, nil
 	}
 
 	return nil, fmt.Errorf("could not extract credentials from access details (no JSON, no parseable fields found in CLI/instructions output)")
@@ -462,14 +412,6 @@ func maskedCreds(creds map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return masked
-}
-
-func credKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }
 
 // sanitizeName converts a name to a safe format for use in target IDs
