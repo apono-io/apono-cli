@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "apono": {
-      "command": "apono",
+      "command": "${CLAUDE_PLUGIN_ROOT}/../bin/apono",
       "args": ["mcp", "--proxy", "--risk-action", "approve", "--mcp-servers-file", "${CLAUDE_PLUGIN_ROOT}/config/mcp-servers.yaml"]
     }
   }
