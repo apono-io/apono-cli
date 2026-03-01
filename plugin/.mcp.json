@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "apono": {
+      "command": "apono",
+      "args": ["mcp", "--proxy", "--risk-action", "approve"]
+    }
+  }
+}
