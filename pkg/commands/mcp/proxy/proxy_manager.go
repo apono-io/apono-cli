@@ -218,6 +218,13 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 		}
 	}
 
+	// Extract and log intent (audit trail, not forwarded to backend)
+	intent, _ := args["intent"].(string)
+	if intent != "" {
+		utils.McpLogf("[Intent] Tool: %s | Intent: %s", name, intent)
+	}
+	delete(args, "intent")
+
 	// Risk detection
 	if m.riskDetector != nil {
 		riskResult := m.riskDetector.DetectRisk(toolName, args)
@@ -535,6 +542,12 @@ func (m *LocalProxyManager) listToolsFromBackends(ctx context.Context) ([]Tool, 
 		}
 
 		allTools = append(allTools, tools...)
+	}
+
+	// Inject required "intent" parameter into all backend tools for audit trail
+	for i := range allTools {
+		allTools[i] = InjectStringParameter(allTools[i], "intent",
+			"Explain why you are performing this action. Required for audit and investigation purposes.")
 	}
 
 	return allTools, nil

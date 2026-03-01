@@ -103,6 +103,47 @@ func RebuildToolCallRequest(reqID interface{}, toolName string, args map[string]
 	return json.Marshal(modifiedReq)
 }
 
+// InjectStringParameter adds a required string parameter to a tool's input schema
+func InjectStringParameter(tool Tool, paramName, description string) Tool {
+	if tool.InputSchema == nil {
+		tool.InputSchema = make(map[string]interface{})
+	}
+
+	if tool.InputSchema["type"] == nil {
+		tool.InputSchema["type"] = "object"
+	}
+
+	properties, _ := tool.InputSchema["properties"].(map[string]interface{})
+	if properties == nil {
+		properties = make(map[string]interface{})
+		tool.InputSchema["properties"] = properties
+	}
+
+	properties[paramName] = map[string]interface{}{
+		"type":        "string",
+		"description": description,
+	}
+
+	required, _ := tool.InputSchema["required"].([]interface{})
+	if required == nil {
+		required = []interface{}{}
+	}
+
+	hasRequired := false
+	for _, r := range required {
+		if r == paramName {
+			hasRequired = true
+			break
+		}
+	}
+	if !hasRequired {
+		required = append(required, paramName)
+		tool.InputSchema["required"] = required
+	}
+
+	return tool
+}
+
 // InjectEnumParameter adds an enum parameter to a tool's input schema
 func InjectEnumParameter(tool Tool, paramName, description string, enumValues []string) Tool {
 	if tool.InputSchema == nil {

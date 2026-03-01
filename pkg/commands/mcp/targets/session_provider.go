@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -50,9 +51,15 @@ func NewSessionTargetProvider(client *aponoapi.AponoClient, allIntegrations bool
 	}
 }
 
-// ListTargets returns all database-type integrations with their access status
-func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, error) {
-	// Get all integrations
+// targetEntry maps a target ID to its session and integration
+type targetEntry struct {
+	session     *clientapi.AccessSessionClientModel
+	integration *clientapi.IntegrationClientModel
+}
+
+// sessionTargetMapping builds a consistent mapping of target IDs to sessions/integrations.
+// Each session becomes its own target. Integrations without sessions get a "needs_access" entry.
+func (p *SessionTargetProvider) sessionTargetMapping(ctx context.Context) (map[string]*targetEntry, error) {
 	integrations, err := services.ListIntegrations(ctx, p.client)
 	if err != nil {
 		utils.McpLogf("[SessionProvider] Failed to list integrations: %v", err)
@@ -60,11 +67,7 @@ func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, 
 	}
 
 	utils.McpLogf("[SessionProvider] Found %d total integrations", len(integrations))
-	for _, integration := range integrations {
-		utils.McpLogf("[SessionProvider]   Integration: id=%s name=%q type=%q", integration.Id, integration.Name, integration.Type)
-	}
 
-	// Get all active sessions
 	sessions, err := services.ListAccessSessions(ctx, p.client, []string{}, []string{}, []string{})
 	if err != nil {
 		utils.McpLogf("[SessionProvider] Failed to list sessions: %v", err)
@@ -73,30 +76,90 @@ func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, 
 
 	utils.McpLogf("[SessionProvider] Found %d active sessions", len(sessions))
 
-	// Build session map: integration ID -> session
-	sessionMap := make(map[string]*clientapi.AccessSessionClientModel)
+	// Group sessions by integration ID, sorted by session ID for stable ordering
+	integrationSessions := make(map[string][]int) // integration ID -> indices into sessions slice
 	for i := range sessions {
-		sessionMap[sessions[i].Integration.Id] = &sessions[i]
+		intID := sessions[i].Integration.Id
+		integrationSessions[intID] = append(integrationSessions[intID], i)
+	}
+	for _, indices := range integrationSessions {
+		sort.Slice(indices, func(a, b int) bool {
+			return sessions[indices[a]].Id < sessions[indices[b]].Id
+		})
 	}
 
-	result := make([]TargetInfo, 0)
-	for _, integration := range integrations {
-		// Only include database-type integrations (unless --all-integrations is set)
+	result := make(map[string]*targetEntry)
+	usedIDs := make(map[string]bool)
+
+	for i := range integrations {
+		integration := &integrations[i]
+
 		if !p.allIntegrations && !isDatabaseIntegrationType(integration.Type) {
 			utils.McpLogf("[SessionProvider]   Skipping integration %q (type=%q) - not a database type", integration.Name, integration.Type)
 			continue
 		}
 
-		targetID := sanitizeName(integration.Name)
+		sessionIndices, hasSessions := integrationSessions[integration.Id]
+		if hasSessions {
+			// One target per session
+			for _, idx := range sessionIndices {
+				session := &sessions[idx]
+				targetID := uniqueTargetID(sanitizeName(session.Name), usedIDs)
+				usedIDs[targetID] = true
+				result[targetID] = &targetEntry{
+					session:     session,
+					integration: integration,
+				}
+				utils.McpLogf("[SessionProvider]   Target %q -> session %s (%s)", targetID, session.Id, session.Name)
+			}
+		} else {
+			// No session — needs_access entry for the integration
+			targetID := uniqueTargetID(sanitizeName(integration.Name), usedIDs)
+			usedIDs[targetID] = true
+			result[targetID] = &targetEntry{
+				session:     nil,
+				integration: integration,
+			}
+			utils.McpLogf("[SessionProvider]   Target %q -> no session (needs access)", targetID)
+		}
+	}
+
+	return result, nil
+}
+
+// uniqueTargetID returns a unique target ID by appending a numeric suffix on collision
+func uniqueTargetID(base string, used map[string]bool) string {
+	if !used[base] {
+		return base
+	}
+	for i := 2; ; i++ {
+		candidate := fmt.Sprintf("%s-%d", base, i)
+		if !used[candidate] {
+			return candidate
+		}
+	}
+}
+
+// ListTargets returns all database-type integrations with their access status,
+// creating one target per active session
+func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, error) {
+	mapping, err := p.sessionTargetMapping(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]TargetInfo, 0, len(mapping))
+	for targetID, entry := range mapping {
 		info := TargetInfo{
 			ID:   targetID,
-			Name: fmt.Sprintf("Apono: %s", integration.Name),
-			Type: mapIntegrationTypeToBackendType(integration.Type),
+			Type: mapIntegrationTypeToBackendType(entry.integration.Type),
 		}
 
-		if _, hasSession := sessionMap[integration.Id]; hasSession {
+		if entry.session != nil {
+			info.Name = fmt.Sprintf("Apono: %s", entry.session.Name)
 			info.Status = TargetStatusReady
 		} else {
+			info.Name = fmt.Sprintf("Apono: %s", entry.integration.Name)
 			info.Status = TargetStatusNeedsAccess
 		}
 
@@ -107,37 +170,23 @@ func (p *SessionTargetProvider) ListTargets(ctx context.Context) ([]TargetInfo, 
 	return result, nil
 }
 
-// GetTarget returns a target definition with credentials from an active session
+// GetTarget returns a target definition with credentials from the specific session
 func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) (*TargetDefinition, error) {
-	// Find the integration matching this target ID
-	integrations, err := services.ListIntegrations(ctx, p.client)
+	mapping, err := p.sessionTargetMapping(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list integrations: %w", err)
+		return nil, err
 	}
 
-	var matchedIntegration *clientapi.IntegrationClientModel
-	for i, integration := range integrations {
-		if sanitizeName(integration.Name) == targetID {
-			matchedIntegration = &integrations[i]
-			break
-		}
+	entry, ok := mapping[targetID]
+	if !ok {
+		return nil, fmt.Errorf("no target found for %q", targetID)
 	}
 
-	if matchedIntegration == nil {
-		return nil, fmt.Errorf("no integration found for target %q", targetID)
-	}
-
-	// Find active session for this integration
-	sessions, err := services.ListAccessSessions(ctx, p.client, []string{matchedIntegration.Id}, []string{}, []string{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list sessions: %w", err)
-	}
-
-	if len(sessions) == 0 {
+	if entry.session == nil {
 		return nil, fmt.Errorf("no active session for target %q - call EnsureAccess first", targetID)
 	}
 
-	session := sessions[0]
+	session := entry.session
 
 	// Check if credentials need resetting
 	if session.Credentials.IsSet() {
@@ -150,7 +199,7 @@ func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) 
 		}
 	}
 
-	// Get full access details to extract credentials
+	// Get full access details to extract credentials for this specific session
 	fullDetails, _, err := p.client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access details: %w", err)
@@ -174,7 +223,7 @@ func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) 
 			utils.McpLogf("[SessionProvider] No JSON credentials, trying CLI/instructions format")
 		}
 
-		credentials, err = extractCredentialsFromText(matchedIntegration.Type, fullDetails)
+		credentials, err = extractCredentialsFromText(entry.integration.Type, fullDetails)
 		if err != nil {
 			return nil, fmt.Errorf("no credentials available for target %q: %w", targetID, err)
 		}
@@ -182,54 +231,42 @@ func (p *SessionTargetProvider) GetTarget(ctx context.Context, targetID string) 
 
 	return &TargetDefinition{
 		ID:            targetID,
-		Name:          fmt.Sprintf("Apono: %s", matchedIntegration.Name),
-		Type:          mapIntegrationTypeToBackendType(matchedIntegration.Type),
+		Name:          fmt.Sprintf("Apono: %s", session.Name),
+		Type:          mapIntegrationTypeToBackendType(entry.integration.Type),
 		Credentials:   credentials,
-		IntegrationID: matchedIntegration.Id,
+		IntegrationID: entry.integration.Id,
+		SessionID:     session.Id,
 	}, nil
 }
 
 // EnsureAccess ensures the target has an active session, requesting access if needed
 func (p *SessionTargetProvider) EnsureAccess(ctx context.Context, targetID string) error {
-	// Find integration
-	integrations, err := services.ListIntegrations(ctx, p.client)
+	mapping, err := p.sessionTargetMapping(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list integrations: %w", err)
+		return err
 	}
 
-	var matchedIntegration *clientapi.IntegrationClientModel
-	for i, integration := range integrations {
-		if sanitizeName(integration.Name) == targetID {
-			matchedIntegration = &integrations[i]
-			break
-		}
+	entry, ok := mapping[targetID]
+	if !ok {
+		return fmt.Errorf("no target found for %q", targetID)
 	}
 
-	if matchedIntegration == nil {
-		return fmt.Errorf("no integration found for target %q", targetID)
-	}
-
-	// Check if we already have an active session
-	sessions, err := services.ListAccessSessions(ctx, p.client, []string{matchedIntegration.Id}, []string{}, []string{})
-	if err != nil {
-		return fmt.Errorf("failed to list sessions: %w", err)
-	}
-
-	if len(sessions) > 0 {
-		return nil // Already have access
+	// Already has a session — nothing to do
+	if entry.session != nil {
+		return nil
 	}
 
 	utils.McpLogf("[SessionProvider] No active session for %s, requesting access...", targetID)
 
-	// Create access request
+	// Create access request for the integration
 	request := clientapi.NewCreateAccessRequestClientModel(
-		[]string{matchedIntegration.Id}, // integration IDs
-		[]string{},                       // bundle IDs
-		[]string{},                       // resource type IDs
-		[]string{},                       // resource IDs
-		[]clientapi.ResourceFilter{},     // resource filters
-		[]string{},                       // permission IDs
-		[]string{},                       // access unit IDs
+		[]string{entry.integration.Id}, // integration IDs
+		[]string{},                      // bundle IDs
+		[]string{},                      // resource type IDs
+		[]string{},                      // resource IDs
+		[]clientapi.ResourceFilter{},    // resource filters
+		[]string{},                      // permission IDs
+		[]string{},                      // access unit IDs
 	)
 
 	justification := fmt.Sprintf("Auto-requested by MCP proxy for target %s", targetID)
@@ -249,7 +286,7 @@ func (p *SessionTargetProvider) EnsureAccess(ctx context.Context, targetID strin
 	utils.McpLogf("[SessionProvider] Access request created: %v, waiting for approval...", createdRequest.RequestIds)
 
 	// Poll for the request to be approved and session to become active
-	return p.waitForAccess(ctx, matchedIntegration.Id)
+	return p.waitForAccess(ctx, entry.integration.Id)
 }
 
 // waitForAccess polls until an active session exists for the integration

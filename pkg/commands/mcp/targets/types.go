@@ -18,6 +18,7 @@ type TargetDefinition struct {
 	Type          string            `yaml:"type" json:"type"`               // references MCPServerDefinition.ID (e.g., "postgres")
 	Credentials   map[string]string `yaml:"credentials" json:"credentials"` // key-value credential pairs
 	IntegrationID string            `yaml:"-" json:"-"`                     // Apono integration ID (set by session provider, not from file)
+	SessionID     string            `yaml:"-" json:"-"`                     // Apono session ID (set by session provider, not from file)
 }
 
 // TargetInfo is the user-facing representation returned by list_targets

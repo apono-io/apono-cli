@@ -10,6 +10,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/utils"
 	"github.com/google/uuid"
 )
 
@@ -168,10 +169,10 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 	// Check if we need to use a different base URL for the assistant API
 	assistantClient := client.ClientAPI
 	assistantAPIURL := os.Getenv("APONO_ASSISTANT_API_URL")
-	fmt.Printf("[DEBUG] APONO_ASSISTANT_API_URL env var value: '%s'\n", assistantAPIURL)
+	utils.McpLogf("[DEBUG] APONO_ASSISTANT_API_URL env var value: '%s'", assistantAPIURL)
 	if assistantAPIURL != "" {
 		// Create a new client configuration with the assistant API URL
-		fmt.Printf("[DEBUG] Using custom assistant API URL from APONO_ASSISTANT_API_URL: %s\n", assistantAPIURL)
+		utils.McpLogf("[DEBUG] Using custom assistant API URL from APONO_ASSISTANT_API_URL: %s", assistantAPIURL)
 
 		// Copy the original configuration to preserve authentication and other settings
 		originalConfig := client.ClientAPI.GetConfig()
@@ -223,22 +224,22 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 		baseURL = fmt.Sprintf("%s://%s", config.Scheme, config.Host)
 	}
 	endpoint := fmt.Sprintf("%s/api/client/v1/assistant/chat?userId=%s", baseURL, client.Session.UserID)
-	fmt.Printf("[DEBUG] Calling assistant API: POST %s\n", endpoint)
-	fmt.Printf("[DEBUG] User ID: %s\n", client.Session.UserID)
-	fmt.Printf("[DEBUG] Conversation ID: %s\n", conversationID)
-	fmt.Printf("[DEBUG] Message: %s\n", userMessage)
+	utils.McpLogf("[DEBUG] Calling assistant API: POST %s", endpoint)
+	utils.McpLogf("[DEBUG] User ID: %s", client.Session.UserID)
+	utils.McpLogf("[DEBUG] Conversation ID: %s", conversationID)
+	utils.McpLogf("[DEBUG] Message: %s", userMessage)
 
 	response, httpResp, err := assistantClient.AccessAssistantAPI.SendMessageToAssistant(ctx).
 		AssistantMessageRequestModel(*request).
 		Execute()
 
 	if httpResp != nil {
-		fmt.Printf("[DEBUG] Response Status: %d\n", httpResp.StatusCode)
+		utils.McpLogf("[DEBUG] Response Status: %d", httpResp.StatusCode)
 	}
 
 	if err != nil {
 		if httpResp != nil && httpResp.StatusCode >= 400 {
-			fmt.Printf("[DEBUG] Response Headers: %v\n", httpResp.Header)
+			utils.McpLogf("[DEBUG] Response Headers: %v", httpResp.Header)
 			return nil, fmt.Errorf("assistant API error (status %d): %w", httpResp.StatusCode, err)
 		}
 		return nil, fmt.Errorf("failed to send message to assistant: %w", err)
@@ -254,7 +255,7 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 		"has_request_cta": false,
 	}
 
-	// Look for request CTA in the response
+	// Look for request CTA and search CTA in the response
 	for _, dataItem := range dataItems {
 		if dataItem.HasClientRequestCta() {
 			requestCta := dataItem.GetClientRequestCta()
@@ -283,6 +284,28 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 				bundlesReq := requestCta.GetBundlesRequest()
 				result["has_bundle_request"] = true
 				result["bundles"] = bundlesReq
+			}
+		}
+
+		// Extract search CTA data (resources, bundles, past requests)
+		if dataItem.HasClientSearchCta() {
+			searchCta := dataItem.GetClientSearchCta()
+
+			if searchCta.HasResources() {
+				resources := searchCta.GetResources()
+				result["search_resources"] = formatSearchResources(resources)
+				result["search_resources_total"] = resources.GetTotal()
+				result["search_resources_has_more"] = resources.GetHasMore()
+			}
+
+			if searchCta.HasBundles() {
+				bundles := searchCta.GetBundles()
+				result["search_bundles"] = bundles
+			}
+
+			if searchCta.HasPastRequests() {
+				pastRequests := searchCta.GetPastRequests()
+				result["search_past_requests"] = pastRequests
 			}
 		}
 	}
@@ -318,6 +341,26 @@ func extractTextFromData(dataItems []clientapi.AssistantMessageDataClientModel) 
 		}
 	}
 	return text
+}
+
+func formatSearchResources(resources clientapi.MessageDataSearchCTAClientModelResources) []map[string]interface{} {
+	data := resources.GetData()
+	result := make([]map[string]interface{}, 0, len(data))
+
+	for _, resource := range data {
+		item := map[string]interface{}{
+			"id":               resource.Id,
+			"name":             resource.Name,
+			"path":             resource.Path,
+			"resource_type":    resource.Type.Id,
+			"resource_type_name": resource.Type.Name,
+			"integration_id":   resource.Integration.Id,
+			"integration_name": resource.Integration.Name,
+		}
+		result = append(result, item)
+	}
+
+	return result
 }
 
 func formatEntitlements(entitlements []clientapi.AccessUnitClientModel) []map[string]interface{} {
