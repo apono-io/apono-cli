@@ -4,6 +4,7 @@ description: >
   Connect to databases and services through Apono. Use when the user
   wants to access a database, query data, or set up access to a service
   managed by Apono.
+allowed-tools: Bash(apono *)
 ---
 
 # Apono Connect
@@ -74,6 +75,7 @@ These tools are provided by the Apono MCP proxy:
 | `ask_access_assistant` | Describe your task to get scoped access recommendations |
 | `create_access_request` | Request access with specific scope |
 | `get_request_details` | Check if an access request was approved |
+| `list_resources_filtered` | List resources filtered by integration type or keyword |
 
 After a target is activated, additional tools become available from the backend (e.g., `query` for PostgreSQL).
 
