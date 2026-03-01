@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -35,6 +36,13 @@ HOW TO USE WITH ASSISTANT:
    - resource_ids from entitlement.resource_id (as array)
    - permission_ids from entitlement.permission_id (as array)
 5. Call this tool with those parameters
+
+⚠️ ID SOURCE RULES - CRITICAL:
+- ALL IDs (integration_id, resource_type_id, resource_ids, permission_ids) MUST come from the entitlements array returned by ask_access_assistant when has_request_cta=true.
+- NEVER invent, guess, or extract IDs from text descriptions. IDs are opaque strings (UUIDs, hashes, etc.).
+- If you don't have entitlements with has_request_cta=true, call ask_access_assistant first.
+- Example valid IDs: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "postgres-read-only"
+- Example INVALID IDs: "my-database", "write", "production-server" (these are descriptions, not IDs)
 
 REQUEST TYPES:
 1. Bundle Request (if assistant provides bundle_id):
@@ -143,6 +151,16 @@ func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.
 
 	if args.IntegrationID != "" && args.ResourceTypeID == "" {
 		return nil, fmt.Errorf("resource_type_id is required for integration requests")
+	}
+
+	// Client-side validation: reject IDs that look like hallucinated/invented names
+	if validationErr := validateIDs(args); validationErr != "" {
+		return map[string]interface{}{
+			"success":         false,
+			"message":         fmt.Sprintf("❌ INVALID IDs DETECTED: %s", validationErr),
+			"action_required": "The IDs you provided appear to be invented or extracted from text descriptions. You MUST get valid IDs from ask_access_assistant: call it first, wait for has_request_cta=true, then use ONLY the IDs from the entitlements array.",
+			"hint":            "Valid IDs are opaque strings like UUIDs or system identifiers from the entitlements array. Do NOT use resource names, descriptions, or human-readable labels as IDs.",
+		}, nil
 	}
 
 	// Build the request model - use nil instead of empty arrays to avoid API validation issues
@@ -286,10 +304,15 @@ func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.
 	}
 
 	if err != nil {
-		if httpResp != nil && httpResp.StatusCode >= 400 {
-			return nil, fmt.Errorf("failed to create access request (status %d): %w", httpResp.StatusCode, err)
+		errorMsg := err.Error()
+		// Enrich common API errors with actionable guidance
+		if strings.Contains(errorMsg, "access request is empty") || strings.Contains(errorMsg, "empty") {
+			return nil, fmt.Errorf("❌ Access request is empty - the IDs you provided do not match any available resources. This usually means the IDs are incorrect or hallucinated. Next step: Call ask_access_assistant to get valid entitlement IDs, then retry with those IDs")
 		}
-		return nil, fmt.Errorf("failed to create access request: %w", err)
+		if httpResp != nil && httpResp.StatusCode >= 400 {
+			return nil, fmt.Errorf("❌ Access request failed (HTTP %d): %w. Next step: Call ask_access_assistant with this error to get help fixing the request", httpResp.StatusCode, err)
+		}
+		return nil, fmt.Errorf("❌ Access request failed: %w. Next step: Call ask_access_assistant with this error to get help fixing the request", err)
 	}
 
 	fmt.Printf("[DEBUG] Request created successfully! IDs: %v\n", createdRequest.RequestIds)
@@ -310,4 +333,49 @@ func (t *CreateAccessRequestTool) Execute(ctx context.Context, client *aponoapi.
 	result["next_step"] = "Use get_request_details with the request_id to check approval status. Once approved, database tools will automatically become available."
 
 	return result, nil
+}
+
+// validateIDs checks if the provided IDs look like real system identifiers
+// rather than hallucinated/invented names. Returns an error message if invalid, empty string if OK.
+func validateIDs(args CreateAccessRequestArgs) string {
+	var issues []string
+
+	// Common hallucinated ID patterns - these are descriptions, not real IDs
+	hallucinated := []string{
+		"my-database", "my-server", "my-cluster",
+		"production", "staging", "development",
+		"write", "read", "admin",
+		"database", "server", "cluster",
+		"example", "test", "demo", "sample",
+	}
+
+	checkID := func(fieldName, value string) {
+		if value == "" {
+			return
+		}
+		lower := strings.ToLower(value)
+		for _, h := range hallucinated {
+			if lower == h {
+				issues = append(issues, fmt.Sprintf("%s='%s' looks like an invented name, not a real ID", fieldName, value))
+				return
+			}
+		}
+	}
+
+	checkIDs := func(fieldName string, values []string) {
+		for _, v := range values {
+			checkID(fieldName, v)
+		}
+	}
+
+	checkID("integration_id", args.IntegrationID)
+	checkID("resource_type_id", args.ResourceTypeID)
+	checkID("bundle_id", args.BundleID)
+	checkIDs("resource_ids", args.ResourceIDs)
+	checkIDs("permission_ids", args.PermissionIDs)
+
+	if len(issues) > 0 {
+		return strings.Join(issues, "; ")
+	}
+	return ""
 }

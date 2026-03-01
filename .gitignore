@@ -210,3 +210,9 @@ $RECYCLE.BIN/
 # GoReleaser
 dist/
 contrib
+
+# CLI binary
+bin/
+
+# Claude Code
+.claude/

@@ -76,13 +76,24 @@ If the assistant asks for clarification OR you lack specific details about resou
 3. This helps avoid requesting access to the wrong resource
 
 RESPONSE FIELDS:
-- text_response: Message from assistant (always show this to user)
-- has_request_cta: true when assistant has built a complete request
-- entitlements: List of resources/permissions to request (when has_request_cta=true)
+- text_response: Message from assistant (informational only - may contain descriptive names but NOT usable IDs)
+- has_request_cta: true when assistant has built a complete request with valid IDs
+- entitlements: List of resources/permissions to request (ONLY present when has_request_cta=true)
+
+⚠️ CRITICAL ID RULES - READ CAREFULLY:
+1. NEVER extract or use IDs from text_response. The text is for display only and may contain descriptive names that look like IDs but are NOT valid API identifiers.
+2. ONLY use IDs from the "entitlements" array, and ONLY when has_request_cta=true.
+3. Each entitlement contains verified IDs: integration_id, resource_type, resource_id, permission_id - use ONLY these.
+4. If has_request_cta=false, do NOT attempt to construct a request yourself. Keep conversing with the assistant.
+
+🎯 ONE RESOURCE AT A TIME:
+- If you need access to multiple resources, make SEPARATE requests for each one.
+- Ask about one specific resource per message to this tool.
+- Example: Instead of "I need access to db1 and db2", ask "I need access to db1" first, complete that flow, then ask about db2.
 
 NEXT STEPS:
-- If has_request_cta=false: Show text_response to user, call again with their answer if asked
-- If has_request_cta=true: Extract entitlements and call create_access_request tool
+- If has_request_cta=false: Show text_response to user, call again with their answer if asked. Do NOT try to call create_access_request.
+- If has_request_cta=true: Extract IDs ONLY from the entitlements array and call create_access_request tool.
 - If create_access_request fails: Read the error, call this tool again with error details to get help fixing it
 
 ⚠️ AFTER REQUESTING ACCESS - VERIFY IT WORKED:
@@ -286,7 +297,14 @@ func (t *AskAccessAssistantTool) Execute(ctx context.Context, client *aponoapi.A
 		result["suggestions"] = suggestionTexts
 	}
 
-	result["next_step"] = "Use create_access_request with the recommended scope to request access."
+	// Add guardrail hints based on whether we have a valid CTA
+	hasRequestCta, _ := result["has_request_cta"].(bool)
+	if hasRequestCta {
+		result["next_step"] = "Use create_access_request with the IDs from the entitlements array above. Do NOT use any IDs from text_response."
+	} else {
+		result["next_step"] = "Show the text_response to the user. Do NOT call create_access_request yet - you do not have valid entitlement IDs. Continue the conversation with this tool if the assistant asked a question."
+		result["warning"] = "Do NOT extract IDs from text_response to use in create_access_request. Only use IDs from the entitlements array when has_request_cta=true."
+	}
 
 	return result, nil
 }
