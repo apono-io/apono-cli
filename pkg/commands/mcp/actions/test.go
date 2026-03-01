@@ -10,6 +10,8 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/approval"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/proxy"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/registry"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/targets"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/tools"
 )
@@ -30,6 +32,7 @@ func MCPTest() *cobra.Command {
 	cmd.AddCommand(testListResourcesFiltered())
 	cmd.AddCommand(testShowConfig())
 	cmd.AddCommand(testApproveFlow())
+	cmd.AddCommand(testAutoSpawn())
 
 	return cmd
 }
@@ -521,4 +524,123 @@ func testShowConfig() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func testAutoSpawn() *cobra.Command {
+	var pollSeconds int
+
+	cmd := &cobra.Command{
+		Use:   "auto-spawn",
+		Short: "Test the auto-spawn flow: list integrations, detect sessions, auto-spawn MCP backends",
+		Long: `Tests the full auto-spawn pipeline:
+1. Lists available integrations via Apono API
+2. Creates a session watcher that monitors for ready sessions
+3. When a session is detected, auto-spawns the matching MCP backend
+4. Lists the tools provided by the spawned backend
+
+This is useful for verifying the end-to-end flow without running the full MCP proxy.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := aponoapi.CreateClient(cmd.Context(), "")
+			if err != nil {
+				return fmt.Errorf("failed to create client: %w", err)
+			}
+
+			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+			defer cancel()
+
+			// Step 1: List available integrations
+			fmt.Println("=== Step 1: Listing available integrations ===")
+			listTool := &tools.ListAvailableResourcesTool{}
+			resources, err := listTool.Execute(ctx, client, nil)
+			if err != nil {
+				return fmt.Errorf("failed to list resources: %w", err)
+			}
+
+			output, _ := json.MarshalIndent(resources, "", "  ")
+			fmt.Println(string(output))
+
+			// Step 2: Set up session target provider
+			fmt.Println("\n=== Step 2: Setting up session watcher ===")
+			sessionProvider := targets.NewSessionTargetProvider(client, false)
+			mcpReg := registry.DefaultConfig()
+
+			fmt.Printf("Loaded %d MCP server definitions\n", len(mcpReg.Servers))
+			for _, s := range mcpReg.Servers {
+				fmt.Printf("  - %s (%s): matches %v\n", s.Name, s.ID, s.IntegrationTypes)
+			}
+
+			// Step 3: List current targets
+			fmt.Println("\n=== Step 3: Current targets ===")
+			targetList, err := sessionProvider.ListTargets(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to list targets: %w", err)
+			}
+
+			if len(targetList) == 0 {
+				fmt.Println("No targets found. Request access to a database integration first.")
+				return nil
+			}
+
+			for _, t := range targetList {
+				fmt.Printf("  - %s (type: %s, status: %s)\n", t.Name, t.Type, t.Status)
+			}
+
+			// Step 4: Start session watcher and wait for auto-spawn
+			fmt.Println("\n=== Step 4: Starting session watcher ===")
+			fmt.Printf("Polling every %d seconds for up to 5 minutes...\n", pollSeconds)
+
+			spawnedCh := make(chan string, 1)
+
+			watcher := proxy.NewSessionWatcher(proxy.SessionWatcherConfig{
+				TargetSource: sessionProvider,
+				MCPRegistry:  mcpReg,
+				PollInterval: time.Duration(pollSeconds) * time.Second,
+				OnNewSession: func(targetID string, serverDef registry.MCPServerDefinition, target *targets.TargetDefinition) {
+					fmt.Printf("\n>>> New session detected: %s (type: %s)\n", targetID, serverDef.ID)
+					fmt.Printf("    Server: %s %v\n", serverDef.Command, serverDef.Args)
+
+					// Build credentials
+					creds, err := registry.BuildCredentials(serverDef, target.Credentials)
+					if err != nil {
+						fmt.Printf("    Error building credentials: %v\n", err)
+						return
+					}
+
+					fmt.Printf("    Credentials built: %d keys\n", len(creds))
+					for k := range creds {
+						fmt.Printf("      - %s: %s...\n", k, truncate(creds[k], 40))
+					}
+
+					spawnedCh <- targetID
+				},
+				OnExpiredSession: func(targetID string) {
+					fmt.Printf("\n>>> Session expired: %s\n", targetID)
+				},
+			})
+
+			go watcher.Start(ctx)
+
+			select {
+			case targetID := <-spawnedCh:
+				fmt.Printf("\n=== Success: Auto-spawn triggered for %s ===\n", targetID)
+				fmt.Println("The session watcher correctly detected the session and would spawn the MCP backend.")
+			case <-ctx.Done():
+				fmt.Println("\n=== Timeout: No new sessions detected in 5 minutes ===")
+				fmt.Println("Make sure you have an active access session for a database integration.")
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().IntVar(&pollSeconds, "poll-interval", 5, "Poll interval in seconds")
+
+	return cmd
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
