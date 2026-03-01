@@ -68,7 +68,7 @@ type LocalProxyManager struct {
 	requestID        int64
 	done             chan struct{}
 	toolsChangedFn   func() // called when dynamic tool list changes
-	notifier       Notifier // called to send MCP log notifications to the client
+	notifier         Notifier // called to send MCP log notifications to the client
 	apiBaseURL       string       // Apono API base URL
 	httpClient       *http.Client // Authenticated HTTP client
 	targetsFilePath  string       // Path to targets.yaml file
@@ -246,6 +246,7 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 		riskResult := m.riskDetector.DetectRisk(toolName, args)
 		if riskResult.IsRisky {
 			utils.McpLogf("[ProxyManager] Risk detected for %s: %s (pattern=%s, intent=%q)", name, riskResult.Reason, suggestedPattern, intent)
+			m.notify("warning", fmt.Sprintf("Risky operation detected: %s. Waiting for approval in Apono...", riskResult.Reason))
 
 			if m.approver != nil {
 				// Look up integration ID from backend instance
@@ -271,6 +272,11 @@ func (m *LocalProxyManager) ExecuteDynamicTool(ctx context.Context, name string,
 				}
 
 				utils.McpLogf("[ProxyManager] Approval result for %s: approved=%v, mode=%s", name, approvalResult.Approved, approvalResult.Mode)
+				if approvalResult.Approved {
+					m.notify("info", "Operation approved. Proceeding with execution.")
+				} else {
+					m.notify("error", fmt.Sprintf("Operation denied: %s", riskResult.Reason))
+				}
 
 				if !approvalResult.Approved {
 					utils.McpLogf("[ProxyManager] Operation blocked for %s: %s", name, riskResult.Reason)
