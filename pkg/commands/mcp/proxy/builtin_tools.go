@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/targets"
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -131,353 +127,33 @@ func (h *BuiltinToolsHandler) handleListTargets(ctx context.Context) (interface{
 }
 
 func (h *BuiltinToolsHandler) handleSetupDatabase(ctx context.Context, args map[string]interface{}) (interface{}, error) {
-	sessionID, _ := args["session_id"].(string)
-	if sessionID == "" {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: session_id is required"},
-			},
+	sessionID, ok := args["session_id"].(string)
+	if !ok || sessionID == "" {
+		return &ToolCallResult{
+			Content: []ContentItem{{Type: "text", Text: "Error: session_id is required"}},
 			IsError: true,
 		}, nil
 	}
 
-	apiBaseURL := h.manager.apiBaseURL
-	httpClient := h.manager.httpClient
-	if apiBaseURL == "" || httpClient == nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: API client not configured for setup_database"},
-			},
-			IsError: true,
-		}, nil
-	}
+	utils.McpLogf("[SetupDatabase] Ensuring access for session %s", sessionID)
 
-	// List all sessions to find the one matching session_id
-	sessionsURL := fmt.Sprintf("%s/api/client/v1/access-sessions", apiBaseURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", sessionsURL, nil)
+	// Trigger EnsureAccess which will make the session "ready"
+	// The session watcher will then detect it and auto-spawn the backend
+	err := h.manager.TargetSource().EnsureAccess(ctx, sessionID)
 	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to create request: " + err.Error()},
-			},
+		return &ToolCallResult{
+			Content: []ContentItem{{Type: "text", Text: fmt.Sprintf("Failed to ensure access: %v", err)}},
 			IsError: true,
 		}, nil
 	}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to list sessions: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-	defer resp.Body.Close()
+	resultJSON, _ := json.Marshal(map[string]interface{}{
+		"status":    "success",
+		"message":   "Access ensured. The MCP server will be automatically spawned when the session becomes active.",
+		"next_step": "Use list_targets to check when the MCP server is ready and see available tools.",
+	})
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to read sessions response: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error: failed to list sessions: API returned %d: %s", resp.StatusCode, string(body))},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Parse sessions list
-	type SessionCredentials struct {
-		Status   string `json:"status"`
-		CanReset bool   `json:"can_reset"`
-	}
-	type Session struct {
-		ID          string `json:"id"`
-		Integration struct {
-			Name string `json:"name"`
-		} `json:"integration"`
-		Credentials *SessionCredentials `json:"credentials,omitempty"`
-	}
-	var sessionsResponse struct {
-		Data []Session `json:"data"`
-	}
-	if err := json.Unmarshal(body, &sessionsResponse); err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to parse sessions: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-	sessions := sessionsResponse.Data
-
-	// Find session matching the given ID
-	var targetSession *Session
-	for i, s := range sessions {
-		if s.ID == sessionID {
-			targetSession = &sessions[i]
-			break
-		}
-	}
-
-	if targetSession == nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error: session not found: %s", sessionID)},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	integrationName := targetSession.Integration.Name
-
-	// Check if credentials need to be reset (stale credentials)
-	if targetSession.Credentials != nil && targetSession.Credentials.Status != "new" && targetSession.Credentials.CanReset {
-		utils.McpLogf("[SetupDatabase] Credentials are stale (status: %s), resetting...", targetSession.Credentials.Status)
-
-		resetURL := fmt.Sprintf("%s/api/client/v1/access-sessions/%s/reset-credentials", apiBaseURL, sessionID)
-		resetReq, err := http.NewRequestWithContext(ctx, "POST", resetURL, nil)
-		if err != nil {
-			return ToolCallResult{
-				Content: []ContentItem{
-					{Type: "text", Text: "error: failed to create reset request: " + err.Error()},
-				},
-				IsError: true,
-			}, nil
-		}
-
-		resetResp, err := httpClient.Do(resetReq)
-		if err != nil {
-			return ToolCallResult{
-				Content: []ContentItem{
-					{Type: "text", Text: "error: failed to reset credentials: " + err.Error()},
-				},
-				IsError: true,
-			}, nil
-		}
-		resetResp.Body.Close()
-
-		if resetResp.StatusCode != http.StatusOK && resetResp.StatusCode != http.StatusNoContent {
-			return ToolCallResult{
-				Content: []ContentItem{
-					{Type: "text", Text: fmt.Sprintf("error: credential reset failed: %d", resetResp.StatusCode)},
-				},
-				IsError: true,
-			}, nil
-		}
-
-		// Wait for credentials to become "new"
-		maxRetries := 30
-		credentialsReady := false
-		for i := 0; i < maxRetries; i++ {
-			time.Sleep(1 * time.Second)
-
-			checkReq, _ := http.NewRequestWithContext(ctx, "GET", sessionsURL, nil)
-			checkResp, err := httpClient.Do(checkReq)
-			if err != nil {
-				continue
-			}
-
-			checkBody, _ := io.ReadAll(checkResp.Body)
-			checkResp.Body.Close()
-
-			var updatedResponse struct {
-				Data []Session `json:"data"`
-			}
-			if json.Unmarshal(checkBody, &updatedResponse) == nil {
-				for _, s := range updatedResponse.Data {
-					if s.ID == sessionID && s.Credentials != nil && s.Credentials.Status == "new" {
-						utils.McpLogf("[SetupDatabase] Credentials reset successfully")
-						credentialsReady = true
-						break
-					}
-				}
-			}
-			if credentialsReady {
-				break
-			}
-		}
-
-		if !credentialsReady {
-			return ToolCallResult{
-				Content: []ContentItem{
-					{Type: "text", Text: "error: timeout waiting for credentials to reset"},
-				},
-				IsError: true,
-			}, nil
-		}
-	}
-
-	// Get session details with credentials
-	detailsURL := fmt.Sprintf("%s/api/client/v1/access-sessions/%s/access-details", apiBaseURL, sessionID)
-	detailsReq, err := http.NewRequestWithContext(ctx, "GET", detailsURL, nil)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to create details request: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	detailsResp, err := httpClient.Do(detailsReq)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to get session details: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-	defer detailsResp.Body.Close()
-
-	detailsBody, err := io.ReadAll(detailsResp.Body)
-	if err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to read details response: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	if detailsResp.StatusCode != http.StatusOK {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: fmt.Sprintf("error: failed to get session details: %d: %s", detailsResp.StatusCode, string(detailsBody))},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Parse session details with credentials
-	var sessionDetails struct {
-		Json map[string]interface{} `json:"json"`
-	}
-	if err := json.Unmarshal(detailsBody, &sessionDetails); err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: failed to parse session details: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Extract PostgreSQL credentials
-	creds := sessionDetails.Json
-	host, _ := creds["host"].(string)
-	port, _ := creds["port"].(string)
-	if portNum, ok := creds["port"].(float64); ok {
-		port = fmt.Sprintf("%.0f", portNum)
-	}
-	dbName, _ := creds["db_name"].(string)
-	username, _ := creds["username"].(string)
-	password, _ := creds["password"].(string)
-
-	if host == "" || port == "" || dbName == "" || username == "" || password == "" {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: session is not a PostgreSQL database or missing credentials"},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Build connection string with URL encoding for special characters
-	connectionString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
-		url.QueryEscape(username),
-		url.QueryEscape(password),
-		host, port, dbName)
-
-	// Sanitize integration name for target ID
-	targetID := sanitizeName(integrationName)
-
-	// Create postgres target definition
-	postgresTarget := targets.TargetDefinition{
-		ID:   targetID,
-		Name: fmt.Sprintf("Apono: %s", integrationName),
-		Type: "postgres",
-		Credentials: map[string]string{
-			"database_url": connectionString,
-		},
-	}
-
-	// Write target to targets.yaml
-	if h.manager.targetsFilePath != "" {
-		fileLoader := targets.NewFileTargetLoader(h.manager.targetsFilePath)
-		if err := fileLoader.AddTarget(postgresTarget); err != nil {
-			return ToolCallResult{
-				Content: []ContentItem{
-					{Type: "text", Text: "error: failed to update targets.yaml: " + err.Error()},
-				},
-				IsError: true,
-			}, nil
-		}
-	}
-
-	utils.McpLogf("[SetupDatabase] Setup database target %s", targetID)
-
-	// Auto-initialize the new target
-	if err := h.manager.InitTarget(ctx, targetID); err != nil {
-		return ToolCallResult{
-			Content: []ContentItem{
-				{Type: "text", Text: "error: target configured but initialization failed: " + err.Error()},
-			},
-			IsError: true,
-		}, nil
-	}
-
-	// Get available tools from the newly initialized target
-	tools, err := h.manager.ListToolsForUser(ctx)
-	if err != nil {
-		tools = []Tool{}
-	}
-
-	// Build tool names list for the new target only
-	var targetTools []string
-	for _, t := range tools {
-		if t.BackendID == targetID {
-			targetTools = append(targetTools, PrefixToolName(t.BackendID, t.Name))
-		}
-	}
-
-	responseData := map[string]interface{}{
-		"success":         true,
-		"target_id":       targetID,
-		"database":        dbName,
-		"host":            host,
-		"message":         fmt.Sprintf("Target '%s' configured and initialized!", targetID),
-		"available_tools": targetTools,
-	}
-
-	responseJSON, _ := json.MarshalIndent(responseData, "", "  ")
-	return ToolCallResult{
-		Content: []ContentItem{
-			{Type: "text", Text: string(responseJSON)},
-		},
+	return &ToolCallResult{
+		Content: []ContentItem{{Type: "text", Text: string(resultJSON)}},
 	}, nil
-}
-
-// sanitizeName converts a name to a safe format for use in target IDs
-func sanitizeName(name string) string {
-	result := ""
-	for _, r := range name {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			result += string(r)
-		} else if r >= 'A' && r <= 'Z' {
-			result += string(r + 32) // Convert to lowercase
-		} else if r == ' ' || r == '_' {
-			result += "-"
-		}
-		// Skip other special characters
-	}
-	return result
 }

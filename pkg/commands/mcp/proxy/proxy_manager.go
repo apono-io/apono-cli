@@ -132,6 +132,11 @@ func (m *LocalProxyManager) SessionWatcher() *SessionWatcher {
 	return m.sessionWatcher
 }
 
+// TargetSource returns the target source used by this manager.
+func (m *LocalProxyManager) TargetSource() targets.TargetSource {
+	return m.targetSource
+}
+
 // SetToolsChangedCallback sets a function called when the dynamic tool list changes
 func (m *LocalProxyManager) SetToolsChangedCallback(fn func()) {
 	m.toolsChangedFn = fn
