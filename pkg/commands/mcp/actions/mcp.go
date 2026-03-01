@@ -10,12 +10,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/approval"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/proxy"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/registry"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/risk"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/targets"
 	"github.com/apono-io/apono-cli/pkg/groups"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -39,8 +46,21 @@ type InitializeClientParams struct {
 	} `json:"params"`
 }
 
+const (
+	proxyFlagName            = "proxy"
+	targetsFileFlagName      = "targets-file"
+	allIntegrationsFlagName  = "all-integrations"
+	riskActionFlagName       = "risk-action"
+	mcpServersFileFlagName   = "mcp-servers-file"
+)
+
 func MCP() *cobra.Command {
 	var debug bool
+	var proxyEnabled bool
+	var targetsFilePath string
+	var allIntegrations bool
+	var riskAction string
+	var mcpServersFile string
 
 	cmd := &cobra.Command{
 		Use:     "mcp",
@@ -59,14 +79,23 @@ func MCP() *cobra.Command {
 				return fmt.Errorf("failed to get API client from context: %w", err)
 			}
 
-			utils.McpLogf("Ready to receive requests...")
+			if proxyEnabled {
+				utils.McpLogf("Proxy mode enabled, risk-action=%s", riskAction)
+				return runLocalSTDIOServerWithProxy(client, debug, targetsFilePath, allIntegrations, riskAction, mcpServersFile)
+			}
 
+			utils.McpLogf("Ready to receive requests...")
 			return runLocalSTDIOServer(client, debug)
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.BoolVar(&debug, debugFlagName, false, "Enable debug logging for request/response bodies")
+	flags.BoolVar(&proxyEnabled, proxyFlagName, false, "Enable local MCP proxy mode with dynamic backend spawning")
+	flags.StringVar(&targetsFilePath, targetsFileFlagName, "", "Path to targets.yaml file (default: ~/.apono/mcp-proxy/targets.yaml)")
+	flags.BoolVar(&allIntegrations, allIntegrationsFlagName, false, "Show all integrations as targets, not just database types")
+	flags.StringVar(&riskAction, riskActionFlagName, "deny", "Action for risky operations: 'deny' (block), 'approve' (request approval via Apono), 'allow' (skip risk checks)")
+	flags.StringVar(&mcpServersFile, mcpServersFileFlagName, "", "Path to mcp-servers.yaml (default: ~/.apono/mcp-servers.yaml)")
 
 	// Add test subcommand
 	cmd.AddCommand(MCPTest())
@@ -132,6 +161,170 @@ func runLocalSTDIOServer(client *aponoapi.AponoClient, debug bool) error {
 			}
 
 			// Only send response if there is one (empty string means notification with no response)
+			if response != "" {
+				fmt.Println(response)
+			}
+		}
+	}
+}
+
+// DefaultMCPRegistry returns the built-in default MCP server registry
+func DefaultMCPRegistry() *registry.MCPServersConfig {
+	return &registry.MCPServersConfig{
+		Servers: []registry.MCPServerDefinition{
+			{
+				ID:               "postgres",
+				Name:             "PostgreSQL MCP",
+				IntegrationTypes: []string{"postgresql", "postgres", "rds-postgresql"},
+				Command:          "npx",
+				Args:             []string{"-y", "@modelcontextprotocol/server-postgres"},
+				CredentialBuilder: map[string]string{
+					"database_url": "postgresql://{{.username}}:{{urlEncode .password}}@{{.host}}:{{.port}}/{{.db_name}}?sslmode=require",
+				},
+				ArgMapping: []string{"database_url"},
+			},
+		},
+	}
+}
+
+func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targetsFilePath string, allIntegrations bool, riskAction string, mcpServersFile string) error {
+	scanner := bufio.NewScanner(os.Stdin)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Resolve targets file path
+	if targetsFilePath == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		targetsFilePath = filepath.Join(homeDir, ".apono", "mcp-proxy", "targets.yaml")
+	}
+
+	utils.McpLogf("Targets file: %s", targetsFilePath)
+
+	// Resolve MCP servers config path and load registry
+	if mcpServersFile == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		mcpServersFile = filepath.Join(homeDir, ".apono", "mcp-servers.yaml")
+	}
+
+	var mcpReg *registry.MCPServersConfig
+	loadedReg, err := registry.LoadMCPServersConfig(mcpServersFile)
+	if err != nil {
+		utils.McpLogf("Could not load MCP servers config from %s: %v, using built-in defaults", mcpServersFile, err)
+		mcpReg = DefaultMCPRegistry()
+	} else {
+		utils.McpLogf("Loaded MCP servers config from %s (%d servers)", mcpServersFile, len(loadedReg.Servers))
+		mcpReg = loadedReg
+	}
+
+	// Build target sources
+	fileLoader := targets.NewFileTargetLoader(targetsFilePath)
+	sessionProvider := targets.NewSessionTargetProvider(client, allIntegrations)
+	// File targets take priority (first source wins on conflict)
+	compositeSource := targets.NewCompositeTargetSource(fileLoader, sessionProvider)
+
+	// Build API base URL and HTTP client
+	apiCfg := client.ClientAPI.GetConfig()
+	apiBaseURL := fmt.Sprintf("%s://%s", apiCfg.Scheme, apiCfg.Host)
+
+	// Configure risk detection and approval based on --risk-action flag
+	var riskDetector risk.RiskDetector
+	var approver approval.Approver
+
+	switch riskAction {
+	case "allow":
+		// No risk detection — all operations are allowed
+		utils.McpLogf("Risk action: allow (no risk checks)")
+	case "approve":
+		// Risk detection + Apono action-approval API flow
+		riskDetector = risk.NewPatternRiskDetector(risk.DefaultRiskConfig())
+		approver = approval.NewAponoActionApprover(apiBaseURL, apiCfg.HTTPClient, client.Session.UserID, 5*time.Minute)
+		utils.McpLogf("Risk action: approve (risky ops require Apono approval)")
+	default: // "deny"
+		// Risk detection, block without approval
+		riskDetector = risk.NewPatternRiskDetector(risk.DefaultRiskConfig())
+		utils.McpLogf("Risk action: deny (risky ops blocked)")
+	}
+
+	// Create proxy manager
+	pm := proxy.NewLocalProxyManager(proxy.LocalProxyManagerConfig{
+		MCPRegistry:     mcpReg,
+		TargetSource:    compositeSource,
+		RiskDetector:    riskDetector,
+		Approver:        approver,
+		APIBaseURL:      apiBaseURL,
+		HTTPClient:      apiCfg.HTTPClient,
+		TargetsFilePath: targetsFilePath,
+	})
+	defer pm.Close()
+
+	// Start background cleanup
+	pm.StartCleanupRoutine()
+
+	// Wire tools/list_changed notification
+	pm.SetToolsChangedCallback(func() {
+		notification := `{"jsonrpc":"2.0","method":"notifications/tools/list_changed"}`
+		fmt.Println(notification)
+		utils.McpLogf("Sent notifications/tools/list_changed")
+	})
+
+	utils.McpLogf("=== STDIO Server with Proxy Started, waiting for input ===")
+	defer func() {
+		utils.McpLogf("=== STDIO Server with Proxy shutting down ===")
+	}()
+
+	handler := NewMCPHandlerWithProxy(client, pm)
+
+	lineCh := make(chan string)
+	errsCh := make(chan error, 1)
+
+	go func() {
+		defer close(lineCh)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			lineCh <- line
+		}
+		if err := scanner.Err(); err != nil {
+			errsCh <- fmt.Errorf("error reading stdin: %w", err)
+		}
+		close(errsCh)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+
+		case err := <-errsCh:
+			if err != nil {
+				utils.McpLogf("[Error]: Scanner error: %v", err)
+				return err
+			}
+			return nil
+
+		case line, ok := <-lineCh:
+			if !ok {
+				return nil
+			}
+			if line == "" {
+				continue
+			}
+
+			if debug {
+				utils.McpLogf("[Debug]: Request: %s", line)
+			}
+
+			response := handler.HandleRequest(ctx, line)
+
+			if debug {
+				utils.McpLogf("[Debug]: Response: %s", response)
+			}
+
 			if response != "" {
 				fmt.Println(response)
 			}

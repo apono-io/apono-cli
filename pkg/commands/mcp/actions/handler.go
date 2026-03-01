@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/proxy"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/tools"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -42,12 +43,22 @@ type RPCError struct {
 type MCPHandler struct {
 	toolRegistry *tools.ToolRegistry
 	client       *aponoapi.AponoClient
+	proxyManager proxy.ProxyManager // nil when proxy mode disabled
 }
 
 func NewMCPHandler(client *aponoapi.AponoClient) *MCPHandler {
 	return &MCPHandler{
 		toolRegistry: tools.NewToolRegistry(),
 		client:       client,
+	}
+}
+
+// NewMCPHandlerWithProxy creates a handler with proxy support enabled
+func NewMCPHandlerWithProxy(client *aponoapi.AponoClient, pm proxy.ProxyManager) *MCPHandler {
+	return &MCPHandler{
+		toolRegistry: tools.NewToolRegistry(),
+		client:       client,
+		proxyManager: pm,
 	}
 }
 
@@ -101,10 +112,15 @@ func (h *MCPHandler) HandleRequest(ctx context.Context, requestLine string) stri
 }
 
 func (h *MCPHandler) handleInitialize(ctx context.Context, params json.RawMessage) (interface{}, error) {
+	toolsCap := map[string]interface{}{}
+	if h.proxyManager != nil {
+		toolsCap["listChanged"] = true
+	}
+
 	return map[string]interface{}{
 		"protocolVersion": MCPVersion,
 		"capabilities": map[string]interface{}{
-			"tools": map[string]interface{}{},
+			"tools": toolsCap,
 		},
 		"serverInfo": map[string]interface{}{
 			"name":    ServerName,
@@ -114,6 +130,7 @@ func (h *MCPHandler) handleInitialize(ctx context.Context, params json.RawMessag
 }
 
 func (h *MCPHandler) handleToolsList(ctx context.Context) (interface{}, error) {
+	// Start with static tools from the registry
 	toolsList := h.toolRegistry.ListTools()
 
 	toolSchemas := make([]map[string]interface{}, 0, len(toolsList))
@@ -123,6 +140,22 @@ func (h *MCPHandler) handleToolsList(ctx context.Context) (interface{}, error) {
 			"description": tool.Description(),
 			"inputSchema": tool.InputSchema(),
 		})
+	}
+
+	// Add dynamic tools from proxy manager
+	if h.proxyManager != nil {
+		dynamicTools, err := h.proxyManager.ListDynamicTools(ctx)
+		if err != nil {
+			utils.McpLogf("[Error]: Failed to list dynamic tools: %v", err)
+		} else {
+			for _, dt := range dynamicTools {
+				toolSchemas = append(toolSchemas, map[string]interface{}{
+					"name":        dt.Name,
+					"description": dt.Description,
+					"inputSchema": dt.InputSchema,
+				})
+			}
+		}
 	}
 
 	return map[string]interface{}{
@@ -143,6 +176,28 @@ func (h *MCPHandler) handleToolsCall(ctx context.Context, params json.RawMessage
 
 	utils.McpLogf("Calling tool: %s", callParams.Name)
 
+	// Check if this is a dynamic (proxy) tool
+	if h.proxyManager != nil && h.proxyManager.IsDynamicTool(callParams.Name) {
+		utils.McpLogf("Routing to proxy manager: %s", callParams.Name)
+		result, err := h.proxyManager.ExecuteDynamicTool(ctx, callParams.Name, callParams.Arguments)
+		if err != nil {
+			return nil, fmt.Errorf("dynamic tool execution failed: %w", err)
+		}
+		// If result is already a ToolCallResult, return it directly
+		if _, ok := result.(proxy.ToolCallResult); ok {
+			return result, nil
+		}
+		return map[string]interface{}{
+			"content": []map[string]interface{}{
+				{
+					"type": "text",
+					"text": formatToolResult(result),
+				},
+			},
+		}, nil
+	}
+
+	// Static tool from registry
 	tool, err := h.toolRegistry.Get(callParams.Name)
 	if err != nil {
 		return nil, err

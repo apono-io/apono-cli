@@ -115,11 +115,11 @@ func (t *GetRequestDetailsTool) Execute(ctx context.Context, client *aponoapi.Ap
 	response := RequestDetailsResponse{
 		RequestID: request.Id,
 		Status:    request.Status.Status,
-		CreatedAt: fmt.Sprintf("%d", request.CreationTime),
+		CreatedAt: fmt.Sprintf("%v", request.CreationTime),
 	}
 
 	if request.RevocationTime.IsSet() {
-		response.ExpiresAt = fmt.Sprintf("%d", *request.RevocationTime.Get())
+		response.ExpiresAt = fmt.Sprintf("%v", *request.RevocationTime.Get())
 	}
 
 	if request.Justification.IsSet() {

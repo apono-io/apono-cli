@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/approval"
+	"github.com/apono-io/apono-cli/pkg/commands/mcp/targets"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp/tools"
 )
 
@@ -26,6 +29,7 @@ func MCPTest() *cobra.Command {
 	cmd.AddCommand(testGetRequestDetails())
 	cmd.AddCommand(testListResourcesFiltered())
 	cmd.AddCommand(testShowConfig())
+	cmd.AddCommand(testApproveFlow())
 
 	return cmd
 }
@@ -345,6 +349,140 @@ func testListResourcesFiltered() *cobra.Command {
 
 	cmd.Flags().StringVar(&integrationType, "integration-type", "", "Filter by integration type (e.g., postgresql, kubernetes)")
 	cmd.Flags().StringVar(&integrationName, "integration-name", "", "Filter by integration name (e.g., local-postgres)")
+
+	return cmd
+}
+
+func testApproveFlow() *cobra.Command {
+	var targetID string
+	var toolName string
+	var reason string
+	var timeoutMinutes int
+
+	cmd := &cobra.Command{
+		Use:   "approve-flow",
+		Short: "Test the approval flow end-to-end",
+		Long: `Tests the Apono approval flow by:
+1. Discovering targets from Apono sessions
+2. Finding the integration ID for the specified target
+3. Creating an approval request via the Apono API
+4. Polling until approved or denied (or timeout)`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := aponoapi.CreateClient(cmd.Context(), "")
+			if err != nil {
+				return fmt.Errorf("failed to create client: %w", err)
+			}
+
+			ctx := context.Background()
+
+			// Discover targets
+			fmt.Println("=== Discovering targets ===")
+			sessionProvider := targets.NewSessionTargetProvider(client, true)
+			targetList, err := sessionProvider.ListTargets(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to list targets: %w", err)
+			}
+
+			if len(targetList) == 0 {
+				return fmt.Errorf("no targets found — make sure you have integrations in Apono")
+			}
+
+			fmt.Printf("Found %d targets:\n", len(targetList))
+			for _, t := range targetList {
+				fmt.Printf("  - %s (name=%s, type=%s, status=%s)\n", t.ID, t.Name, t.Type, t.Status)
+			}
+
+			// Pick target
+			if targetID == "" {
+				// Pick first available target
+				targetID = targetList[0].ID
+				fmt.Printf("\nNo --target-id specified, using first target: %s\n", targetID)
+			}
+
+			// Get target definition to find integration ID
+			fmt.Printf("\n=== Getting target details for %s ===\n", targetID)
+			targetDef, err := sessionProvider.GetTarget(ctx, targetID)
+			if err != nil {
+				// If GetTarget fails (no active session), try to find integration ID from list
+				fmt.Printf("Note: GetTarget failed (%v), looking up integration ID directly...\n", err)
+
+				// We need the integration ID — get it by matching target ID to integration name
+				targetDef = &targets.TargetDefinition{
+					ID:   targetID,
+					Name: targetID,
+				}
+
+				// Try to find integration ID via EnsureAccess first to create a session
+				fmt.Println("Attempting to ensure access...")
+				if accessErr := sessionProvider.EnsureAccess(ctx, targetID); accessErr != nil {
+					return fmt.Errorf("failed to ensure access for target %s: %w", targetID, accessErr)
+				}
+
+				// Retry GetTarget after ensuring access
+				targetDef, err = sessionProvider.GetTarget(ctx, targetID)
+				if err != nil {
+					return fmt.Errorf("failed to get target definition after ensuring access: %w", err)
+				}
+			}
+
+			integrationID := targetDef.IntegrationID
+			if integrationID == "" {
+				return fmt.Errorf("no integration ID found for target %s — cannot create approval request", targetID)
+			}
+
+			fmt.Printf("Target: %s\n", targetDef.Name)
+			fmt.Printf("Type: %s\n", targetDef.Type)
+			fmt.Printf("Integration ID: %s\n", integrationID)
+
+			// Create approval request
+			timeout := time.Duration(timeoutMinutes) * time.Minute
+			if toolName == "" {
+				toolName = "query"
+			}
+			if reason == "" {
+				reason = "Test approval flow: simulated risky operation (DROP TABLE)"
+			}
+
+			fmt.Printf("\n=== Submitting approval request ===\n")
+			fmt.Printf("Tool: %s\n", toolName)
+			fmt.Printf("Reason: %s\n", reason)
+			fmt.Printf("Timeout: %v\n", timeout)
+
+			cfg := client.ClientAPI.GetConfig()
+			baseURL := fmt.Sprintf("%s://%s", cfg.Scheme, cfg.Host)
+			approver := approval.NewAponoActionApprover(baseURL, cfg.HTTPClient, client.Session.UserID, timeout)
+			req := approval.ApprovalRequest{
+				ToolName:      toolName,
+				Arguments:     map[string]interface{}{"sql": "DROP TABLE users"},
+				Reason:        reason,
+				RiskLevel:     "high",
+				TargetID:      targetID,
+				IntegrationID: integrationID,
+			}
+
+			fmt.Println("\nWaiting for approval (check Slack/Apono UI to approve or deny)...")
+			approved, err := approver.RequestApproval(ctx, req)
+			if err != nil {
+				return fmt.Errorf("approval request failed: %w", err)
+			}
+
+			fmt.Println()
+			if approved {
+				fmt.Println("=== RESULT: APPROVED ===")
+				fmt.Println("The risky operation was approved.")
+			} else {
+				fmt.Println("=== RESULT: DENIED ===")
+				fmt.Println("The risky operation was denied.")
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&targetID, "target-id", "", "Target ID to test with (default: first discovered target)")
+	cmd.Flags().StringVar(&toolName, "tool-name", "query", "Simulated tool name for the approval request")
+	cmd.Flags().StringVar(&reason, "reason", "", "Reason for the approval request (default: test message)")
+	cmd.Flags().IntVar(&timeoutMinutes, "timeout", 5, "Timeout in minutes for waiting for approval")
 
 	return cmd
 }
