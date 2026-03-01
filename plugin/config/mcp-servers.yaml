@@ -1,0 +1,24 @@
+# Apono MCP Server Definitions
+#
+# Maps Apono integration types to MCP server commands.
+# When the proxy detects an active session for a matching integration type,
+# it spawns the corresponding MCP server with injected credentials.
+#
+# To add a new database type, add a new entry below.
+# See the reference guide for details: plugin/skills/connect/reference.md
+
+mcp_servers:
+  - id: postgres
+    name: "PostgreSQL MCP"
+    integration_types:
+      - postgresql
+      - postgres
+      - rds-postgresql
+      - azure-postgresql
+      - gcp-postgresql
+    command: "npx"
+    args: ["-y", "@modelcontextprotocol/server-postgres"]
+    credential_builder:
+      database_url: "postgresql://{{.username}}:{{urlEncode .password}}@{{.host}}:{{.port}}/{{.db_name}}?sslmode=require"
+    arg_mapping:
+      - database_url
