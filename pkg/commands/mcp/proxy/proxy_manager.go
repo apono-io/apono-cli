@@ -67,6 +67,7 @@ type LocalProxyManager struct {
 	apiBaseURL       string       // Apono API base URL
 	httpClient       *http.Client // Authenticated HTTP client
 	targetsFilePath  string       // Path to targets.yaml file
+	sessionWatcher   *SessionWatcher
 
 	builtinTools *BuiltinToolsHandler
 }
@@ -78,6 +79,7 @@ type LocalProxyManagerConfig struct {
 	RiskDetector    risk.RiskDetector
 	Approver        approval.Approver
 	CleanupTimeout  time.Duration
+	PollInterval    time.Duration
 	APIBaseURL      string       // Apono API base URL
 	HTTPClient      *http.Client // Authenticated HTTP client
 	TargetsFilePath string       // Path to targets.yaml file
@@ -103,7 +105,31 @@ func NewLocalProxyManager(cfg LocalProxyManagerConfig) *LocalProxyManager {
 	}
 
 	pm.builtinTools = NewBuiltinToolsHandler(pm)
+
+	pm.sessionWatcher = NewSessionWatcher(SessionWatcherConfig{
+		TargetSource: cfg.TargetSource,
+		MCPRegistry:  cfg.MCPRegistry,
+		PollInterval: cfg.PollInterval,
+		OnNewSession: func(targetID string, serverDef registry.MCPServerDefinition, target *targets.TargetDefinition) {
+			utils.McpLogf("[ProxyManager] Auto-spawning backend for target %s", targetID)
+			if err := pm.InitTarget(context.Background(), targetID); err != nil {
+				utils.McpLogf("[ProxyManager] Failed to auto-spawn %s: %v", targetID, err)
+			}
+		},
+		OnExpiredSession: func(targetID string) {
+			utils.McpLogf("[ProxyManager] Auto-killing backend for expired target %s", targetID)
+			if err := pm.StopTarget(context.Background(), targetID); err != nil {
+				utils.McpLogf("[ProxyManager] Failed to auto-kill %s: %v", targetID, err)
+			}
+		},
+	})
+
 	return pm
+}
+
+// SessionWatcher returns the session watcher instance.
+func (m *LocalProxyManager) SessionWatcher() *SessionWatcher {
+	return m.sessionWatcher
 }
 
 // SetToolsChangedCallback sets a function called when the dynamic tool list changes

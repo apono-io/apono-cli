@@ -263,6 +263,11 @@ func runLocalSTDIOServerWithProxy(client *aponoapi.AponoClient, debug bool, targ
 	})
 	defer pm.Close()
 
+	// Start session watcher in background
+	watcherCtx, watcherCancel := context.WithCancel(ctx)
+	defer watcherCancel()
+	go pm.SessionWatcher().Start(watcherCtx)
+
 	// Start background cleanup
 	pm.StartCleanupRoutine()
 
