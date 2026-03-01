@@ -53,6 +53,9 @@ func (i *BackendInstance) GetLastUsed() time.Time {
 	return i.LastUsed
 }
 
+// Notifier sends MCP logging notifications to the client.
+type Notifier func(level, message string)
+
 // LocalProxyManager implements ProxyManager for a single local user
 type LocalProxyManager struct {
 	mu               sync.RWMutex
@@ -65,6 +68,7 @@ type LocalProxyManager struct {
 	requestID        int64
 	done             chan struct{}
 	toolsChangedFn   func() // called when dynamic tool list changes
+	notifier       Notifier // called to send MCP log notifications to the client
 	apiBaseURL       string       // Apono API base URL
 	httpClient       *http.Client // Authenticated HTTP client
 	targetsFilePath  string       // Path to targets.yaml file
@@ -84,6 +88,7 @@ type LocalProxyManagerConfig struct {
 	APIBaseURL      string       // Apono API base URL
 	HTTPClient      *http.Client // Authenticated HTTP client
 	TargetsFilePath string       // Path to targets.yaml file
+	Notifier        Notifier     // Optional: sends MCP log notifications to the client
 }
 
 // NewLocalProxyManager creates a new local proxy manager
@@ -100,6 +105,7 @@ func NewLocalProxyManager(cfg LocalProxyManagerConfig) *LocalProxyManager {
 		approver:        cfg.Approver,
 		cleanupTimeout:  cfg.CleanupTimeout,
 		done:            make(chan struct{}),
+		notifier:        cfg.Notifier,
 		apiBaseURL:      cfg.APIBaseURL,
 		httpClient:      cfg.HTTPClient,
 		targetsFilePath: cfg.TargetsFilePath,
@@ -146,6 +152,12 @@ func (m *LocalProxyManager) SetToolsChangedCallback(fn func()) {
 func (m *LocalProxyManager) notifyToolsChanged() {
 	if m.toolsChangedFn != nil {
 		m.toolsChangedFn()
+	}
+}
+
+func (m *LocalProxyManager) notify(level, message string) {
+	if m.notifier != nil {
+		m.notifier(level, message)
 	}
 }
 
