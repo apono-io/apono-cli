@@ -41,7 +41,7 @@ func VaultUpdate() *cobra.Command {
 				return err
 			}
 
-			if err := vc.Write(services.VaultKVDataPath(mount, secretName), secretData); err != nil {
+			if err := vc.WriteSecret(ctx, mount, secretName, secretData); err != nil {
 				return err
 			}
 

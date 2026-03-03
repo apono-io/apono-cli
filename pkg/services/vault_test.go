@@ -39,6 +39,32 @@ func TestSaveAndLoadVaultCredentials(t *testing.T) {
 	}
 }
 
+func TestSaveAndLoadVaultCredentials_WithMountName(t *testing.T) {
+	cacheDir := t.TempDir()
+	integrationID := "test-mount"
+
+	creds := &VaultCredentials{
+		VaultAddress: "https://vault.example.com:8200",
+		Username:     "testuser",
+		Password:     "testpass",
+		MountName:    "secret",
+	}
+
+	err := saveVaultCredentials(cacheDir, integrationID, creds)
+	if err != nil {
+		t.Fatalf("saveVaultCredentials failed: %v", err)
+	}
+
+	loaded, err := loadVaultCredentials(cacheDir, integrationID)
+	if err != nil {
+		t.Fatalf("loadVaultCredentials failed: %v", err)
+	}
+
+	if loaded.MountName != creds.MountName {
+		t.Errorf("MountName: got %q, want %q", loaded.MountName, creds.MountName)
+	}
+}
+
 func TestLoadVaultCredentials_NotFound(t *testing.T) {
 	cacheDir := t.TempDir()
 
@@ -146,23 +172,5 @@ func TestParseVaultPath_EmptySecretPath(t *testing.T) {
 	_, _, err := ParseVaultPath("kv/")
 	if err == nil {
 		t.Fatal("expected error for empty secret path, got nil")
-	}
-}
-
-func TestVaultKVDataPath(t *testing.T) {
-	got := VaultKVDataPath("kv", "db/prod")
-	want := "kv/data/db/prod"
-
-	if got != want {
-		t.Errorf("VaultKVDataPath: got %q, want %q", got, want)
-	}
-}
-
-func TestVaultKVMetadataPath(t *testing.T) {
-	got := VaultKVMetadataPath("kv")
-	want := "kv/metadata/"
-
-	if got != want {
-		t.Errorf("VaultKVMetadataPath: got %q, want %q", got, want)
 	}
 }

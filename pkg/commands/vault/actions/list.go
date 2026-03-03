@@ -35,7 +35,7 @@ func VaultList() *cobra.Command {
 				mountName = "kv"
 			}
 
-			keys, err := vc.List(services.VaultKVMetadataPath(mountName))
+			keys, err := vc.ListSecrets(ctx, mountName)
 			if err != nil {
 				return err
 			}

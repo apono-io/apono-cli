@@ -1,12 +1,11 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +13,8 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	vclient "github.com/hashicorp/vault-client-go"
+	"github.com/hashicorp/vault-client-go/schema"
 )
 
 const (
@@ -30,10 +31,9 @@ type VaultCredentials struct {
 	MountName    string `json:"mount_name,omitempty"`
 }
 
-// VaultClient is an HTTP client for interacting with a HashiCorp Vault server.
+// VaultClient wraps the HashiCorp Vault SDK client for KV v2 operations.
 type VaultClient struct {
-	Address string
-	Token   string
+	api *vclient.Client
 }
 
 // defaultCacheDir returns the default cache directory for vault credentials.
@@ -104,16 +104,6 @@ func ParseVaultPath(path string) (mount string, secretPath string, err error) {
 	}
 
 	return mount, secretPath, nil
-}
-
-// VaultKVDataPath returns the KV v2 data API path for the given mount and secret path.
-func VaultKVDataPath(mount, secretPath string) string {
-	return mount + "/data/" + secretPath
-}
-
-// VaultKVMetadataPath returns the KV v2 metadata API path for the given mount.
-func VaultKVMetadataPath(mount string) string {
-	return mount + "/metadata/"
 }
 
 // FindVaultSession finds an active session matching the given integration ID and session type.
@@ -202,7 +192,7 @@ func ResolveVaultClient(ctx context.Context, client *aponoapi.AponoClient, vault
 		return nil, nil, err
 	}
 
-	vc, err := VaultLogin(creds.VaultAddress, creds.Username, creds.Password)
+	vc, err := VaultLogin(ctx, creds.VaultAddress, creds.Username, creds.Password)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,180 +202,86 @@ func ResolveVaultClient(ctx context.Context, client *aponoapi.AponoClient, vault
 
 // VaultLogin authenticates to Vault using the userpass auth method and returns
 // a VaultClient with the resulting client token.
-func VaultLogin(address, username, password string) (*VaultClient, error) {
+func VaultLogin(ctx context.Context, address, username, password string) (*VaultClient, error) {
 	address = strings.TrimRight(address, "/")
-	loginPath := fmt.Sprintf("/v1/auth/userpass/login/%s", username)
-	body, err := json.Marshal(map[string]string{"password": password})
+
+	api, err := vclient.New(
+		vclient.WithAddress(address),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal login request: %w", err)
+		return nil, fmt.Errorf("failed to create vault client: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, address+loginPath, bytes.NewReader(body))
+	resp, err := api.Auth.UserpassLogin(ctx, username, schema.UserpassLoginRequest{
+		Password: password,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create login request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("vault login request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if err := checkVaultResponse(resp); err != nil {
 		return nil, fmt.Errorf("vault login failed: %w", err)
 	}
 
-	var result struct {
-		Auth struct {
-			ClientToken string `json:"client_token"`
-		} `json:"auth"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode vault login response: %w", err)
-	}
-
-	if result.Auth.ClientToken == "" {
+	if resp == nil || resp.Auth == nil || resp.Auth.ClientToken == "" {
 		return nil, fmt.Errorf("vault login response missing client_token")
 	}
 
-	return &VaultClient{
-		Address: address,
-		Token:   result.Auth.ClientToken,
-	}, nil
+	if err := api.SetToken(resp.Auth.ClientToken); err != nil {
+		return nil, fmt.Errorf("failed to set vault token: %w", err)
+	}
+
+	return &VaultClient{api: api}, nil
 }
 
-// Read reads a secret from Vault at the given API path.
-func (vc *VaultClient) Read(apiPath string) (map[string]interface{}, error) {
-	req, err := http.NewRequest(http.MethodGet, vc.Address+"/v1/"+apiPath, nil)
+// ReadSecret reads a KV v2 secret from Vault at the given mount and path.
+func (vc *VaultClient) ReadSecret(ctx context.Context, mount, secretPath string) (map[string]interface{}, error) {
+	resp, err := vc.api.Secrets.KvV2Read(ctx, secretPath, vclient.WithMountPath(mount))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create read request: %w", err)
-	}
-
-	req.Header.Set("X-Vault-Token", vc.Token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("vault read request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if err := checkVaultResponse(resp); err != nil {
 		return nil, fmt.Errorf("vault read failed: %w", err)
 	}
 
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode vault read response: %w", err)
+	if resp == nil || resp.Data.Data == nil {
+		return nil, fmt.Errorf("vault read returned empty response")
 	}
 
-	return result, nil
+	return resp.Data.Data, nil
 }
 
-// Write writes data to Vault at the given API path.
-func (vc *VaultClient) Write(apiPath string, data map[string]interface{}) error {
-	payload := map[string]interface{}{
-		"data": data,
-	}
-
-	body, err := json.Marshal(payload)
+// WriteSecret writes a KV v2 secret to Vault at the given mount and path.
+func (vc *VaultClient) WriteSecret(ctx context.Context, mount, secretPath string, data map[string]interface{}) error {
+	_, err := vc.api.Secrets.KvV2Write(ctx, secretPath, schema.KvV2WriteRequest{
+		Data: data,
+	}, vclient.WithMountPath(mount))
 	if err != nil {
-		return fmt.Errorf("failed to marshal write request: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, vc.Address+"/v1/"+apiPath, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("failed to create write request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Vault-Token", vc.Token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("vault write request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if err := checkVaultResponse(resp); err != nil {
 		return fmt.Errorf("vault write failed: %w", err)
 	}
 
 	return nil
 }
 
-// List lists keys at the given metadata path in Vault using the LIST HTTP method.
-func (vc *VaultClient) List(metadataPath string) ([]string, error) {
-	req, err := http.NewRequest("LIST", vc.Address+"/v1/"+metadataPath, nil)
+// ListSecrets lists KV v2 secret keys at the given mount and prefix.
+func (vc *VaultClient) ListSecrets(ctx context.Context, mount string) ([]string, error) {
+	resp, err := vc.api.Secrets.KvV2List(ctx, "", vclient.WithMountPath(mount))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create list request: %w", err)
-	}
-
-	req.Header.Set("X-Vault-Token", vc.Token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("vault list request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if err := checkVaultResponse(resp); err != nil {
 		return nil, fmt.Errorf("vault list failed: %w", err)
 	}
 
-	var result struct {
-		Data struct {
-			Keys []string `json:"keys"`
-		} `json:"data"`
+	if resp == nil {
+		return nil, nil
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode vault list response: %w", err)
-	}
-
-	return result.Data.Keys, nil
+	return resp.Data.Keys, nil
 }
 
-// Delete deletes a secret at the given API path in Vault.
-func (vc *VaultClient) Delete(apiPath string) error {
-	req, err := http.NewRequest(http.MethodDelete, vc.Address+"/v1/"+apiPath, nil)
+// DeleteSecret deletes a KV v2 secret at the given mount and path.
+func (vc *VaultClient) DeleteSecret(ctx context.Context, mount, secretPath string) error {
+	_, err := vc.api.Secrets.KvV2Delete(ctx, secretPath, vclient.WithMountPath(mount))
 	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
-	}
-
-	req.Header.Set("X-Vault-Token", vc.Token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("vault delete request failed: %w", err)
-	}
-
-	defer resp.Body.Close()
-
-	if err := checkVaultResponse(resp); err != nil {
 		return fmt.Errorf("vault delete failed: %w", err)
 	}
 
 	return nil
 }
 
-// checkVaultResponse checks an HTTP response from Vault and returns an appropriate error.
-func checkVaultResponse(resp *http.Response) error {
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
-	}
-
-	body, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("not found (404): %s", string(body))
-	}
-
-	return fmt.Errorf("operation failed with status %d: %s", resp.StatusCode, string(body))
+// IsNotFoundError checks whether an error from the Vault SDK is a 404.
+func IsNotFoundError(err error) bool {
+	var responseError *vclient.ResponseError
+	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusNotFound
 }

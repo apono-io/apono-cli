@@ -37,7 +37,7 @@ func VaultFetch() *cobra.Command {
 				return err
 			}
 
-			result, err := vc.Read(services.VaultKVDataPath(mount, secretName))
+			result, err := vc.ReadSecret(ctx, mount, secretName)
 			if err != nil {
 				return err
 			}
@@ -48,10 +48,9 @@ func VaultFetch() *cobra.Command {
 			case utils.YamlFormat:
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), result)
 			default:
-				kvData := extractKVData(result)
 				table := uitable.New()
 				table.AddRow("KEY", "VALUE")
-				for k, v := range kvData {
+				for k, v := range result {
 					table.AddRow(k, fmt.Sprintf("%v", v))
 				}
 
@@ -67,29 +66,4 @@ func VaultFetch() *cobra.Command {
 	_ = cmd.MarkFlagRequired("vault-id")
 
 	return cmd
-}
-
-// extractKVData extracts the nested data.data map from a KV v2 response.
-func extractKVData(result map[string]interface{}) map[string]interface{} {
-	dataRaw, ok := result["data"]
-	if !ok {
-		return result
-	}
-
-	dataMap, ok := dataRaw.(map[string]interface{})
-	if !ok {
-		return result
-	}
-
-	innerData, ok := dataMap["data"]
-	if !ok {
-		return dataMap
-	}
-
-	innerMap, ok := innerData.(map[string]interface{})
-	if !ok {
-		return dataMap
-	}
-
-	return innerMap
 }
