@@ -16,7 +16,7 @@ Help the user connect to databases and services through Apono's MCP proxy.
 Before proceeding, verify:
 
 1. **Check CLI is installed**: Run `apono --version`. If not found, tell the user to install it: `brew install apono-io/tap/apono-cli` (macOS) or see https://docs.apono.io/docs/cli-installation
-2. **Check authentication**: Run `apono auth status`. If not authenticated, tell the user to run `apono auth login` first and stop.
+2. **Check authentication**: Run `apono profiles list`. If no profiles are listed or all are expired, tell the user to run `apono login` first and stop.
 
 ## Connect Flow
 
@@ -82,5 +82,5 @@ After a target is activated, additional tools become available from the backend 
 ## Troubleshooting
 
 - **No targets visible**: User may not have any active Apono sessions. Suggest using `list_available_resources` to see integrations and `create_access_request` to request access.
-- **Auth error**: User needs to run `apono auth login`.
+- **Auth error**: User needs to run `apono login`.
 - **Target stuck in pending**: Access request is awaiting approval in Apono.
