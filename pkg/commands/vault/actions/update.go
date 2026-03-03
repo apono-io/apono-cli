@@ -16,7 +16,7 @@ func VaultUpdate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <path>",
 		Short: "Update a secret in a vault",
-		Args:  cobra.ExactArgs(1),
+		Args:  requirePathArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			secretPath := args[0]

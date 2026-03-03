@@ -17,7 +17,7 @@ func VaultFetch() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fetch <path>",
 		Short: "Fetch a secret from a vault",
-		Args:  cobra.ExactArgs(1),
+		Args:  requirePathArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			secretPath := args[0]

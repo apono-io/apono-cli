@@ -16,7 +16,7 @@ func VaultCreate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <path>",
 		Short: "Create a secret in a vault",
-		Args:  cobra.ExactArgs(1),
+		Args:  requirePathArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			secretPath := args[0]
