@@ -25,41 +25,14 @@ func VaultList() *cobra.Command {
 				return err
 			}
 
-			integration, err := services.GetIntegrationByIDOrByTypeAndName(ctx, client, vaultID)
-			if err != nil {
-				return fmt.Errorf("vault %q not found", vaultID)
-			}
-
-			session, err := services.FindVaultSession(ctx, client, integration.Id, services.VaultManagementSessionType)
+			vc, creds, err := services.ResolveVaultClient(ctx, client, vaultID, services.VaultManagementSessionType)
 			if err != nil {
 				return err
 			}
 
-			if session == nil {
-				return fmt.Errorf("no active management access found for vault %q, create a new request by running: apono request create", vaultID)
-			}
-
-			creds, err := services.ResolveVaultCredentials(ctx, client, integration.Id, session)
-			if err != nil {
-				return err
-			}
-
-			// Fetch mount_name from access details JSON
-			accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).
-				FormatType(services.JSONOutputFormat).
-				Execute()
-			if err != nil {
-				return fmt.Errorf("failed to get session details: %w", err)
-			}
-
-			mountName, _ := accessDetails.GetJson()["mount_name"].(string)
+			mountName := creds.MountName
 			if mountName == "" {
 				mountName = "kv"
-			}
-
-			vc, err := services.VaultLogin(creds.VaultAddress, creds.Username, creds.Password)
-			if err != nil {
-				return err
 			}
 
 			keys, err := vc.List(services.VaultKVMetadataPath(mountName))
@@ -72,24 +45,21 @@ func VaultList() *cobra.Command {
 				return err
 			}
 
+			paths := make([]string, len(keys))
+			for i, key := range keys {
+				paths[i] = mountName + "/" + key
+			}
+
 			switch *format {
 			case utils.JSONFormat:
-				paths := make([]string, len(keys))
-				for i, key := range keys {
-					paths[i] = mountName + "/" + key
-				}
 				return utils.PrintObjectsAsJSON(cmd.OutOrStdout(), paths)
 			case utils.YamlFormat:
-				paths := make([]string, len(keys))
-				for i, key := range keys {
-					paths[i] = mountName + "/" + key
-				}
 				return utils.PrintObjectsAsYaml(cmd.OutOrStdout(), paths)
 			default:
 				table := uitable.New()
 				table.AddRow("SECRET PATH")
-				for _, key := range keys {
-					table.AddRow(mountName + "/" + key)
+				for _, p := range paths {
+					table.AddRow(p)
 				}
 
 				_, err = fmt.Fprintln(cmd.OutOrStdout(), table)

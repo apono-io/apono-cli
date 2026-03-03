@@ -27,6 +27,7 @@ type VaultCredentials struct {
 	VaultAddress string `json:"vault_address"`
 	Username     string `json:"username"`
 	Password     string `json:"password"`
+	MountName    string `json:"mount_name,omitempty"`
 }
 
 // VaultClient is an HTTP client for interacting with a HashiCorp Vault server.
@@ -98,6 +99,10 @@ func ParseVaultPath(path string) (mount string, secretPath string, err error) {
 	mount = path[:idx]
 	secretPath = path[idx+1:]
 
+	if secretPath == "" {
+		return "", "", fmt.Errorf("invalid vault path %q: secret path cannot be empty", path)
+	}
+
 	return mount, secretPath, nil
 }
 
@@ -150,6 +155,7 @@ func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 	vaultAddress, _ := jsonData["vault_address"].(string)
 	username, _ := jsonData["username"].(string)
 	password, _ := jsonData["password"].(string)
+	mountName, _ := jsonData["mount_name"].(string)
 
 	if vaultAddress == "" || username == "" || password == "" {
 		return nil, fmt.Errorf("access details for session %s missing required vault credentials", session.Id)
@@ -159,6 +165,7 @@ func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 		VaultAddress: vaultAddress,
 		Username:     username,
 		Password:     password,
+		MountName:    mountName,
 	}
 
 	// Best-effort cache; ignore errors.
@@ -167,9 +174,46 @@ func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 	return creds, nil
 }
 
+// ResolveVaultClient is a convenience function that finds a vault session, resolves
+// credentials, and logs in to the vault. It returns the authenticated VaultClient
+// and the resolved credentials (which include mount_name).
+func ResolveVaultClient(ctx context.Context, client *aponoapi.AponoClient, vaultID string, sessionType string) (*VaultClient, *VaultCredentials, error) {
+	integration, err := GetIntegrationByIDOrByTypeAndName(ctx, client, vaultID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("vault %q not found", vaultID)
+	}
+
+	session, err := FindVaultSession(ctx, client, integration.Id, sessionType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if session == nil {
+		sessionLabel := "access"
+		if sessionType == VaultManagementSessionType {
+			sessionLabel = "management access"
+		}
+
+		return nil, nil, fmt.Errorf("no active %s found for vault %q, create a new request by running: apono request create", sessionLabel, vaultID)
+	}
+
+	creds, err := ResolveVaultCredentials(ctx, client, integration.Id, session)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	vc, err := VaultLogin(creds.VaultAddress, creds.Username, creds.Password)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return vc, creds, nil
+}
+
 // VaultLogin authenticates to Vault using the userpass auth method and returns
 // a VaultClient with the resulting client token.
 func VaultLogin(address, username, password string) (*VaultClient, error) {
+	address = strings.TrimRight(address, "/")
 	loginPath := fmt.Sprintf("/v1/auth/userpass/login/%s", username)
 	body, err := json.Marshal(map[string]string{"password": password})
 	if err != nil {
@@ -340,7 +384,7 @@ func checkVaultResponse(resp *http.Response) error {
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("not found (404)")
+		return fmt.Errorf("not found (404): %s", string(body))
 	}
 
 	return fmt.Errorf("operation failed with status %d: %s", resp.StatusCode, string(body))

@@ -31,26 +31,7 @@ func VaultUpdate() *cobra.Command {
 				return err
 			}
 
-			integration, err := services.GetIntegrationByIDOrByTypeAndName(ctx, client, vaultID)
-			if err != nil {
-				return fmt.Errorf("vault %q not found", vaultID)
-			}
-
-			session, err := services.FindVaultSession(ctx, client, integration.Id, services.VaultManagementSessionType)
-			if err != nil {
-				return err
-			}
-
-			if session == nil {
-				return fmt.Errorf("no active management access found for vault %q, create a new request by running: apono request create", vaultID)
-			}
-
-			creds, err := services.ResolveVaultCredentials(ctx, client, integration.Id, session)
-			if err != nil {
-				return err
-			}
-
-			vc, err := services.VaultLogin(creds.VaultAddress, creds.Username, creds.Password)
+			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID, services.VaultManagementSessionType)
 			if err != nil {
 				return err
 			}

@@ -142,6 +142,13 @@ func TestParseVaultPath_Invalid(t *testing.T) {
 	}
 }
 
+func TestParseVaultPath_EmptySecretPath(t *testing.T) {
+	_, _, err := ParseVaultPath("kv/")
+	if err == nil {
+		t.Fatal("expected error for empty secret path, got nil")
+	}
+}
+
 func TestVaultKVDataPath(t *testing.T) {
 	got := VaultKVDataPath("kv", "db/prod")
 	want := "kv/data/db/prod"
