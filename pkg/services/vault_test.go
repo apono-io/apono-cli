@@ -74,7 +74,12 @@ func TestSaveVaultCredentials_CreatesDirectory(t *testing.T) {
 		t.Fatal("expected file, got directory")
 	}
 
-	// Verify the directory was created with correct permissions.
+	// Verify file permissions.
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("file permissions: got %o, want 0600", perm)
+	}
+
+	// Verify the directory was created.
 	dirInfo, err := os.Stat(nestedDir)
 	if err != nil {
 		t.Fatalf("cache directory not created: %v", err)
