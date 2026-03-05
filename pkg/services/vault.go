@@ -11,10 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/apono-io/apono-cli/pkg/clientapi"
 	vclient "github.com/hashicorp/vault-client-go"
 	"github.com/hashicorp/vault-client-go/schema"
+
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
 const AponoVaultIntegrationType = "apono-vault"

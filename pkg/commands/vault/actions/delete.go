@@ -3,9 +3,10 @@ package actions
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/services"
-	"github.com/spf13/cobra"
 )
 
 func VaultDelete() *cobra.Command {
