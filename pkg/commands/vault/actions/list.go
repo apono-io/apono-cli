@@ -25,14 +25,14 @@ func VaultList() *cobra.Command {
 				return err
 			}
 
-			vc, creds, err := services.ResolveVaultClient(ctx, client, vaultID, services.VaultManagementSessionType)
+			vc, creds, err := services.ResolveVaultClient(ctx, client, vaultID)
 			if err != nil {
 				return err
 			}
 
 			mountName := creds.MountName
 			if mountName == "" {
-				mountName = "kv"
+				mountName = "apono-store"
 			}
 
 			keys, err := vc.ListSecrets(ctx, mountName)
@@ -70,7 +70,7 @@ func VaultList() *cobra.Command {
 
 	flags := cmd.Flags()
 	utils.AddFormatFlag(flags, format)
-	flags.StringVar(&vaultID, "vault-id", "", "The vault integration ID or type/name")
+	flags.StringVar(&vaultID, "vault-id", "", "The vault integration name or ID")
 	_ = cmd.MarkFlagRequired("vault-id")
 
 	return cmd

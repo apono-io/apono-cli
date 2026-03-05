@@ -27,7 +27,7 @@ func VaultFetch() *cobra.Command {
 				return err
 			}
 
-			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID, services.VaultSecretSessionType)
+			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
 			if err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func VaultFetch() *cobra.Command {
 
 	flags := cmd.Flags()
 	utils.AddFormatFlag(flags, format)
-	flags.StringVar(&vaultID, "vault-id", "", "The vault integration ID or type/name")
+	flags.StringVar(&vaultID, "vault-id", "", "The vault integration name or ID")
 	_ = cmd.MarkFlagRequired("vault-id")
 
 	return cmd

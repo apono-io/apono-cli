@@ -31,7 +31,7 @@ func VaultCreate() *cobra.Command {
 				return err
 			}
 
-			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID, services.VaultManagementSessionType)
+			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
 			if err != nil {
 				return err
 			}
@@ -51,7 +51,7 @@ func VaultCreate() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&vaultID, "vault-id", "", "The vault integration ID or type/name")
+	flags.StringVar(&vaultID, "vault-id", "", "The vault integration name or ID")
 	flags.StringVar(&value, "value", "", "Secret value as JSON (e.g. '{\"key\":\"val\"}')")
 	_ = cmd.MarkFlagRequired("vault-id")
 	_ = cmd.MarkFlagRequired("value")
