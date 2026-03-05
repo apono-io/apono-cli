@@ -40,7 +40,7 @@ func defaultCacheDir() string {
 }
 
 func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCredentials) error {
-	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
@@ -52,7 +52,7 @@ func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCre
 	encoded := base64.StdEncoding.EncodeToString(data)
 	filePath := filepath.Join(cacheDir, "vault-"+integrationID)
 
-	if err := os.WriteFile(filePath, []byte(encoded), 0600); err != nil {
+	if err := os.WriteFile(filePath, []byte(encoded), 0o600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 

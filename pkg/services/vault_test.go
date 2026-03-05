@@ -101,7 +101,7 @@ func TestSaveVaultCredentials_CreatesDirectory(t *testing.T) {
 	}
 
 	// Verify file permissions.
-	if perm := info.Mode().Perm(); perm != 0600 {
+	if perm := info.Mode().Perm(); perm != 0o600 {
 		t.Errorf("file permissions: got %o, want 0600", perm)
 	}
 
