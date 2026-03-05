@@ -1,11 +1,8 @@
 package actions
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
-	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/spf13/cobra"
 )
 
@@ -18,34 +15,17 @@ func VaultUpdate() *cobra.Command {
 		Short: "Update a secret in a vault",
 		Args:  requirePathArg,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			secretPath := args[0]
-
-			var secretData map[string]interface{}
-			if err := json.Unmarshal([]byte(value), &secretData); err != nil {
-				return fmt.Errorf("invalid JSON value: %w", err)
-			}
-
-			client, err := aponoapi.GetClient(ctx)
+			vc, secretData, mount, secretName, err := resolveWriteArgs(cmd, args[0], vaultID, value)
 			if err != nil {
 				return err
 			}
 
-			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
+			err = vc.WriteSecret(cmd.Context(), mount, secretName, secretData)
 			if err != nil {
 				return err
 			}
 
-			mount, secretName, err := services.ParseVaultPath(secretPath)
-			if err != nil {
-				return err
-			}
-
-			if err := vc.WriteSecret(ctx, mount, secretName, secretData); err != nil {
-				return err
-			}
-
-			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Secret %q updated successfully\n", secretPath)
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Secret %q updated successfully\n", args[0])
 			return err
 		},
 	}

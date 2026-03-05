@@ -34,7 +34,8 @@ func VaultDelete() *cobra.Command {
 				return err
 			}
 
-			if err := vc.DeleteSecret(ctx, mount, secretName); err != nil {
+			err = vc.DeleteSecret(ctx, mount, secretName)
+			if err != nil {
 				return err
 			}
 

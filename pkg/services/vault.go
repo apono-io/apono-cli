@@ -62,7 +62,7 @@ func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCre
 func loadVaultCredentials(cacheDir string, integrationID string) (*VaultCredentials, error) {
 	filePath := filepath.Join(cacheDir, "vault-"+integrationID)
 
-	encoded, err := os.ReadFile(filePath)
+	encoded, err := os.ReadFile(filePath) //nolint:gosec // filePath is constructed from a fixed cache dir + integration ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cache file: %w", err)
 	}
