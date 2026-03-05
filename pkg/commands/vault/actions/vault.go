@@ -30,26 +30,53 @@ func requirePathArg(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func resolveWriteArgs(cmd *cobra.Command, secretPath, vaultID, value string) (*services.VaultClient, map[string]interface{}, string, string, error) {
-	var secretData map[string]interface{}
-	if err := json.Unmarshal([]byte(value), &secretData); err != nil {
-		return nil, nil, "", "", fmt.Errorf("invalid JSON value: %w", err)
+func vaultWriteCommand(use, short, pastTense string) *cobra.Command {
+	var vaultID string
+	var value string
+
+	cmd := &cobra.Command{
+		Use:   use + " <path>",
+		Short: short,
+		Args:  requirePathArg,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			secretPath := args[0]
+
+			var secretData map[string]interface{}
+			if err := json.Unmarshal([]byte(value), &secretData); err != nil {
+				return fmt.Errorf("invalid JSON value: %w", err)
+			}
+
+			client, err := aponoapi.GetClient(ctx)
+			if err != nil {
+				return err
+			}
+
+			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
+			if err != nil {
+				return err
+			}
+
+			mount, secretName, err := services.ParseVaultPath(secretPath)
+			if err != nil {
+				return err
+			}
+
+			err = vc.WriteSecret(ctx, mount, secretName, secretData)
+			if err != nil {
+				return err
+			}
+
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Secret %q %s successfully\n", secretPath, pastTense)
+			return err
+		},
 	}
 
-	client, err := aponoapi.GetClient(cmd.Context())
-	if err != nil {
-		return nil, nil, "", "", err
-	}
+	flags := cmd.Flags()
+	flags.StringVar(&vaultID, "vault-id", "", "The vault integration name or ID")
+	flags.StringVar(&value, "value", "", "Secret value as JSON (e.g. '{\"key\":\"val\"}')")
+	_ = cmd.MarkFlagRequired("vault-id")
+	_ = cmd.MarkFlagRequired("value")
 
-	vc, _, err := services.ResolveVaultClient(cmd.Context(), client, vaultID)
-	if err != nil {
-		return nil, nil, "", "", err
-	}
-
-	mount, secretName, err := services.ParseVaultPath(secretPath)
-	if err != nil {
-		return nil, nil, "", "", err
-	}
-
-	return vc, secretData, mount, secretName, nil
+	return cmd
 }
