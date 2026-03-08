@@ -31,6 +31,23 @@ func requirePathArg(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func allowedMount(creds *services.VaultCredentials) string {
+	if creds.MountName != "" {
+		return creds.MountName
+	}
+
+	return services.DefaultVaultMount
+}
+
+func validateMount(mount string, creds *services.VaultCredentials) error {
+	expected := allowedMount(creds)
+	if mount != expected {
+		return fmt.Errorf("invalid mount %q; your session only has access to mount %q", mount, expected)
+	}
+
+	return nil
+}
+
 func vaultWriteCommand(use, short, pastTense string, requireNew bool) *cobra.Command {
 	var vaultID string
 	var value string
@@ -53,13 +70,17 @@ func vaultWriteCommand(use, short, pastTense string, requireNew bool) *cobra.Com
 				return err
 			}
 
-			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
+			vc, creds, err := services.ResolveVaultClient(ctx, client, vaultID)
 			if err != nil {
 				return err
 			}
 
 			mount, secretName, err := services.ParseVaultPath(secretPath)
 			if err != nil {
+				return err
+			}
+
+			if err = validateMount(mount, creds); err != nil {
 				return err
 			}
 

@@ -28,13 +28,17 @@ func VaultFetch() *cobra.Command {
 				return err
 			}
 
-			vc, _, err := services.ResolveVaultClient(ctx, client, vaultID)
+			vc, creds, err := services.ResolveVaultClient(ctx, client, vaultID)
 			if err != nil {
 				return err
 			}
 
 			mount, secretName, err := services.ParseVaultPath(secretPath)
 			if err != nil {
+				return err
+			}
+
+			if err = validateMount(mount, creds); err != nil {
 				return err
 			}
 

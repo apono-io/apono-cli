@@ -246,6 +246,10 @@ func VaultLogin(ctx context.Context, address, username, password string) (*Vault
 func (vc *VaultClient) ReadSecret(ctx context.Context, mount, secretPath string) (map[string]interface{}, error) {
 	resp, err := vc.api.Secrets.KvV2Read(ctx, secretPath, vclient.WithMountPath(mount))
 	if err != nil {
+		if IsNotFoundError(err) {
+			return nil, fmt.Errorf("secret %q not found in mount %q", secretPath, mount)
+		}
+
 		return nil, fmt.Errorf("vault read failed: %w", err)
 	}
 
@@ -270,6 +274,10 @@ func (vc *VaultClient) WriteSecret(ctx context.Context, mount, secretPath string
 func (vc *VaultClient) ListSecrets(ctx context.Context, mount string) ([]string, error) {
 	resp, err := vc.api.Secrets.KvV2List(ctx, "", vclient.WithMountPath(mount))
 	if err != nil {
+		if IsNotFoundError(err) {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("vault list failed: %w", err)
 	}
 
@@ -294,7 +302,7 @@ func (vc *VaultClient) SecretExists(ctx context.Context, mount, secretPath strin
 }
 
 func (vc *VaultClient) DeleteSecret(ctx context.Context, mount, secretPath string) error {
-	_, err := vc.api.Secrets.KvV2Delete(ctx, secretPath, vclient.WithMountPath(mount))
+	_, err := vc.api.Secrets.KvV2DeleteMetadataAndAllVersions(ctx, secretPath, vclient.WithMountPath(mount))
 	if err != nil {
 		if IsNotFoundError(err) {
 			return fmt.Errorf("secret %q not found in mount %q", secretPath, mount)
@@ -309,6 +317,11 @@ func (vc *VaultClient) DeleteSecret(ctx context.Context, mount, secretPath strin
 func IsNotFoundError(err error) bool {
 	var responseError *vclient.ResponseError
 	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusNotFound
+}
+
+func IsForbiddenError(err error) bool {
+	var responseError *vclient.ResponseError
+	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusForbidden
 }
 
 func isSessionCredentialsNew(session *clientapi.AccessSessionClientModel) bool {
