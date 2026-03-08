@@ -5,5 +5,5 @@ import (
 )
 
 func VaultCreate() *cobra.Command {
-	return vaultWriteCommand("create", "Create a secret in a vault", "created")
+	return vaultWriteCommand("create", "Create a secret in a vault", "created", true)
 }

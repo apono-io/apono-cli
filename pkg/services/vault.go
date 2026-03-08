@@ -18,7 +18,13 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
-const AponoVaultIntegrationType = "apono-vault"
+const (
+	AponoVaultIntegrationType = "apono-vault"
+	DefaultVaultMount         = "apono-store"
+
+	cacheDirPermission  = 0o700
+	cacheFilePermission = 0o600
+)
 
 type VaultCredentials struct {
 	VaultAddress string `json:"vault_address"`
@@ -41,7 +47,7 @@ func defaultCacheDir() string {
 }
 
 func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCredentials) error {
-	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+	if err := os.MkdirAll(cacheDir, cacheDirPermission); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
@@ -53,7 +59,7 @@ func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCre
 	encoded := base64.StdEncoding.EncodeToString(data)
 	filePath := filepath.Join(cacheDir, "vault-"+integrationID)
 
-	if err := os.WriteFile(filePath, []byte(encoded), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte(encoded), cacheFilePermission); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 
@@ -63,7 +69,7 @@ func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCre
 func loadVaultCredentials(cacheDir string, integrationID string) (*VaultCredentials, error) {
 	filePath := filepath.Join(cacheDir, "vault-"+integrationID)
 
-	encoded, err := os.ReadFile(filePath) //nolint:gosec // filePath is constructed from a fixed cache dir + integration ID
+	encoded, err := os.ReadFile(filePath) //nolint:gosec // path is built from fixed cache dir
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cache file: %w", err)
 	}
@@ -274,9 +280,26 @@ func (vc *VaultClient) ListSecrets(ctx context.Context, mount string) ([]string,
 	return resp.Data.Keys, nil
 }
 
+func (vc *VaultClient) SecretExists(ctx context.Context, mount, secretPath string) (bool, error) {
+	_, err := vc.api.Secrets.KvV2Read(ctx, secretPath, vclient.WithMountPath(mount))
+	if err != nil {
+		if IsNotFoundError(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("vault read failed: %w", err)
+	}
+
+	return true, nil
+}
+
 func (vc *VaultClient) DeleteSecret(ctx context.Context, mount, secretPath string) error {
 	_, err := vc.api.Secrets.KvV2Delete(ctx, secretPath, vclient.WithMountPath(mount))
 	if err != nil {
+		if IsNotFoundError(err) {
+			return fmt.Errorf("secret %q not found in mount %q", secretPath, mount)
+		}
+
 		return fmt.Errorf("vault delete failed: %w", err)
 	}
 

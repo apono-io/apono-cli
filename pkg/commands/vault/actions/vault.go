@@ -31,7 +31,7 @@ func requirePathArg(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func vaultWriteCommand(use, short, pastTense string) *cobra.Command {
+func vaultWriteCommand(use, short, pastTense string, requireNew bool) *cobra.Command {
 	var vaultID string
 	var value string
 
@@ -61,6 +61,18 @@ func vaultWriteCommand(use, short, pastTense string) *cobra.Command {
 			mount, secretName, err := services.ParseVaultPath(secretPath)
 			if err != nil {
 				return err
+			}
+
+			if requireNew {
+				var exists bool
+				exists, err = vc.SecretExists(ctx, mount, secretName)
+				if err != nil {
+					return err
+				}
+
+				if exists {
+					return fmt.Errorf("secret %q already exists in mount %q; use 'apono vault update' to modify it", secretName, mount)
+				}
 			}
 
 			err = vc.WriteSecret(ctx, mount, secretName, secretData)

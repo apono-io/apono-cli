@@ -17,7 +17,7 @@ func VaultList() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List secrets in a vault",
+		Short: "List all secrets in a vault",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -33,7 +33,7 @@ func VaultList() *cobra.Command {
 
 			mountName := creds.MountName
 			if mountName == "" {
-				mountName = "apono-store"
+				mountName = services.DefaultVaultMount
 			}
 
 			keys, err := vc.ListSecrets(ctx, mountName)

@@ -5,5 +5,5 @@ import (
 )
 
 func VaultUpdate() *cobra.Command {
-	return vaultWriteCommand("update", "Update a secret in a vault", "updated")
+	return vaultWriteCommand("update", "Update a secret in a vault", "updated", false)
 }
