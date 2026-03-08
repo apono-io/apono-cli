@@ -131,8 +131,12 @@ func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 
 	_, loginErr := VaultLogin(ctx, cached.VaultAddress, cached.Username, cached.Password)
 	if loginErr != nil {
-		_ = os.Remove(filepath.Join(cacheDir, "vault-"+integrationID))
-		return nil, fmt.Errorf("vault credentials have expired; %s", resetMsg)
+		if IsNotFoundError(loginErr) || IsForbiddenError(loginErr) || IsUnauthorizedError(loginErr) {
+			_ = os.Remove(filepath.Join(cacheDir, "vault-"+integrationID))
+			return nil, fmt.Errorf("vault credentials have expired; %s", resetMsg)
+		}
+
+		return nil, fmt.Errorf("vault login failed: %w", loginErr)
 	}
 
 	return cached, nil
@@ -341,6 +345,11 @@ func IsNotFoundError(err error) bool {
 func IsForbiddenError(err error) bool {
 	var responseError *vclient.ResponseError
 	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusForbidden
+}
+
+func IsUnauthorizedError(err error) bool {
+	var responseError *vclient.ResponseError
+	return errors.As(err, &responseError) && responseError.StatusCode == http.StatusUnauthorized
 }
 
 func isSessionCredentialsNew(session *clientapi.AccessSessionClientModel) bool {
