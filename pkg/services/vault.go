@@ -272,7 +272,11 @@ func (vc *VaultClient) WriteSecret(ctx context.Context, mount, secretPath string
 }
 
 func (vc *VaultClient) ListSecrets(ctx context.Context, mount string) ([]string, error) {
-	resp, err := vc.api.Secrets.KvV2List(ctx, "", vclient.WithMountPath(mount))
+	return vc.listSecretsRecursive(ctx, mount, "")
+}
+
+func (vc *VaultClient) listSecretsRecursive(ctx context.Context, mount, prefix string) ([]string, error) {
+	resp, err := vc.api.Secrets.KvV2List(ctx, prefix, vclient.WithMountPath(mount))
 	if err != nil {
 		if IsNotFoundError(err) {
 			return nil, nil
@@ -285,7 +289,22 @@ func (vc *VaultClient) ListSecrets(ctx context.Context, mount string) ([]string,
 		return nil, nil
 	}
 
-	return resp.Data.Keys, nil
+	var result []string
+	for _, key := range resp.Data.Keys {
+		fullPath := prefix + key
+		if strings.HasSuffix(key, "/") {
+			children, err := vc.listSecretsRecursive(ctx, mount, fullPath)
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, children...)
+		} else {
+			result = append(result, fullPath)
+		}
+	}
+
+	return result, nil
 }
 
 func (vc *VaultClient) SecretExists(ctx context.Context, mount, secretPath string) (bool, error) {
