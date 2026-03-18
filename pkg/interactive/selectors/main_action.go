@@ -5,6 +5,7 @@ import listselect "github.com/apono-io/apono-cli/pkg/interactive/inputs/list_sel
 const (
 	RequestAccessOption = "request_access"
 	ConnectOption       = "connect"
+	AssistOption        = "assist"
 )
 
 func RunMainActionSelector() (string, error) {
@@ -16,6 +17,10 @@ func RunMainActionSelector() (string, error) {
 		{
 			ID:    ConnectOption,
 			Label: "Connect to a resource",
+		},
+		{
+			ID:    AssistOption,
+			Label: "Ask Apono Assist",
 		},
 	}
 

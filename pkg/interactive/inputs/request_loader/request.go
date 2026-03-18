@@ -26,17 +26,5 @@ func shouldRetryLoading(lastRequestTime time.Time, interval time.Duration) bool 
 }
 
 func ShouldStopLoading(request *clientapi.AccessRequestClientModel) bool {
-	switch request.Status.Status {
-	case services.AccessRequestActiveStatus, services.AccessRequestFailedStatus, services.AccessRequestRejectedStatus:
-		return true
-
-	case services.AccessRequestPendingStatus:
-		if services.IsRequestWaitingForHumanApproval(request) {
-			return true
-		}
-	case services.AccessRequestPendingMFAStatus:
-		return true
-	}
-
-	return false
+	return services.ShouldStopWaitingForRequest(request)
 }
