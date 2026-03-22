@@ -103,7 +103,7 @@ func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
 	return &sessionCfg, nil
 }
 
-func IsFeatureAnnouncementsEnabled() bool {
+func IsFeatureAnnouncementNotificationsEnabled() bool {
 	cfg, err := Get()
 	if err != nil {
 		return true
@@ -114,7 +114,7 @@ func IsFeatureAnnouncementsEnabled() bool {
 	return *cfg.Notifications.FeatureAnnouncements
 }
 
-func SetFeatureAnnouncements(value bool) error {
+func SetFeatureAnnouncementsNotification(value bool) error {
 	cfg, err := Get()
 	if err != nil {
 		cfg = &Config{}

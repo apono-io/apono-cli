@@ -233,29 +233,35 @@ func (a *DefaultAPIService) GetApprovalStatusExecute(r ApiGetApprovalStatusReque
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetMessagesRequest struct {
+type ApiListRequest struct {
 	ctx        context.Context
 	ApiService *DefaultAPIService
 	location   *string
+	category   *string
 }
 
-func (r ApiGetMessagesRequest) Location(location string) ApiGetMessagesRequest {
+func (r ApiListRequest) Location(location string) ApiListRequest {
 	r.location = &location
 	return r
 }
 
-func (r ApiGetMessagesRequest) Execute() (*CliMessagesClientListModel, *http.Response, error) {
-	return r.ApiService.GetMessagesExecute(r)
+func (r ApiListRequest) Category(category string) ApiListRequest {
+	r.category = &category
+	return r
+}
+
+func (r ApiListRequest) Execute() (*CliNotificationsClientListModel, *http.Response, error) {
+	return r.ApiService.ListExecute(r)
 }
 
 /*
-GetMessages Method for GetMessages
+List Method for List
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-	@return ApiGetMessagesRequest
+	@return ApiListRequest
 */
-func (a *DefaultAPIService) GetMessages(ctx context.Context) ApiGetMessagesRequest {
-	return ApiGetMessagesRequest{
+func (a *DefaultAPIService) List(ctx context.Context) ApiListRequest {
+	return ApiListRequest{
 		ApiService: a,
 		ctx:        ctx,
 	}
@@ -263,21 +269,21 @@ func (a *DefaultAPIService) GetMessages(ctx context.Context) ApiGetMessagesReque
 
 // Execute executes the request
 //
-//	@return CliMessagesClientListModel
-func (a *DefaultAPIService) GetMessagesExecute(r ApiGetMessagesRequest) (*CliMessagesClientListModel, *http.Response, error) {
+//	@return CliNotificationsClientListModel
+func (a *DefaultAPIService) ListExecute(r ApiListRequest) (*CliNotificationsClientListModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *CliMessagesClientListModel
+		localVarReturnValue *CliNotificationsClientListModel
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.GetMessages")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.List")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/client/v1/cli-messages"
+	localVarPath := localBasePath + "/api/client/v1/cli-notifications"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -286,6 +292,9 @@ func (a *DefaultAPIService) GetMessagesExecute(r ApiGetMessagesRequest) (*CliMes
 		return localVarReturnValue, nil, reportError("location is required and must be specified")
 	}
 
+	if r.category != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "category", r.category, "")
+	}
 	parameterAddToHeaderOrQuery(localVarQueryParams, "location", r.location, "")
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

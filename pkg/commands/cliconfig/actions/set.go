@@ -26,7 +26,7 @@ var configHandlers = map[string]configHandler{
 			if value != "true" && value != "false" {
 				return fmt.Errorf("invalid value for %s: %s (expected true or false)", keyNotificationsFeatureAnnouncements, value)
 			}
-			return config.SetFeatureAnnouncements(value == "true")
+			return config.SetFeatureAnnouncementsNotification(value == "true")
 		},
 	},
 }

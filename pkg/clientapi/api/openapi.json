@@ -1378,11 +1378,19 @@
         }
       }
     },
-    "/api/client/v1/cli-messages": {
+    "/api/client/v1/cli-notifications": {
       "get": {
         "tags": [],
-        "operationId": "getMessages",
+        "operationId": "list",
         "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
           {
             "name": "location",
             "in": "query",
@@ -1398,7 +1406,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CliMessagesClientListModel"
+                  "$ref": "#/components/schemas/CliNotificationsClientListModel"
                 }
               }
             }
@@ -3264,9 +3272,11 @@
           }
         }
       },
-      "CliMessageClientModel": {
+      "CliNotificationClientModel": {
         "required": [
           "id",
+          "category",
+          "prefix",
           "text"
         ],
         "type": "object",
@@ -3274,25 +3284,27 @@
           "id": {
             "type": "string"
           },
+          "category": {
+            "type": "string"
+          },
           "prefix": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "text": {
             "type": "string"
           }
         }
       },
-      "CliMessagesClientListModel": {
+      "CliNotificationsClientListModel": {
         "required": [
-          "messages"
+          "notifications"
         ],
         "type": "object",
         "properties": {
-          "messages": {
+          "notifications": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CliMessageClientModel"
+              "$ref": "#/components/schemas/CliNotificationClientModel"
             }
           }
         }

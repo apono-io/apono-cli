@@ -15,17 +15,13 @@ const (
 
 	prefixNotice = "notice"
 	prefixNew    = "NEW"
-	prefixUpdate = "UPDATE"
-	prefixTip    = "TIP"
 )
 
 var (
 	beforeSelectIcon = prefixIconColor.Sprint("?")
 	afterSelectIcon  = prefixIconColor.Sprint("✓")
-	noticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf("notice") + color.Bold.Sprintf("]")
+	noticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf(prefixNotice) + color.Bold.Sprintf("]")
 	newMsgPrefix     = color.Bold.Sprintf("[") + color.Green.Sprintf(prefixNew) + color.Bold.Sprintf("]")
-	updateMsgPrefix  = color.Bold.Sprintf("[") + color.Green.Sprintf(prefixUpdate) + color.Bold.Sprintf("]")
-	tipMsgPrefix     = color.Bold.Sprintf("[") + color.Green.Sprintf(prefixTip) + color.Bold.Sprintf("]")
 )
 
 func GetNoticeMessagePrefix() string {
@@ -36,12 +32,6 @@ func GetCustomMessagePrefix(prefix string) string {
 	switch strings.ToUpper(prefix) {
 	case prefixNew:
 		return newMsgPrefix
-	case prefixUpdate:
-		return updateMsgPrefix
-	case prefixTip:
-		return tipMsgPrefix
-	case prefixNotice:
-		return noticeMsgPrefix
 	default:
 		return noticeMsgPrefix
 	}

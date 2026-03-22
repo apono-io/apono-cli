@@ -1,33 +1,45 @@
 package services
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/styles"
+	"github.com/spf13/cobra"
 )
 
-func FetchAndDisplayMessages(cmd *cobra.Command, client *clientapi.APIClient, ctx context.Context, location string) {
-	if !config.IsFeatureAnnouncementsEnabled() {
-		return
-	}
+const (
+	LocationPostLogin   = "post_login"
+	LocationPostRequest = "post_request"
 
-	resp, _, err := client.DefaultAPI.GetMessages(ctx).Location(location).Execute()
+	CategoryFeatureAnnouncement = "feature_announcement"
+)
+
+func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient, location string) {
+	resp, _, err := client.DefaultAPI.List(cmd.Context()).Location(location).Execute()
 	if err != nil {
 		return
 	}
 
-	for _, msg := range resp.Messages {
-		var prefix string
-		if msg.HasPrefix() {
-			p := msg.GetPrefix()
-			prefix = p
+	var relevantNotifications []clientapi.CliNotificationClientModel
+	for _, notification := range resp.Notifications {
+		if isNotificationCategoryEnabled(notification.GetCategory()) {
+			relevantNotifications = append(relevantNotifications, notification)
 		}
-		styledPrefix := styles.GetCustomMessagePrefix(prefix)
-		fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, msg.GetText())
+	}
+
+	for _, notification := range relevantNotifications {
+		styledPrefix := styles.GetCustomMessagePrefix(notification.GetPrefix())
+		fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
+	}
+}
+
+func isNotificationCategoryEnabled(category string) bool {
+	switch category {
+	case CategoryFeatureAnnouncement:
+		return config.IsFeatureAnnouncementNotificationsEnabled()
+	default:
+		return false
 	}
 }
