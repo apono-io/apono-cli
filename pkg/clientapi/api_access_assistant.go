@@ -581,15 +581,15 @@ func (a *AccessAssistantAPIService) SendMessageToAssistantExecute(r ApiSendMessa
 }
 
 type ApiSubmitAssistantMessageFeedbackRequest struct {
-	ctx                           context.Context
-	ApiService                    *AccessAssistantAPIService
-	id                            string
-	messageId                     string
-	assistantMessageFeedbackModel *AssistantMessageFeedbackModel
+	ctx                                 context.Context
+	ApiService                          *AccessAssistantAPIService
+	id                                  string
+	messageId                           string
+	assistantMessageFeedbackClientModel *AssistantMessageFeedbackClientModel
 }
 
-func (r ApiSubmitAssistantMessageFeedbackRequest) AssistantMessageFeedbackModel(assistantMessageFeedbackModel AssistantMessageFeedbackModel) ApiSubmitAssistantMessageFeedbackRequest {
-	r.assistantMessageFeedbackModel = &assistantMessageFeedbackModel
+func (r ApiSubmitAssistantMessageFeedbackRequest) AssistantMessageFeedbackClientModel(assistantMessageFeedbackClientModel AssistantMessageFeedbackClientModel) ApiSubmitAssistantMessageFeedbackRequest {
+	r.assistantMessageFeedbackClientModel = &assistantMessageFeedbackClientModel
 	return r
 }
 
@@ -637,8 +637,8 @@ func (a *AccessAssistantAPIService) SubmitAssistantMessageFeedbackExecute(r ApiS
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if r.assistantMessageFeedbackModel == nil {
-		return localVarReturnValue, nil, reportError("assistantMessageFeedbackModel is required and must be specified")
+	if r.assistantMessageFeedbackClientModel == nil {
+		return localVarReturnValue, nil, reportError("assistantMessageFeedbackClientModel is required and must be specified")
 	}
 
 	// to determine the Content-Type header
@@ -659,7 +659,7 @@ func (a *AccessAssistantAPIService) SubmitAssistantMessageFeedbackExecute(r ApiS
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
 	// body params
-	localVarPostBody = r.assistantMessageFeedbackModel
+	localVarPostBody = r.assistantMessageFeedbackClientModel
 	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
 	if err != nil {
 		return localVarReturnValue, nil, err

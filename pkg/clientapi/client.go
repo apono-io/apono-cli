@@ -61,7 +61,11 @@ type APIClient struct {
 
 	AccountsAPI *AccountsAPIService
 
+	AgenticAPI *AgenticAPIService
+
 	AnalyticsAPI *AnalyticsAPIService
+
+	DefaultAPI *DefaultAPIService
 
 	FiltersAPI *FiltersAPIService
 
@@ -94,7 +98,9 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.AccessRequestsAPI = (*AccessRequestsAPIService)(&c.common)
 	c.AccessSessionsAPI = (*AccessSessionsAPIService)(&c.common)
 	c.AccountsAPI = (*AccountsAPIService)(&c.common)
+	c.AgenticAPI = (*AgenticAPIService)(&c.common)
 	c.AnalyticsAPI = (*AnalyticsAPIService)(&c.common)
+	c.DefaultAPI = (*DefaultAPIService)(&c.common)
 	c.FiltersAPI = (*FiltersAPIService)(&c.common)
 	c.InventoryAPI = (*InventoryAPIService)(&c.common)
 	c.MCPServerAPI = (*MCPServerAPIService)(&c.common)

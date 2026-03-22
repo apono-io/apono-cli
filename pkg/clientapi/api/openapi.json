@@ -35,6 +35,9 @@
       "name": "Accounts"
     },
     {
+      "name": "Agentic"
+    },
+    {
       "name": "Analytics"
     },
     {
@@ -377,6 +380,16 @@
         "operationId": "listAccessRequests",
         "parameters": [
           {
+            "name": "access_units_summary_limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": "5",
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
             "name": "favorite_only",
             "in": "query",
             "schema": {
@@ -626,6 +639,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "access_units_summary_limit",
+            "in": "query",
+            "schema": {
+              "format": "int32",
+              "default": "5",
+              "type": "integer",
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -669,6 +692,37 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/access-requests/{id}/extend": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Extend access request duration",
+        "operationId": "extendAccessRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -1242,6 +1296,64 @@
         }
       }
     },
+    "/api/client/v1/action-approval": {
+      "post": {
+        "tags": [],
+        "summary": "Create HiL approval request",
+        "operationId": "createApprovalRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActionApprovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionApprovalStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/action-approval/{id}": {
+      "get": {
+        "tags": [],
+        "summary": "Get HiL approval status",
+        "operationId": "getApprovalStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionApprovalStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/analytics": {
       "post": {
         "tags": [
@@ -1262,6 +1374,34 @@
         "responses": {
           "201": {
             "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/client/v1/cli-messages": {
+      "get": {
+        "tags": [],
+        "operationId": "getMessages",
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliMessagesClientListModel"
+                }
+              }
+            }
           }
         }
       }
@@ -1442,6 +1582,14 @@
               "items": {
                 "type": "string"
               },
+              "nullable": true
+            }
+          },
+          {
+            "name": "permission-search",
+            "in": "query",
+            "schema": {
+              "type": "string",
               "nullable": true
             }
           },
@@ -2328,7 +2476,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssistantMessageFeedbackModel"
+                "$ref": "#/components/schemas/AssistantMessageFeedbackClientModel"
               }
             }
           },
@@ -2341,6 +2489,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/auth": {
+      "post": {
+        "tags": [
+          "Agentic"
+        ],
+        "operationId": "authenticateAgent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentAuthRequestAppModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentAuthResponseAppModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/tools/available": {
+      "get": {
+        "tags": [
+          "Agentic"
+        ],
+        "operationId": "getAvailableTools",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseMcpServerClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/trust-policies/resolved": {
+      "get": {
+        "tags": [
+          "Agentic"
+        ],
+        "operationId": "getResolvedTrustPolicies",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseResolvedTrustPolicyClientModel"
                 }
               }
             }
@@ -2438,6 +2656,16 @@
           },
           "status": {
             "$ref": "#/components/schemas/AccessGroupStatusClientModel"
+          },
+          "total_resources": {
+            "format": "int32",
+            "type": "integer",
+            "nullable": true
+          },
+          "total_permissions": {
+            "format": "int32",
+            "type": "integer",
+            "nullable": true
           }
         }
       },
@@ -2470,7 +2698,9 @@
           "requestor",
           "creation_time",
           "status",
-          "access_groups"
+          "access_groups",
+          "extension_count",
+          "extend_options"
         ],
         "type": "object",
         "properties": {
@@ -2551,6 +2781,27 @@
           "favorite": {
             "type": "boolean",
             "nullable": true
+          },
+          "access_units_summary": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessUnitSummaryClientModel"
+            },
+            "nullable": true
+          },
+          "distinct_resource_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "extension_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "extend_options": {
+            "$ref": "#/components/schemas/ExtendOptionsClientModel"
           }
         }
       },
@@ -2869,6 +3120,21 @@
           }
         }
       },
+      "AccessUnitSummaryClientModel": {
+        "required": [
+          "resource_name",
+          "permission_name"
+        ],
+        "type": "object",
+        "properties": {
+          "resource_name": {
+            "type": "string"
+          },
+          "permission_name": {
+            "type": "string"
+          }
+        }
+      },
       "AccountClientModel": {
         "required": [
           "id",
@@ -2884,6 +3150,21 @@
             "type": "string"
           },
           "plan": {
+            "type": "string"
+          }
+        }
+      },
+      "ActionApprovalStatusResponse": {
+        "required": [
+          "approval_id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "approval_id": {
+            "type": "string"
+          },
+          "status": {
             "type": "string"
           }
         }
@@ -2906,7 +3187,8 @@
       "BundleClientModel": {
         "required": [
           "id",
-          "name"
+          "name",
+          "labels"
         ],
         "type": "object",
         "properties": {
@@ -2915,6 +3197,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2941,6 +3229,20 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "tier": {
+            "format": "int32",
+            "type": "integer",
+            "nullable": true
+          },
+          "tier_escalated_at": {
+            "type": "number",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -2958,6 +3260,39 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ChallengeApproverClientModel"
+            }
+          }
+        }
+      },
+      "CliMessageClientModel": {
+        "required": [
+          "id",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "CliMessagesClientListModel": {
+        "required": [
+          "messages"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CliMessageClientModel"
             }
           }
         }
@@ -3054,6 +3389,53 @@
           "grantee_id": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "CreateActionApprovalRequest": {
+        "required": [
+          "session_id",
+          "agent_name",
+          "tool_name",
+          "tool_args",
+          "resolved_intent",
+          "intent",
+          "user_request",
+          "expected_impact",
+          "is_reversible",
+          "affected_resources"
+        ],
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "agent_name": {
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "tool_args": {
+            "type": "string"
+          },
+          "resolved_intent": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string"
+          },
+          "user_request": {
+            "type": "string"
+          },
+          "expected_impact": {
+            "type": "string"
+          },
+          "is_reversible": {
+            "type": "boolean"
+          },
+          "affected_resources": {
+            "type": "string"
           }
         }
       },
@@ -3196,6 +3578,36 @@
             "items": {
               "$ref": "#/components/schemas/DryRunAccessRequestError"
             }
+          },
+          "max_duration_in_sec": {
+            "format": "int64",
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ExtendOptionsClientModel": {
+        "required": [
+          "can_extend",
+          "extension_availability",
+          "extend_duration_in_sec",
+          "remaining_extensions"
+        ],
+        "type": "object",
+        "properties": {
+          "can_extend": {
+            "type": "boolean"
+          },
+          "extension_availability": {
+            "type": "string"
+          },
+          "extend_duration_in_sec": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "remaining_extensions": {
+            "format": "int32",
+            "type": "integer"
           }
         }
       },
@@ -4074,7 +4486,12 @@
             "type": "string"
           },
           "feedback": {
-            "type": "string",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AssistantMessageFeedbackClientModel"
+              }
+            ],
             "nullable": true
           },
           "created_date": {
@@ -4129,14 +4546,26 @@
           }
         }
       },
-      "AssistantMessageFeedbackModel": {
+      "AssistantMessageFeedbackClientModel": {
         "required": [
-          "feedback"
+          "rating"
         ],
         "type": "object",
         "properties": {
-          "feedback": {
+          "rating": {
             "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         }
       },
@@ -4474,6 +4903,248 @@
           }
         }
       },
+      "AgentAuthRequestAppModel": {
+        "required": [
+          "agent_platform",
+          "agent_name"
+        ],
+        "type": "object",
+        "properties": {
+          "agent_platform": {
+            "type": "string"
+          },
+          "agent_name": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentAuthResponseAppModel": {
+        "required": [
+          "agent_id",
+          "agent_token"
+        ],
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "agent_token": {
+            "type": "string"
+          }
+        }
+      },
+      "McpServerClientModel": {
+        "required": [
+          "id",
+          "type",
+          "name",
+          "server_config",
+          "resource_types",
+          "blocked_tools"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "catalog_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "server_config": {
+            "$ref": "#/components/schemas/McpServerConfigAppModel"
+          },
+          "resource_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blocked_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tool_intents": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/McpToolIntentClientModel"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "McpServerConfigAppModel": {
+        "required": [
+          "command",
+          "args",
+          "env"
+        ],
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "McpToolIntentClientModel": {
+        "required": [
+          "possible",
+          "default"
+        ],
+        "type": "object",
+        "properties": {
+          "possible": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "type": "string"
+          },
+          "intent_rules": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "nullable": true
+          },
+          "intent_match_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "PaginatedResponseMcpServerClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpServerClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginatedResponseResolvedTrustPolicyClientModel": {
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedTrustPolicyClientModel"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginationInfo": {
+        "required": [
+          "total",
+          "limit",
+          "offset"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "limit": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "offset": {
+            "format": "int32",
+            "type": "integer"
+          }
+        }
+      },
+      "ResolvedTrustPolicyClientModel": {
+        "required": [
+          "resource_type",
+          "enforcement"
+        ],
+        "type": "object",
+        "properties": {
+          "resource_type": {
+            "type": "string"
+          },
+          "enforcement": {
+            "$ref": "#/components/schemas/TrustPolicyMatrixClientModel"
+          },
+          "alert_config_id": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TrustPolicyMatrixClientModel": {
+        "required": [
+          "read",
+          "create",
+          "update",
+          "delete",
+          "admin"
+        ],
+        "type": "object",
+        "properties": {
+          "read": {
+            "type": "string"
+          },
+          "create": {
+            "type": "string"
+          },
+          "update": {
+            "type": "string"
+          },
+          "delete": {
+            "type": "string"
+          },
+          "admin": {
+            "type": "string"
+          }
+        }
+      },
       "McpError": {
         "required": [
           "code",
@@ -4493,46 +5164,6 @@
         }
       },
       "McpRequest": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/StandardMcpRequest"
-          },
-          {
-            "$ref": "#/components/schemas/NotificationMcpRequest"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "id",
-          "mapping": {
-            "StandardMcpRequest": "#/components/schemas/StandardMcpRequest",
-            "NotificationMcpRequest": "#/components/schemas/NotificationMcpRequest"
-          }
-        }
-      },
-      "StandardMcpRequest": {
-        "required": [
-          "id",
-          "jsonrpc",
-          "method"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "params": {
-            "type": "object",
-            "nullable": true
-          },
-          "jsonrpc": {
-            "type": "string"
-          },
-          "method": {
-            "type": "string"
-          }
-        }
-      },
-      "NotificationMcpRequest": {
         "required": [
           "jsonrpc",
           "method"
@@ -4544,10 +5175,6 @@
           },
           "method": {
             "type": "string"
-          },
-          "params": {
-            "type": "object",
-            "nullable": true
           }
         }
       },
@@ -4562,9 +5189,7 @@
           "jsonrpc": {
             "type": "string"
           },
-          "id": {
-            "type": "string"
-          },
+          "id": {},
           "result": {},
           "error": {
             "type": "object",

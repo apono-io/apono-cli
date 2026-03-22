@@ -34,6 +34,10 @@ type AccessRequestClientModel struct {
 	CustomFields          map[string]string                         `json:"custom_fields,omitempty"`
 	RequireApproverReason NullableBool                              `json:"require_approver_reason,omitempty"`
 	Favorite              NullableBool                              `json:"favorite,omitempty"`
+	AccessUnitsSummary    []AccessUnitSummaryClientModel            `json:"access_units_summary,omitempty"`
+	DistinctResourceNames []string                                  `json:"distinct_resource_names,omitempty"`
+	ExtensionCount        int32                                     `json:"extension_count"`
+	ExtendOptions         ExtendOptionsClientModel                  `json:"extend_options"`
 }
 
 type _AccessRequestClientModel AccessRequestClientModel
@@ -42,13 +46,15 @@ type _AccessRequestClientModel AccessRequestClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessRequestClientModel(id string, requestor UserClientModel, creationTime float64, status RequestStatusClientModel, accessGroups []AccessGroupClientModel) *AccessRequestClientModel {
+func NewAccessRequestClientModel(id string, requestor UserClientModel, creationTime float64, status RequestStatusClientModel, accessGroups []AccessGroupClientModel, extensionCount int32, extendOptions ExtendOptionsClientModel) *AccessRequestClientModel {
 	this := AccessRequestClientModel{}
 	this.Id = id
 	this.Requestor = requestor
 	this.CreationTime = creationTime
 	this.Status = status
 	this.AccessGroups = accessGroups
+	this.ExtensionCount = extensionCount
+	this.ExtendOptions = extendOptions
 	return &this
 }
 
@@ -557,6 +563,120 @@ func (o *AccessRequestClientModel) UnsetFavorite() {
 	o.Favorite.Unset()
 }
 
+// GetAccessUnitsSummary returns the AccessUnitsSummary field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetAccessUnitsSummary() []AccessUnitSummaryClientModel {
+	if o == nil {
+		var ret []AccessUnitSummaryClientModel
+		return ret
+	}
+	return o.AccessUnitsSummary
+}
+
+// GetAccessUnitsSummaryOk returns a tuple with the AccessUnitsSummary field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetAccessUnitsSummaryOk() ([]AccessUnitSummaryClientModel, bool) {
+	if o == nil || IsNil(o.AccessUnitsSummary) {
+		return nil, false
+	}
+	return o.AccessUnitsSummary, true
+}
+
+// HasAccessUnitsSummary returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasAccessUnitsSummary() bool {
+	if o != nil && IsNil(o.AccessUnitsSummary) {
+		return true
+	}
+
+	return false
+}
+
+// SetAccessUnitsSummary gets a reference to the given []AccessUnitSummaryClientModel and assigns it to the AccessUnitsSummary field.
+func (o *AccessRequestClientModel) SetAccessUnitsSummary(v []AccessUnitSummaryClientModel) {
+	o.AccessUnitsSummary = v
+}
+
+// GetDistinctResourceNames returns the DistinctResourceNames field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessRequestClientModel) GetDistinctResourceNames() []string {
+	if o == nil {
+		var ret []string
+		return ret
+	}
+	return o.DistinctResourceNames
+}
+
+// GetDistinctResourceNamesOk returns a tuple with the DistinctResourceNames field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessRequestClientModel) GetDistinctResourceNamesOk() ([]string, bool) {
+	if o == nil || IsNil(o.DistinctResourceNames) {
+		return nil, false
+	}
+	return o.DistinctResourceNames, true
+}
+
+// HasDistinctResourceNames returns a boolean if a field has been set.
+func (o *AccessRequestClientModel) HasDistinctResourceNames() bool {
+	if o != nil && IsNil(o.DistinctResourceNames) {
+		return true
+	}
+
+	return false
+}
+
+// SetDistinctResourceNames gets a reference to the given []string and assigns it to the DistinctResourceNames field.
+func (o *AccessRequestClientModel) SetDistinctResourceNames(v []string) {
+	o.DistinctResourceNames = v
+}
+
+// GetExtensionCount returns the ExtensionCount field value
+func (o *AccessRequestClientModel) GetExtensionCount() int32 {
+	if o == nil {
+		var ret int32
+		return ret
+	}
+
+	return o.ExtensionCount
+}
+
+// GetExtensionCountOk returns a tuple with the ExtensionCount field value
+// and a boolean to check if the value has been set.
+func (o *AccessRequestClientModel) GetExtensionCountOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.ExtensionCount, true
+}
+
+// SetExtensionCount sets field value
+func (o *AccessRequestClientModel) SetExtensionCount(v int32) {
+	o.ExtensionCount = v
+}
+
+// GetExtendOptions returns the ExtendOptions field value
+func (o *AccessRequestClientModel) GetExtendOptions() ExtendOptionsClientModel {
+	if o == nil {
+		var ret ExtendOptionsClientModel
+		return ret
+	}
+
+	return o.ExtendOptions
+}
+
+// GetExtendOptionsOk returns a tuple with the ExtendOptions field value
+// and a boolean to check if the value has been set.
+func (o *AccessRequestClientModel) GetExtendOptionsOk() (*ExtendOptionsClientModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.ExtendOptions, true
+}
+
+// SetExtendOptions sets field value
+func (o *AccessRequestClientModel) SetExtendOptions(v ExtendOptionsClientModel) {
+	o.ExtendOptions = v
+}
+
 func (o AccessRequestClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -599,6 +719,14 @@ func (o AccessRequestClientModel) ToMap() (map[string]interface{}, error) {
 	if o.Favorite.IsSet() {
 		toSerialize["favorite"] = o.Favorite.Get()
 	}
+	if o.AccessUnitsSummary != nil {
+		toSerialize["access_units_summary"] = o.AccessUnitsSummary
+	}
+	if o.DistinctResourceNames != nil {
+		toSerialize["distinct_resource_names"] = o.DistinctResourceNames
+	}
+	toSerialize["extension_count"] = o.ExtensionCount
+	toSerialize["extend_options"] = o.ExtendOptions
 	return toSerialize, nil
 }
 
@@ -612,6 +740,8 @@ func (o *AccessRequestClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		"creation_time",
 		"status",
 		"access_groups",
+		"extension_count",
+		"extend_options",
 	}
 
 	allProperties := make(map[string]interface{})

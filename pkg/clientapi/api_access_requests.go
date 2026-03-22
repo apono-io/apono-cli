@@ -366,25 +366,25 @@ func (a *AccessRequestsAPIService) DryRunCreateUserAccessRequestExecute(r ApiDry
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiGetAccessRequestRequest struct {
+type ApiExtendAccessRequestRequest struct {
 	ctx        context.Context
 	ApiService *AccessRequestsAPIService
 	id         string
 }
 
-func (r ApiGetAccessRequestRequest) Execute() (*AccessRequestClientModel, *http.Response, error) {
-	return r.ApiService.GetAccessRequestExecute(r)
+func (r ApiExtendAccessRequestRequest) Execute() (*MessageResponse, *http.Response, error) {
+	return r.ApiService.ExtendAccessRequestExecute(r)
 }
 
 /*
-GetAccessRequest Get access request
+ExtendAccessRequest Extend access request duration
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@param id
-	@return ApiGetAccessRequestRequest
+	@return ApiExtendAccessRequestRequest
 */
-func (a *AccessRequestsAPIService) GetAccessRequest(ctx context.Context, id string) ApiGetAccessRequestRequest {
-	return ApiGetAccessRequestRequest{
+func (a *AccessRequestsAPIService) ExtendAccessRequest(ctx context.Context, id string) ApiExtendAccessRequestRequest {
+	return ApiExtendAccessRequestRequest{
 		ApiService: a,
 		ctx:        ctx,
 		id:         id,
@@ -393,21 +393,21 @@ func (a *AccessRequestsAPIService) GetAccessRequest(ctx context.Context, id stri
 
 // Execute executes the request
 //
-//	@return AccessRequestClientModel
-func (a *AccessRequestsAPIService) GetAccessRequestExecute(r ApiGetAccessRequestRequest) (*AccessRequestClientModel, *http.Response, error) {
+//	@return MessageResponse
+func (a *AccessRequestsAPIService) ExtendAccessRequestExecute(r ApiExtendAccessRequestRequest) (*MessageResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod  = http.MethodGet
+		localVarHTTPMethod  = http.MethodPost
 		localVarPostBody    interface{}
 		formFiles           []formFile
-		localVarReturnValue *AccessRequestClientModel
+		localVarReturnValue *MessageResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.GetAccessRequest")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.ExtendAccessRequest")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/client/v1/access-requests/{id}"
+	localVarPath := localBasePath + "/api/client/v1/access-requests/{id}/extend"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -468,22 +468,139 @@ func (a *AccessRequestsAPIService) GetAccessRequestExecute(r ApiGetAccessRequest
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiGetAccessRequestRequest struct {
+	ctx                     context.Context
+	ApiService              *AccessRequestsAPIService
+	id                      string
+	accessUnitsSummaryLimit *int32
+}
+
+func (r ApiGetAccessRequestRequest) AccessUnitsSummaryLimit(accessUnitsSummaryLimit int32) ApiGetAccessRequestRequest {
+	r.accessUnitsSummaryLimit = &accessUnitsSummaryLimit
+	return r
+}
+
+func (r ApiGetAccessRequestRequest) Execute() (*AccessRequestClientModel, *http.Response, error) {
+	return r.ApiService.GetAccessRequestExecute(r)
+}
+
+/*
+GetAccessRequest Get access request
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@param id
+	@return ApiGetAccessRequestRequest
+*/
+func (a *AccessRequestsAPIService) GetAccessRequest(ctx context.Context, id string) ApiGetAccessRequestRequest {
+	return ApiGetAccessRequestRequest{
+		ApiService: a,
+		ctx:        ctx,
+		id:         id,
+	}
+}
+
+// Execute executes the request
+//
+//	@return AccessRequestClientModel
+func (a *AccessRequestsAPIService) GetAccessRequestExecute(r ApiGetAccessRequestRequest) (*AccessRequestClientModel, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *AccessRequestClientModel
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.GetAccessRequest")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/access-requests/{id}"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	if r.accessUnitsSummaryLimit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "access_units_summary_limit", r.accessUnitsSummaryLimit, "")
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiListAccessRequestsRequest struct {
-	ctx              context.Context
-	ApiService       *AccessRequestsAPIService
-	scope            *AccessRequestsScopeModel
-	favoriteOnly     *bool
-	granteeIds       *[]string
-	includeAutogrant *bool
-	limit            *int32
-	requestIds       *[]string
-	requestorIds     *[]string
-	skip             *int32
-	statuses         *[]string
+	ctx                     context.Context
+	ApiService              *AccessRequestsAPIService
+	scope                   *AccessRequestsScopeModel
+	accessUnitsSummaryLimit *int32
+	favoriteOnly            *bool
+	granteeIds              *[]string
+	includeAutogrant        *bool
+	limit                   *int32
+	requestIds              *[]string
+	requestorIds            *[]string
+	skip                    *int32
+	statuses                *[]string
 }
 
 func (r ApiListAccessRequestsRequest) Scope(scope AccessRequestsScopeModel) ApiListAccessRequestsRequest {
 	r.scope = &scope
+	return r
+}
+
+func (r ApiListAccessRequestsRequest) AccessUnitsSummaryLimit(accessUnitsSummaryLimit int32) ApiListAccessRequestsRequest {
+	r.accessUnitsSummaryLimit = &accessUnitsSummaryLimit
 	return r
 }
 
@@ -569,6 +686,9 @@ func (a *AccessRequestsAPIService) ListAccessRequestsExecute(r ApiListAccessRequ
 		return localVarReturnValue, nil, reportError("scope is required and must be specified")
 	}
 
+	if r.accessUnitsSummaryLimit != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "access_units_summary_limit", r.accessUnitsSummaryLimit, "")
+	}
 	if r.favoriteOnly != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "favorite_only", r.favoriteOnly, "")
 	} else {

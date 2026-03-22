@@ -20,8 +20,9 @@ var _ MappedNullable = &DryRunClientResponse{}
 
 // DryRunClientResponse struct for DryRunClientResponse
 type DryRunClientResponse struct {
-	Status string                     `json:"status"`
-	Errors []DryRunAccessRequestError `json:"errors"`
+	Status           string                     `json:"status"`
+	Errors           []DryRunAccessRequestError `json:"errors"`
+	MaxDurationInSec NullableInt64              `json:"max_duration_in_sec,omitempty"`
 }
 
 type _DryRunClientResponse DryRunClientResponse
@@ -93,6 +94,49 @@ func (o *DryRunClientResponse) SetErrors(v []DryRunAccessRequestError) {
 	o.Errors = v
 }
 
+// GetMaxDurationInSec returns the MaxDurationInSec field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *DryRunClientResponse) GetMaxDurationInSec() int64 {
+	if o == nil || IsNil(o.MaxDurationInSec.Get()) {
+		var ret int64
+		return ret
+	}
+	return *o.MaxDurationInSec.Get()
+}
+
+// GetMaxDurationInSecOk returns a tuple with the MaxDurationInSec field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *DryRunClientResponse) GetMaxDurationInSecOk() (*int64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.MaxDurationInSec.Get(), o.MaxDurationInSec.IsSet()
+}
+
+// HasMaxDurationInSec returns a boolean if a field has been set.
+func (o *DryRunClientResponse) HasMaxDurationInSec() bool {
+	if o != nil && o.MaxDurationInSec.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetMaxDurationInSec gets a reference to the given NullableInt64 and assigns it to the MaxDurationInSec field.
+func (o *DryRunClientResponse) SetMaxDurationInSec(v int64) {
+	o.MaxDurationInSec.Set(&v)
+}
+
+// SetMaxDurationInSecNil sets the value for MaxDurationInSec to be an explicit nil
+func (o *DryRunClientResponse) SetMaxDurationInSecNil() {
+	o.MaxDurationInSec.Set(nil)
+}
+
+// UnsetMaxDurationInSec ensures that no value is present for MaxDurationInSec, not even an explicit nil
+func (o *DryRunClientResponse) UnsetMaxDurationInSec() {
+	o.MaxDurationInSec.Unset()
+}
+
 func (o DryRunClientResponse) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -105,6 +149,9 @@ func (o DryRunClientResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["status"] = o.Status
 	toSerialize["errors"] = o.Errors
+	if o.MaxDurationInSec.IsSet() {
+		toSerialize["max_duration_in_sec"] = o.MaxDurationInSec.Get()
+	}
 	return toSerialize, nil
 }
 

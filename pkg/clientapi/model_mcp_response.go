@@ -21,7 +21,7 @@ var _ MappedNullable = &McpResponse{}
 // McpResponse struct for McpResponse
 type McpResponse struct {
 	Jsonrpc string                   `json:"jsonrpc"`
-	Id      string                   `json:"id"`
+	Id      interface{}              `json:"id"`
 	Result  interface{}              `json:"result"`
 	Error   NullableMcpResponseError `json:"error,omitempty"`
 }
@@ -32,7 +32,7 @@ type _McpResponse McpResponse
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMcpResponse(jsonrpc string, id string, result interface{}) *McpResponse {
+func NewMcpResponse(jsonrpc string, id interface{}, result interface{}) *McpResponse {
 	this := McpResponse{}
 	this.Jsonrpc = jsonrpc
 	this.Id = id
@@ -73,9 +73,10 @@ func (o *McpResponse) SetJsonrpc(v string) {
 }
 
 // GetId returns the Id field value
-func (o *McpResponse) GetId() string {
+// If the value is explicit nil, the zero value for interface{} will be returned
+func (o *McpResponse) GetId() interface{} {
 	if o == nil {
-		var ret string
+		var ret interface{}
 		return ret
 	}
 
@@ -84,15 +85,16 @@ func (o *McpResponse) GetId() string {
 
 // GetIdOk returns a tuple with the Id field value
 // and a boolean to check if the value has been set.
-func (o *McpResponse) GetIdOk() (*string, bool) {
-	if o == nil {
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *McpResponse) GetIdOk() (*interface{}, bool) {
+	if o == nil || IsNil(o.Id) {
 		return nil, false
 	}
 	return &o.Id, true
 }
 
 // SetId sets field value
-func (o *McpResponse) SetId(v string) {
+func (o *McpResponse) SetId(v interface{}) {
 	o.Id = v
 }
 
@@ -176,7 +178,9 @@ func (o McpResponse) MarshalJSON() ([]byte, error) {
 func (o McpResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["jsonrpc"] = o.Jsonrpc
-	toSerialize["id"] = o.Id
+	if o.Id != nil {
+		toSerialize["id"] = o.Id
+	}
 	if o.Result != nil {
 		toSerialize["result"] = o.Result
 	}
