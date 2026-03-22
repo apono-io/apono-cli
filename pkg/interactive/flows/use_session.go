@@ -90,12 +90,12 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 
 func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error {
 	resetCommand := resetCredentialsCommand + sessionID
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.GetNoticeMessagePrefix(), color.Green.Sprint(resetCommand))
 	return err
 }
 
 func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error {
 	resetCommand := resetCredentialsCommand + sessionID
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.GetNoticeMessagePrefix(), color.Green.Sprint(resetCommand))
 	return err
 }

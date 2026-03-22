@@ -165,6 +165,6 @@ func PrintCustomInstructionMessage(cmd *cobra.Command, customInstructionMessage 
 		return nil
 	}
 
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Message from your admin: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(customInstructionMessage))
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Message from your admin: %s\n", styles.GetNoticeMessagePrefix(), color.Green.Sprint(customInstructionMessage))
 	return err
 }

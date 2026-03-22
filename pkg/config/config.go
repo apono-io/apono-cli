@@ -21,7 +21,12 @@ var (
 )
 
 type Config struct {
-	Auth AuthConfig `json:"auth"`
+	Auth          AuthConfig          `json:"auth"`
+	Notifications NotificationsConfig `json:"notifications"`
+}
+
+type NotificationsConfig struct {
+	FeatureAnnouncements *bool `json:"feature_announcements,omitempty"`
 }
 
 type AuthConfig struct {
@@ -96,4 +101,24 @@ func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
 	}
 
 	return &sessionCfg, nil
+}
+
+func IsFeatureAnnouncementsEnabled() bool {
+	cfg, err := Get()
+	if err != nil {
+		return true
+	}
+	if cfg.Notifications.FeatureAnnouncements == nil {
+		return true
+	}
+	return *cfg.Notifications.FeatureAnnouncements
+}
+
+func SetFeatureAnnouncements(value bool) error {
+	cfg, err := Get()
+	if err != nil {
+		cfg = &Config{}
+	}
+	cfg.Notifications.FeatureAnnouncements = &value
+	return Save(cfg)
 }
