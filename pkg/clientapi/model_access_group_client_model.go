@@ -25,6 +25,8 @@ type AccessGroupClientModel struct {
 	Id                string                       `json:"id"`
 	HasNewCredentials bool                         `json:"has_new_credentials"`
 	Status            AccessGroupStatusClientModel `json:"status"`
+	TotalResources    NullableInt32                `json:"total_resources,omitempty"`
+	TotalPermissions  NullableInt32                `json:"total_permissions,omitempty"`
 }
 
 type _AccessGroupClientModel AccessGroupClientModel
@@ -171,6 +173,92 @@ func (o *AccessGroupClientModel) SetStatus(v AccessGroupStatusClientModel) {
 	o.Status = v
 }
 
+// GetTotalResources returns the TotalResources field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessGroupClientModel) GetTotalResources() int32 {
+	if o == nil || IsNil(o.TotalResources.Get()) {
+		var ret int32
+		return ret
+	}
+	return *o.TotalResources.Get()
+}
+
+// GetTotalResourcesOk returns a tuple with the TotalResources field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessGroupClientModel) GetTotalResourcesOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.TotalResources.Get(), o.TotalResources.IsSet()
+}
+
+// HasTotalResources returns a boolean if a field has been set.
+func (o *AccessGroupClientModel) HasTotalResources() bool {
+	if o != nil && o.TotalResources.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetTotalResources gets a reference to the given NullableInt32 and assigns it to the TotalResources field.
+func (o *AccessGroupClientModel) SetTotalResources(v int32) {
+	o.TotalResources.Set(&v)
+}
+
+// SetTotalResourcesNil sets the value for TotalResources to be an explicit nil
+func (o *AccessGroupClientModel) SetTotalResourcesNil() {
+	o.TotalResources.Set(nil)
+}
+
+// UnsetTotalResources ensures that no value is present for TotalResources, not even an explicit nil
+func (o *AccessGroupClientModel) UnsetTotalResources() {
+	o.TotalResources.Unset()
+}
+
+// GetTotalPermissions returns the TotalPermissions field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessGroupClientModel) GetTotalPermissions() int32 {
+	if o == nil || IsNil(o.TotalPermissions.Get()) {
+		var ret int32
+		return ret
+	}
+	return *o.TotalPermissions.Get()
+}
+
+// GetTotalPermissionsOk returns a tuple with the TotalPermissions field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessGroupClientModel) GetTotalPermissionsOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.TotalPermissions.Get(), o.TotalPermissions.IsSet()
+}
+
+// HasTotalPermissions returns a boolean if a field has been set.
+func (o *AccessGroupClientModel) HasTotalPermissions() bool {
+	if o != nil && o.TotalPermissions.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetTotalPermissions gets a reference to the given NullableInt32 and assigns it to the TotalPermissions field.
+func (o *AccessGroupClientModel) SetTotalPermissions(v int32) {
+	o.TotalPermissions.Set(&v)
+}
+
+// SetTotalPermissionsNil sets the value for TotalPermissions to be an explicit nil
+func (o *AccessGroupClientModel) SetTotalPermissionsNil() {
+	o.TotalPermissions.Set(nil)
+}
+
+// UnsetTotalPermissions ensures that no value is present for TotalPermissions, not even an explicit nil
+func (o *AccessGroupClientModel) UnsetTotalPermissions() {
+	o.TotalPermissions.Unset()
+}
+
 func (o AccessGroupClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -186,6 +274,12 @@ func (o AccessGroupClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize["id"] = o.Id
 	toSerialize["has_new_credentials"] = o.HasNewCredentials
 	toSerialize["status"] = o.Status
+	if o.TotalResources.IsSet() {
+		toSerialize["total_resources"] = o.TotalResources.Get()
+	}
+	if o.TotalPermissions.IsSet() {
+		toSerialize["total_permissions"] = o.TotalPermissions.Get()
+	}
 	return toSerialize, nil
 }
 

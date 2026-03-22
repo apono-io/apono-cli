@@ -163,17 +163,18 @@ func (a *InventoryAPIService) ListAccessBundlesExecute(r ApiListAccessBundlesReq
 }
 
 type ApiListAccessUnitsRequest struct {
-	ctx             context.Context
-	ApiService      *InventoryAPIService
-	bundleIds       *[]string
-	granteeId       *string
-	integrationIds  *[]string
-	limit           *int32
-	permissionIds   *[]string
-	resourceIds     *[]string
-	resourceTypeIds *[]string
-	search          *string
-	skip            *int32
+	ctx              context.Context
+	ApiService       *InventoryAPIService
+	bundleIds        *[]string
+	granteeId        *string
+	integrationIds   *[]string
+	limit            *int32
+	permissionIds    *[]string
+	permissionSearch *string
+	resourceIds      *[]string
+	resourceTypeIds  *[]string
+	search           *string
+	skip             *int32
 }
 
 func (r ApiListAccessUnitsRequest) BundleIds(bundleIds []string) ApiListAccessUnitsRequest {
@@ -198,6 +199,11 @@ func (r ApiListAccessUnitsRequest) Limit(limit int32) ApiListAccessUnitsRequest 
 
 func (r ApiListAccessUnitsRequest) PermissionIds(permissionIds []string) ApiListAccessUnitsRequest {
 	r.permissionIds = &permissionIds
+	return r
+}
+
+func (r ApiListAccessUnitsRequest) PermissionSearch(permissionSearch string) ApiListAccessUnitsRequest {
+	r.permissionSearch = &permissionSearch
 	return r
 }
 
@@ -301,6 +307,9 @@ func (a *InventoryAPIService) ListAccessUnitsExecute(r ApiListAccessUnitsRequest
 		} else {
 			parameterAddToHeaderOrQuery(localVarQueryParams, "permission-ids", t, "multi")
 		}
+	}
+	if r.permissionSearch != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "permission-search", r.permissionSearch, "")
 	}
 	if r.resourceIds != nil {
 		t := *r.resourceIds

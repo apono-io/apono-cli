@@ -20,10 +20,12 @@ var _ MappedNullable = &ChallengeApproverClientModel{}
 
 // ChallengeApproverClientModel struct for ChallengeApproverClientModel
 type ChallengeApproverClientModel struct {
-	Name     string                `json:"name"`
-	Type     string                `json:"type"`
-	Status   ClientChallengeStatus `json:"status"`
-	Metadata map[string]string     `json:"metadata"`
+	Name            string                `json:"name"`
+	Type            string                `json:"type"`
+	Status          ClientChallengeStatus `json:"status"`
+	Metadata        map[string]string     `json:"metadata"`
+	Tier            NullableInt32         `json:"tier,omitempty"`
+	TierEscalatedAt NullableFloat64       `json:"tier_escalated_at,omitempty"`
 }
 
 type _ChallengeApproverClientModel ChallengeApproverClientModel
@@ -145,6 +147,92 @@ func (o *ChallengeApproverClientModel) SetMetadata(v map[string]string) {
 	o.Metadata = v
 }
 
+// GetTier returns the Tier field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *ChallengeApproverClientModel) GetTier() int32 {
+	if o == nil || IsNil(o.Tier.Get()) {
+		var ret int32
+		return ret
+	}
+	return *o.Tier.Get()
+}
+
+// GetTierOk returns a tuple with the Tier field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *ChallengeApproverClientModel) GetTierOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Tier.Get(), o.Tier.IsSet()
+}
+
+// HasTier returns a boolean if a field has been set.
+func (o *ChallengeApproverClientModel) HasTier() bool {
+	if o != nil && o.Tier.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetTier gets a reference to the given NullableInt32 and assigns it to the Tier field.
+func (o *ChallengeApproverClientModel) SetTier(v int32) {
+	o.Tier.Set(&v)
+}
+
+// SetTierNil sets the value for Tier to be an explicit nil
+func (o *ChallengeApproverClientModel) SetTierNil() {
+	o.Tier.Set(nil)
+}
+
+// UnsetTier ensures that no value is present for Tier, not even an explicit nil
+func (o *ChallengeApproverClientModel) UnsetTier() {
+	o.Tier.Unset()
+}
+
+// GetTierEscalatedAt returns the TierEscalatedAt field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *ChallengeApproverClientModel) GetTierEscalatedAt() float64 {
+	if o == nil || IsNil(o.TierEscalatedAt.Get()) {
+		var ret float64
+		return ret
+	}
+	return *o.TierEscalatedAt.Get()
+}
+
+// GetTierEscalatedAtOk returns a tuple with the TierEscalatedAt field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *ChallengeApproverClientModel) GetTierEscalatedAtOk() (*float64, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.TierEscalatedAt.Get(), o.TierEscalatedAt.IsSet()
+}
+
+// HasTierEscalatedAt returns a boolean if a field has been set.
+func (o *ChallengeApproverClientModel) HasTierEscalatedAt() bool {
+	if o != nil && o.TierEscalatedAt.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetTierEscalatedAt gets a reference to the given NullableFloat64 and assigns it to the TierEscalatedAt field.
+func (o *ChallengeApproverClientModel) SetTierEscalatedAt(v float64) {
+	o.TierEscalatedAt.Set(&v)
+}
+
+// SetTierEscalatedAtNil sets the value for TierEscalatedAt to be an explicit nil
+func (o *ChallengeApproverClientModel) SetTierEscalatedAtNil() {
+	o.TierEscalatedAt.Set(nil)
+}
+
+// UnsetTierEscalatedAt ensures that no value is present for TierEscalatedAt, not even an explicit nil
+func (o *ChallengeApproverClientModel) UnsetTierEscalatedAt() {
+	o.TierEscalatedAt.Unset()
+}
+
 func (o ChallengeApproverClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -159,6 +247,12 @@ func (o ChallengeApproverClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize["type"] = o.Type
 	toSerialize["status"] = o.Status
 	toSerialize["metadata"] = o.Metadata
+	if o.Tier.IsSet() {
+		toSerialize["tier"] = o.Tier.Get()
+	}
+	if o.TierEscalatedAt.IsSet() {
+		toSerialize["tier_escalated_at"] = o.TierEscalatedAt.Get()
+	}
 	return toSerialize, nil
 }
 

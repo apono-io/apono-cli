@@ -20,8 +20,9 @@ var _ MappedNullable = &AccessRequestClientModelBundle{}
 
 // AccessRequestClientModelBundle struct for AccessRequestClientModelBundle
 type AccessRequestClientModelBundle struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id     string            `json:"id"`
+	Name   string            `json:"name"`
+	Labels map[string]string `json:"labels"`
 }
 
 type _AccessRequestClientModelBundle AccessRequestClientModelBundle
@@ -30,10 +31,11 @@ type _AccessRequestClientModelBundle AccessRequestClientModelBundle
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessRequestClientModelBundle(id string, name string) *AccessRequestClientModelBundle {
+func NewAccessRequestClientModelBundle(id string, name string, labels map[string]string) *AccessRequestClientModelBundle {
 	this := AccessRequestClientModelBundle{}
 	this.Id = id
 	this.Name = name
+	this.Labels = labels
 	return &this
 }
 
@@ -93,6 +95,30 @@ func (o *AccessRequestClientModelBundle) SetName(v string) {
 	o.Name = v
 }
 
+// GetLabels returns the Labels field value
+func (o *AccessRequestClientModelBundle) GetLabels() map[string]string {
+	if o == nil {
+		var ret map[string]string
+		return ret
+	}
+
+	return o.Labels
+}
+
+// GetLabelsOk returns a tuple with the Labels field value
+// and a boolean to check if the value has been set.
+func (o *AccessRequestClientModelBundle) GetLabelsOk() (*map[string]string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Labels, true
+}
+
+// SetLabels sets field value
+func (o *AccessRequestClientModelBundle) SetLabels(v map[string]string) {
+	o.Labels = v
+}
+
 func (o AccessRequestClientModelBundle) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -105,6 +131,7 @@ func (o AccessRequestClientModelBundle) ToMap() (map[string]interface{}, error) 
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
 	toSerialize["name"] = o.Name
+	toSerialize["labels"] = o.Labels
 	return toSerialize, nil
 }
 
@@ -115,6 +142,7 @@ func (o *AccessRequestClientModelBundle) UnmarshalJSON(bytes []byte) (err error)
 	requiredProperties := []string{
 		"id",
 		"name",
+		"labels",
 	}
 
 	allProperties := make(map[string]interface{})

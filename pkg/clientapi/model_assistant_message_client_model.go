@@ -21,10 +21,10 @@ var _ MappedNullable = &AssistantMessageClientModel{}
 
 // AssistantMessageClientModel struct for AssistantMessageClientModel
 type AssistantMessageClientModel struct {
-	Id             string         `json:"id"`
-	MessageOrdinal int32          `json:"message_ordinal"`
-	Role           string         `json:"role"`
-	Feedback       NullableString `json:"feedback,omitempty"`
+	Id             string                                      `json:"id"`
+	MessageOrdinal int32                                       `json:"message_ordinal"`
+	Role           string                                      `json:"role"`
+	Feedback       NullableAssistantMessageClientModelFeedback `json:"feedback,omitempty"`
 	// ISO 8601 formatted date-time
 	CreatedDate time.Time                         `json:"created_date"`
 	Data        []AssistantMessageDataClientModel `json:"data"`
@@ -127,9 +127,9 @@ func (o *AssistantMessageClientModel) SetRole(v string) {
 }
 
 // GetFeedback returns the Feedback field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *AssistantMessageClientModel) GetFeedback() string {
+func (o *AssistantMessageClientModel) GetFeedback() AssistantMessageClientModelFeedback {
 	if o == nil || IsNil(o.Feedback.Get()) {
-		var ret string
+		var ret AssistantMessageClientModelFeedback
 		return ret
 	}
 	return *o.Feedback.Get()
@@ -138,7 +138,7 @@ func (o *AssistantMessageClientModel) GetFeedback() string {
 // GetFeedbackOk returns a tuple with the Feedback field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 // NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *AssistantMessageClientModel) GetFeedbackOk() (*string, bool) {
+func (o *AssistantMessageClientModel) GetFeedbackOk() (*AssistantMessageClientModelFeedback, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -154,8 +154,8 @@ func (o *AssistantMessageClientModel) HasFeedback() bool {
 	return false
 }
 
-// SetFeedback gets a reference to the given NullableString and assigns it to the Feedback field.
-func (o *AssistantMessageClientModel) SetFeedback(v string) {
+// SetFeedback gets a reference to the given NullableAssistantMessageClientModelFeedback and assigns it to the Feedback field.
+func (o *AssistantMessageClientModel) SetFeedback(v AssistantMessageClientModelFeedback) {
 	o.Feedback.Set(&v)
 }
 

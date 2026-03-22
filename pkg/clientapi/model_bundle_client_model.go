@@ -20,8 +20,9 @@ var _ MappedNullable = &BundleClientModel{}
 
 // BundleClientModel struct for BundleClientModel
 type BundleClientModel struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id     string            `json:"id"`
+	Name   string            `json:"name"`
+	Labels map[string]string `json:"labels"`
 }
 
 type _BundleClientModel BundleClientModel
@@ -30,10 +31,11 @@ type _BundleClientModel BundleClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewBundleClientModel(id string, name string) *BundleClientModel {
+func NewBundleClientModel(id string, name string, labels map[string]string) *BundleClientModel {
 	this := BundleClientModel{}
 	this.Id = id
 	this.Name = name
+	this.Labels = labels
 	return &this
 }
 
@@ -93,6 +95,30 @@ func (o *BundleClientModel) SetName(v string) {
 	o.Name = v
 }
 
+// GetLabels returns the Labels field value
+func (o *BundleClientModel) GetLabels() map[string]string {
+	if o == nil {
+		var ret map[string]string
+		return ret
+	}
+
+	return o.Labels
+}
+
+// GetLabelsOk returns a tuple with the Labels field value
+// and a boolean to check if the value has been set.
+func (o *BundleClientModel) GetLabelsOk() (*map[string]string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Labels, true
+}
+
+// SetLabels sets field value
+func (o *BundleClientModel) SetLabels(v map[string]string) {
+	o.Labels = v
+}
+
 func (o BundleClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -105,6 +131,7 @@ func (o BundleClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
 	toSerialize["name"] = o.Name
+	toSerialize["labels"] = o.Labels
 	return toSerialize, nil
 }
 
@@ -115,6 +142,7 @@ func (o *BundleClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	requiredProperties := []string{
 		"id",
 		"name",
+		"labels",
 	}
 
 	allProperties := make(map[string]interface{})
