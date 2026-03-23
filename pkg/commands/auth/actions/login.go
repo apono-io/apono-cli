@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/groups"
-	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/int128/oauth2cli"
 	"github.com/int128/oauth2cli/oauth2params"
@@ -120,7 +118,6 @@ func Login() *cobra.Command {
 				}
 			}
 
-			fetchAndPrintPostLoginNotifications(cmd, cmdFlags.profileName)
 			return nil
 		},
 	}
@@ -174,28 +171,6 @@ func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL st
 	return nil
 }
 
-func fetchAndPrintPostLoginNotifications(cmd *cobra.Command, profileName string) {
-	profile, err := config.GetProfileByName(config.ProfileName(profileName))
-	if err != nil {
-		return
-	}
-
-	apiURL, err := url.Parse(profile.ApiURL)
-	if err != nil {
-		return
-	}
-	
-	var httpClient *http.Client
-	if profile.PersonalToken != "" {
-		httpClient = aponoapi.HTTPClientWithPersonalToken(profile.PersonalToken)
-	} else {
-		httpClient = oauth2.NewClient(cmd.Context(), oauth2.StaticTokenSource(&profile.Token))
-	}
-
-	clientAPI := aponoapi.CreateClientAPI(apiURL, httpClient)
-
-	services.FetchAndPrintNotifications(cmd, clientAPI, services.LocationPostLogin)
-}
 
 func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) (*config.SessionConfig, error) {
 	cfg, err := config.Get()

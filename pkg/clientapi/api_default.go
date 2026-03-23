@@ -236,13 +236,7 @@ func (a *DefaultAPIService) GetApprovalStatusExecute(r ApiGetApprovalStatusReque
 type ApiListRequest struct {
 	ctx        context.Context
 	ApiService *DefaultAPIService
-	location   *string
 	category   *string
-}
-
-func (r ApiListRequest) Location(location string) ApiListRequest {
-	r.location = &location
-	return r
 }
 
 func (r ApiListRequest) Category(category string) ApiListRequest {
@@ -288,14 +282,10 @@ func (a *DefaultAPIService) ListExecute(r ApiListRequest) (*CliNotificationsClie
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if r.location == nil {
-		return localVarReturnValue, nil, reportError("location is required and must be specified")
-	}
 
 	if r.category != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "category", r.category, "")
 	}
-	parameterAddToHeaderOrQuery(localVarQueryParams, "location", r.location, "")
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 

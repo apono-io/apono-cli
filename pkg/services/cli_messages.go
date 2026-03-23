@@ -3,43 +3,48 @@ package services
 import (
 	"fmt"
 
+	"github.com/gookit/color"
+	"github.com/spf13/cobra"
+
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
-	"github.com/apono-io/apono-cli/pkg/styles"
-	"github.com/spf13/cobra"
 )
 
 const (
-	LocationPostLogin   = "post_login"
-	LocationPostRequest = "post_request"
-
-	CategoryFeatureAnnouncement = "feature_announcement"
+	CategoryFeatureAnnouncement = "featureAnnouncement"
 )
 
-func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient, location string) {
-	resp, _, err := client.DefaultAPI.List(cmd.Context()).Location(location).Execute()
+type notificationCategoryConfig struct {
+	prefix    string
+	color     color.Color
+	isEnabled func() bool
+}
+
+var supportedNotificationCategories = map[string]notificationCategoryConfig{
+	CategoryFeatureAnnouncement: {
+		prefix:    "NEW",
+		color:     color.Magenta,
+		isEnabled: config.IsFeatureAnnouncementNotificationsEnabled,
+	},
+}
+
+func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient) {
+	resp, _, err := client.DefaultAPI.List(cmd.Context()).Execute()
 	if err != nil {
 		return
 	}
 
-	var relevantNotifications []clientapi.CliNotificationClientModel
 	for _, notification := range resp.Notifications {
-		if isNotificationCategoryEnabled(notification.GetCategory()) {
-			relevantNotifications = append(relevantNotifications, notification)
+		categoryConfig, isSupported := supportedNotificationCategories[notification.GetCategory()]
+		if !isSupported {
+			continue
 		}
-	}
 
-	for _, notification := range relevantNotifications {
-		styledPrefix := styles.GetCustomMessagePrefix(notification.GetPrefix(), notification.GetPrefixColor())
+		if !categoryConfig.isEnabled() {
+			continue
+		}
+
+		styledPrefix := color.Bold.Sprintf("[") + categoryConfig.color.Sprint(categoryConfig.prefix) + color.Bold.Sprintf("]")
 		fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
-	}
-}
-
-func isNotificationCategoryEnabled(category string) bool {
-	switch category {
-	case CategoryFeatureAnnouncement:
-		return config.IsFeatureAnnouncementNotificationsEnabled()
-	default:
-		return true
 	}
 }

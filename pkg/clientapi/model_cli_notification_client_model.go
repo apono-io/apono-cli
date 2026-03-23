@@ -20,11 +20,9 @@ var _ MappedNullable = &CliNotificationClientModel{}
 
 // CliNotificationClientModel struct for CliNotificationClientModel
 type CliNotificationClientModel struct {
-	Id          string `json:"id"`
-	Category    string `json:"category"`
-	Prefix      string `json:"prefix"`
-	PrefixColor string `json:"prefix_color"`
-	Text        string `json:"text"`
+	Id       string `json:"id"`
+	Category string `json:"category"`
+	Text     string `json:"text"`
 }
 
 type _CliNotificationClientModel CliNotificationClientModel
@@ -33,12 +31,10 @@ type _CliNotificationClientModel CliNotificationClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCliNotificationClientModel(id string, category string, prefix string, prefixColor string, text string) *CliNotificationClientModel {
+func NewCliNotificationClientModel(id string, category string, text string) *CliNotificationClientModel {
 	this := CliNotificationClientModel{}
 	this.Id = id
 	this.Category = category
-	this.Prefix = prefix
-	this.PrefixColor = prefixColor
 	this.Text = text
 	return &this
 }
@@ -99,54 +95,6 @@ func (o *CliNotificationClientModel) SetCategory(v string) {
 	o.Category = v
 }
 
-// GetPrefix returns the Prefix field value
-func (o *CliNotificationClientModel) GetPrefix() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.Prefix
-}
-
-// GetPrefixOk returns a tuple with the Prefix field value
-// and a boolean to check if the value has been set.
-func (o *CliNotificationClientModel) GetPrefixOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.Prefix, true
-}
-
-// SetPrefix sets field value
-func (o *CliNotificationClientModel) SetPrefix(v string) {
-	o.Prefix = v
-}
-
-// GetPrefixColor returns the PrefixColor field value
-func (o *CliNotificationClientModel) GetPrefixColor() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.PrefixColor
-}
-
-// GetPrefixColorOk returns a tuple with the PrefixColor field value
-// and a boolean to check if the value has been set.
-func (o *CliNotificationClientModel) GetPrefixColorOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.PrefixColor, true
-}
-
-// SetPrefixColor sets field value
-func (o *CliNotificationClientModel) SetPrefixColor(v string) {
-	o.PrefixColor = v
-}
-
 // GetText returns the Text field value
 func (o *CliNotificationClientModel) GetText() string {
 	if o == nil {
@@ -183,8 +131,6 @@ func (o CliNotificationClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["id"] = o.Id
 	toSerialize["category"] = o.Category
-	toSerialize["prefix"] = o.Prefix
-	toSerialize["prefix_color"] = o.PrefixColor
 	toSerialize["text"] = o.Text
 	return toSerialize, nil
 }
@@ -196,8 +142,6 @@ func (o *CliNotificationClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	requiredProperties := []string{
 		"id",
 		"category",
-		"prefix",
-		"prefix_color",
 		"text",
 	}
 

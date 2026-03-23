@@ -1390,14 +1390,6 @@
               "type": "string",
               "nullable": true
             }
-          },
-          {
-            "name": "location",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -3276,8 +3268,6 @@
         "required": [
           "id",
           "category",
-          "prefix",
-          "prefix_color",
           "text"
         ],
         "type": "object",
@@ -3286,12 +3276,6 @@
             "type": "string"
           },
           "category": {
-            "type": "string"
-          },
-          "prefix": {
-            "type": "string"
-          },
-          "prefix_color": {
             "type": "string"
           },
           "text": {

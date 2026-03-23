@@ -103,10 +103,6 @@ func Create() *cobra.Command {
 				}
 			}
 
-			if cmdFlags.output == utils.TableFormat {
-				services.FetchAndPrintNotifications(cmd, client.ClientAPI, services.LocationPostRequest)
-			}
-
 			return nil
 		},
 	}
