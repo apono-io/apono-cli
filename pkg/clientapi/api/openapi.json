@@ -2075,6 +2075,37 @@
         }
       }
     },
+    "/api/client/v1/justification-validation": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Validate Access Request Justification",
+        "operationId": "validateAccessRequestJustification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessRequestClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JustificationValidationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/personal-tokens": {
       "get": {
         "tags": [
@@ -3729,6 +3760,25 @@
           },
           "icons": {
             "$ref": "#/components/schemas/IconsConfigClientModel"
+          }
+        }
+      },
+      "JustificationValidationResponse": {
+        "required": [
+          "describes_task",
+          "justifies_permission_level",
+          "has_ticket_id_url"
+        ],
+        "type": "object",
+        "properties": {
+          "describes_task": {
+            "type": "boolean"
+          },
+          "justifies_permission_level": {
+            "type": "boolean"
+          },
+          "has_ticket_id_url": {
+            "type": "boolean"
           }
         }
       },

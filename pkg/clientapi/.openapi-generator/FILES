@@ -78,6 +78,7 @@ model_grantee_client_model.go
 model_icons_config_client_model.go
 model_instruction_client_model.go
 model_integration_client_model.go
+model_justification_validation_response.go
 model_link_client_model.go
 model_mcp_error.go
 model_mcp_request.go
