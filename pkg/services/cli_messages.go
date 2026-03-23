@@ -40,6 +40,6 @@ func isNotificationCategoryEnabled(category string) bool {
 	case CategoryFeatureAnnouncement:
 		return config.IsFeatureAnnouncementNotificationsEnabled()
 	default:
-		return false
+		return true
 	}
 }
