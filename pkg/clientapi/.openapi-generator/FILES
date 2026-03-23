@@ -59,8 +59,6 @@ model_assistant_message_response_client_model.go
 model_bundle_client_model.go
 model_challenge_approver_client_model.go
 model_challenge_info_client_model.go
-model_cli_message_client_model.go
-model_cli_messages_client_list_model.go
 model_client_challenge_logical_relation.go
 model_client_challenge_status.go
 model_create_access_request_client_model.go
@@ -78,6 +76,7 @@ model_grantee_client_model.go
 model_icons_config_client_model.go
 model_instruction_client_model.go
 model_integration_client_model.go
+model_justification_validation_response.go
 model_link_client_model.go
 model_mcp_error.go
 model_mcp_request.go

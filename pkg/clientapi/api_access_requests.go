@@ -1468,3 +1468,112 @@ func (a *AccessRequestsAPIService) UpdateFavoriteStateExecute(r ApiUpdateFavorit
 
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
+
+type ApiValidateAccessRequestJustificationRequest struct {
+	ctx                            context.Context
+	ApiService                     *AccessRequestsAPIService
+	createAccessRequestClientModel *CreateAccessRequestClientModel
+}
+
+func (r ApiValidateAccessRequestJustificationRequest) CreateAccessRequestClientModel(createAccessRequestClientModel CreateAccessRequestClientModel) ApiValidateAccessRequestJustificationRequest {
+	r.createAccessRequestClientModel = &createAccessRequestClientModel
+	return r
+}
+
+func (r ApiValidateAccessRequestJustificationRequest) Execute() (*JustificationValidationResponse, *http.Response, error) {
+	return r.ApiService.ValidateAccessRequestJustificationExecute(r)
+}
+
+/*
+ValidateAccessRequestJustification Validate Access Request Justification
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiValidateAccessRequestJustificationRequest
+*/
+func (a *AccessRequestsAPIService) ValidateAccessRequestJustification(ctx context.Context) ApiValidateAccessRequestJustificationRequest {
+	return ApiValidateAccessRequestJustificationRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return JustificationValidationResponse
+func (a *AccessRequestsAPIService) ValidateAccessRequestJustificationExecute(r ApiValidateAccessRequestJustificationRequest) (*JustificationValidationResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodPost
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *JustificationValidationResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AccessRequestsAPIService.ValidateAccessRequestJustification")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/justification-validation"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.createAccessRequestClientModel == nil {
+		return localVarReturnValue, nil, reportError("createAccessRequestClientModel is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.createAccessRequestClientModel
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
