@@ -30,7 +30,7 @@ func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient,
 	}
 
 	for _, notification := range relevantNotifications {
-		styledPrefix := styles.GetCustomMessagePrefix(notification.GetPrefix())
+		styledPrefix := styles.GetCustomMessagePrefix(notification.GetPrefix(), notification.GetPrefixColor())
 		fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
 	}
 }

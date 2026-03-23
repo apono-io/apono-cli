@@ -14,27 +14,42 @@ const (
 	noItemsTextColor   = color.Gray
 
 	prefixNotice = "notice"
-	prefixNew    = "NEW"
 )
 
 var (
 	beforeSelectIcon = prefixIconColor.Sprint("?")
 	afterSelectIcon  = prefixIconColor.Sprint("✓")
 	noticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf(prefixNotice) + color.Bold.Sprintf("]")
-	newMsgPrefix     = color.Bold.Sprintf("[") + color.Green.Sprintf(prefixNew) + color.Bold.Sprintf("]")
 )
+
+var colorMap = map[string]color.Color{
+	"RED":           color.Red,
+	"GREEN":         color.Green,
+	"YELLOW":        color.Yellow,
+	"BLUE":          color.Blue,
+	"MAGENTA":       color.Magenta,
+	"CYAN":          color.Cyan,
+	"WHITE":         color.White,
+	"LIGHT_RED":     color.LightRed,
+	"LIGHT_GREEN":   color.LightGreen,
+	"LIGHT_YELLOW":  color.LightYellow,
+	"LIGHT_BLUE":    color.LightBlue,
+	"LIGHT_MAGENTA": color.LightMagenta,
+	"LIGHT_CYAN":    color.LightCyan,
+	"LIGHT_WHITE":   color.LightWhite,
+	"GRAY":          color.Gray,
+}
 
 func GetNoticeMessagePrefix() string {
 	return noticeMsgPrefix
 }
 
-func GetCustomMessagePrefix(prefix string) string {
-	switch strings.ToUpper(prefix) {
-	case prefixNew:
-		return newMsgPrefix
-	default:
-		return noticeMsgPrefix
+func GetCustomMessagePrefix(prefix string, prefixColor string) string {
+	c, exists := colorMap[strings.ToUpper(prefixColor)]
+	if !exists {
+		c = color.Green
 	}
+	return color.Bold.Sprintf("[") + c.Sprint(prefix) + color.Bold.Sprintf("]")
 }
 
 func BeforeSelectingItemsTitleStyle(name string, optional bool) string {

@@ -3277,6 +3277,7 @@
           "id",
           "category",
           "prefix",
+          "prefix_color",
           "text"
         ],
         "type": "object",
@@ -3288,6 +3289,9 @@
             "type": "string"
           },
           "prefix": {
+            "type": "string"
+          },
+          "prefix_color": {
             "type": "string"
           },
           "text": {
