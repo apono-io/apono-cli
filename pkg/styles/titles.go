@@ -12,19 +12,13 @@ const (
 	selectedItemsColor = color.Cyan
 	optionalTextColor  = color.Gray
 	noItemsTextColor   = color.Gray
-
-	prefixNotice = "notice"
 )
 
 var (
 	beforeSelectIcon = prefixIconColor.Sprint("?")
 	afterSelectIcon  = prefixIconColor.Sprint("✓")
-	noticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf(prefixNotice) + color.Bold.Sprintf("]")
+	NoticeMsgPrefix  = color.Bold.Sprintf("[") + color.LightBlue.Sprintf("notice") + color.Bold.Sprintf("]")
 )
-
-func GetNoticeMessagePrefix() string {
-	return noticeMsgPrefix
-}
 
 func BeforeSelectingItemsTitleStyle(name string, optional bool) string {
 	var optionalText string

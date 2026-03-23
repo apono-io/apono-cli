@@ -376,7 +376,7 @@ func printCreateBundleRequestCommand(cmd *cobra.Command, bundle string, justific
 }
 
 func printCreateCommand(cmd *cobra.Command, commandString string) error {
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Use the following command to request this access again or create an alias for it: %s\n", styles.GetNoticeMessagePrefix(), color.Green.Sprint(commandString))
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Use the following command to request this access again or create an alias for it: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(commandString))
 	if err != nil {
 		return err
 	}
