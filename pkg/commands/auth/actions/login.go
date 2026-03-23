@@ -171,7 +171,6 @@ func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL st
 	return nil
 }
 
-
 func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) (*config.SessionConfig, error) {
 	cfg, err := config.Get()
 	if err != nil {
