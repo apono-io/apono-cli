@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+
 	"github.com/apono-io/apono-cli/pkg/groups"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/int128/oauth2cli"
 	"github.com/int128/oauth2cli/oauth2params"
@@ -111,14 +113,10 @@ func Login() *cobra.Command {
 				if err := eg.Wait(); err != nil {
 					return fmt.Errorf("authorization error: %s", err)
 				}
+				return nil
 			} else {
-				err = storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx)
-				if err != nil {
-					return err
-				}
+				return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx)
 			}
-
-			return nil
 		},
 	}
 
