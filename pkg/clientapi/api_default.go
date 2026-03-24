@@ -233,29 +233,29 @@ func (a *DefaultAPIService) GetApprovalStatusExecute(r ApiGetApprovalStatusReque
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiListRequest struct {
+type ApiListCliNotificationsRequest struct {
 	ctx        context.Context
 	ApiService *DefaultAPIService
 	category   *string
 }
 
-func (r ApiListRequest) Category(category string) ApiListRequest {
+func (r ApiListCliNotificationsRequest) Category(category string) ApiListCliNotificationsRequest {
 	r.category = &category
 	return r
 }
 
-func (r ApiListRequest) Execute() (*CliNotificationsClientListModel, *http.Response, error) {
-	return r.ApiService.ListExecute(r)
+func (r ApiListCliNotificationsRequest) Execute() (*CliNotificationsClientListModel, *http.Response, error) {
+	return r.ApiService.ListCliNotificationsExecute(r)
 }
 
 /*
-List Method for List
+ListCliNotifications Method for ListCliNotifications
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-	@return ApiListRequest
+	@return ApiListCliNotificationsRequest
 */
-func (a *DefaultAPIService) List(ctx context.Context) ApiListRequest {
-	return ApiListRequest{
+func (a *DefaultAPIService) ListCliNotifications(ctx context.Context) ApiListCliNotificationsRequest {
+	return ApiListCliNotificationsRequest{
 		ApiService: a,
 		ctx:        ctx,
 	}
@@ -264,7 +264,7 @@ func (a *DefaultAPIService) List(ctx context.Context) ApiListRequest {
 // Execute executes the request
 //
 //	@return CliNotificationsClientListModel
-func (a *DefaultAPIService) ListExecute(r ApiListRequest) (*CliNotificationsClientListModel, *http.Response, error) {
+func (a *DefaultAPIService) ListCliNotificationsExecute(r ApiListCliNotificationsRequest) (*CliNotificationsClientListModel, *http.Response, error) {
 	var (
 		localVarHTTPMethod  = http.MethodGet
 		localVarPostBody    interface{}
@@ -272,7 +272,7 @@ func (a *DefaultAPIService) ListExecute(r ApiListRequest) (*CliNotificationsClie
 		localVarReturnValue *CliNotificationsClientListModel
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.List")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.ListCliNotifications")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}

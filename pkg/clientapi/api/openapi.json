@@ -1381,7 +1381,7 @@
     "/api/client/v1/cli-notifications": {
       "get": {
         "tags": [],
-        "operationId": "list",
+        "operationId": "listCliNotifications",
         "parameters": [
           {
             "name": "category",
