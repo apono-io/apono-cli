@@ -36,7 +36,7 @@ func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient)
 		return
 	}
 
-	for i, notification := range resp.Notifications {
+	for _, notification := range resp.Notifications {
 		categoryConfig, isSupported := supportedNotificationCategories[notification.GetCategory()]
 		if !isSupported {
 			continue
@@ -48,15 +48,15 @@ func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient)
 
 		styledPrefix := color.Bold.Sprintf("[") + categoryConfig.color.Sprint(categoryConfig.prefix) + color.Bold.Sprintf("]")
 
-		newLines := "\n"
-		isLastNotification := i == len(resp.Notifications)-1
-		if isLastNotification {
-			newLines += "\n"
-		}
-
-		_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s%s", styledPrefix, notification.GetText(), newLines)
+		_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
 		if err != nil {
 			return
 		}
+	}
+
+	// add another row spacing between the last notification print and later prints
+	_, err = fmt.Fprintf(cmd.OutOrStdout(), "\n")
+	if err != nil {
+		return
 	}
 }
