@@ -48,7 +48,7 @@ func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient)
 
 		styledPrefix := color.Bold.Sprintf("[") + categoryConfig.color.Sprint(categoryConfig.prefix) + color.Bold.Sprintf("]")
 
-		_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n", styledPrefix, notification.GetText())
 		if err != nil {
 			return
 		}
