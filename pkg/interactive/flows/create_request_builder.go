@@ -121,8 +121,6 @@ func StartBundleRequestBuilderInteractiveMode(
 		return nil, err
 	}
 
-	services.FetchAndPrintNotifications(cmd, client.ClientAPI)
-
 	return request, nil
 }
 
@@ -215,8 +213,6 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	if err != nil {
 		return nil, err
 	}
-
-	services.FetchAndPrintNotifications(cmd, client.ClientAPI)
 
 	return request, nil
 }

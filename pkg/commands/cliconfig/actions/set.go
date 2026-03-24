@@ -70,7 +70,11 @@ func ConfigSet() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s set to %s\n", key, value)
+			_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s set to %s\n", key, value)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		},
 	}

@@ -22,6 +22,8 @@ const (
 )
 
 func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
+	services.FetchAndPrintNotifications(cmd, client.ClientAPI)
+
 	mainAction, err := selectors.RunMainActionSelector()
 	if err != nil {
 		return err
