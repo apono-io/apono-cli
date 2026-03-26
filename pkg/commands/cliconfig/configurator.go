@@ -13,6 +13,7 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	rootCmd.AddCommand(configCmd)
 
 	configCmd.AddCommand(actions.ConfigSet())
+	configCmd.AddCommand(actions.ConfigGet())
 
 	return nil
 }

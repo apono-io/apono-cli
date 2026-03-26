@@ -28,15 +28,18 @@ var supportedNotificationCategories = map[string]notificationCategoryConfig{
 	},
 }
 
-// FetchAndPrintNotifications fetch notifications from server and prints them to the user if they are supported and
-// enabled. Errors during fetching or printing are silently ignored to avoid interrupting the main flow of the CLI.
 func FetchAndPrintNotifications(cmd *cobra.Command, client *clientapi.APIClient) {
 	resp, _, err := client.DefaultAPI.ListCliNotifications(cmd.Context()).Execute()
-	if err != nil {
+	if err != nil || resp == nil {
 		return
 	}
 
-	for _, notification := range resp.Notifications {
+	notifications, ok := resp.GetNotificationsOk()
+	if !ok {
+		return
+	}
+
+	for _, notification := range notifications {
 		categoryConfig, isSupported := supportedNotificationCategories[notification.GetCategory()]
 		if !isSupported {
 			continue
