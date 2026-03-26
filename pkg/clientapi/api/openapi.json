@@ -1378,6 +1378,34 @@
         }
       }
     },
+    "/api/client/v1/cli-notifications": {
+      "get": {
+        "tags": [],
+        "operationId": "listCliNotifications",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliNotificationsClientListModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/filters/integrations": {
       "get": {
         "tags": [
@@ -3263,6 +3291,39 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ChallengeApproverClientModel"
+            }
+          }
+        }
+      },
+      "CliNotificationClientModel": {
+        "required": [
+          "id",
+          "category",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "CliNotificationsClientListModel": {
+        "required": [
+          "notifications"
+        ],
+        "type": "object",
+        "properties": {
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CliNotificationClientModel"
             }
           }
         }
