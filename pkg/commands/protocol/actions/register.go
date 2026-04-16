@@ -22,8 +22,13 @@ func ProtocolRegister() *cobra.Command {
 		Use:   "register",
 		Short: "Register apono:// URI scheme handler on macOS",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if runtime.GOOS != "darwin" {
+			if runtime.GOOS != darwinOS {
 				return fmt.Errorf("protocol handler registration is only supported on macOS")
+			}
+
+			aponoBinary, err := resolveAponoBinary()
+			if err != nil {
+				return fmt.Errorf("failed to resolve apono binary path: %w", err)
 			}
 
 			appDir, err := appBundlePath()
@@ -31,7 +36,7 @@ func ProtocolRegister() *cobra.Command {
 				return err
 			}
 
-			err = createAppBundle(appDir)
+			err = createAppBundle(appDir, aponoBinary)
 			if err != nil {
 				return fmt.Errorf("failed to create app bundle: %w", err)
 			}
@@ -41,12 +46,26 @@ func ProtocolRegister() *cobra.Command {
 				return fmt.Errorf("failed to register with launch services: %w", err)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Registered apono:// protocol handler at %s\n", appDir)
-			return nil
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Registered apono:// protocol handler at %s\n", appDir)
+			return err
 		},
 	}
 
 	return cmd
+}
+
+func resolveAponoBinary() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	exe, err = filepath.EvalSymlinks(exe)
+	if err != nil {
+		return "", err
+	}
+
+	return exe, nil
 }
 
 func appBundlePath() (string, error) {
@@ -56,7 +75,7 @@ func appBundlePath() (string, error) {
 	}
 
 	appsDir := filepath.Join(homeDir, "Applications")
-	err = os.MkdirAll(appsDir, 0o755)
+	err = os.MkdirAll(appsDir, 0o750)
 	if err != nil {
 		return "", fmt.Errorf("failed to create ~/Applications: %w", err)
 	}
@@ -64,7 +83,7 @@ func appBundlePath() (string, error) {
 	return filepath.Join(appsDir, appBundleName), nil
 }
 
-func createAppBundle(appDir string) error {
+func createAppBundle(appDir string, aponoBinary string) error {
 	// Remove existing bundle to ensure clean state
 	_ = os.RemoveAll(appDir)
 
@@ -74,47 +93,31 @@ func createAppBundle(appDir string) error {
 	// (or a Cocoa/Swift binary) can. We use osacompile to create a proper .app
 	// bundle that has the Apple Event loop built in, then patch its Info.plist
 	// to declare the URL scheme.
-	// The AppleScript extracts the session ID from apono://connect/{sessionId}
-	// and opens Terminal.app directly with the access command.
-	// No intermediate `apono protocol handle` hop — AppleScript can talk to
-	// Terminal natively, which avoids permission and background-app issues.
-	appleScript := `on open location theURL
-	set sessionId to extractSessionId(theURL)
-	if sessionId is not "" then
-		set cmd to "export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH && apono access use " & sessionId & " --run"
-		tell application "Terminal"
-			activate
-			do script cmd
-		end tell
-	end if
-end open location
-
-on extractSessionId(theURL)
-	-- theURL looks like "apono://connect/abc123"
-	set oldDelims to AppleScript's text item delimiters
-	set AppleScript's text item delimiters to "apono://connect/"
-	set parts to text items of theURL
-	set AppleScript's text item delimiters to oldDelims
-	if (count of parts) > 1 then
-		return item 2 of parts
-	end if
-	return ""
-end extractSessionId`
+	// Minimal AppleScript relay — receives the URL from macOS and passes it
+	// to `apono protocol handle`. All routing logic lives in Go.
+	// The binary path is baked in at registration time so it works regardless
+	// of the user's PATH. Re-register after upgrading apono to update the path.
+	appleScript := fmt.Sprintf(`on open location theURL
+	do shell script "%s protocol handle " & quoted form of theURL & " &"
+end open location`, aponoBinary)
 
 	tmpScript, err := os.CreateTemp("", "apono-url-handler-*.applescript")
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpScript.Name())
+	defer func() { _ = os.Remove(tmpScript.Name()) }()
 
 	_, err = tmpScript.WriteString(appleScript)
 	if err != nil {
 		return err
 	}
-	tmpScript.Close()
+
+	if err = tmpScript.Close(); err != nil {
+		return err
+	}
 
 	// osacompile -o X.app produces a full .app bundle with Apple Event support
-	cmd := exec.Command("osacompile", "-o", appDir, tmpScript.Name())
+	cmd := exec.Command("osacompile", "-o", appDir, tmpScript.Name()) //nolint:gosec // args are not user-controlled
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to compile AppleScript app: %s: %s", err, string(output))
@@ -125,18 +128,16 @@ end extractSessionId`
 	// needs, and replacing the plist breaks the code signature and event handling.
 	plistPath := filepath.Join(appDir, "Contents", "Info.plist")
 
-	defaultsCommands := []struct {
-		args []string
-	}{
-		{[]string{"write", plistPath, "CFBundleIdentifier", "-string", "io.apono.url-handler"}},
-		{[]string{"write", plistPath, "CFBundleURLTypes", "-array", `<dict><key>CFBundleURLName</key><string>Apono CLI Protocol</string><key>CFBundleURLSchemes</key><array><string>apono</string></array></dict>`}},
-		{[]string{"write", plistPath, "LSUIElement", "-bool", "true"}},
+	defaultsCommands := [][]string{
+		{"write", plistPath, "CFBundleIdentifier", "-string", "io.apono.url-handler"},
+		{"write", plistPath, "CFBundleURLTypes", "-array", `<dict><key>CFBundleURLName</key><string>Apono CLI Protocol</string><key>CFBundleURLSchemes</key><array><string>apono</string></array></dict>`},
+		{"write", plistPath, "LSUIElement", "-bool", "true"},
 	}
 
-	for _, dc := range defaultsCommands {
-		out, err := exec.Command("defaults", dc.args...).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("defaults write failed: %s: %s", err, string(out))
+	for _, args := range defaultsCommands {
+		out, execErr := exec.Command("defaults", args...).CombinedOutput() //nolint:gosec // args are not user-controlled
+		if execErr != nil {
+			return fmt.Errorf("defaults write failed: %s: %s", execErr, string(out))
 		}
 	}
 

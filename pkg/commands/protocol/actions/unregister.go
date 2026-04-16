@@ -16,7 +16,7 @@ func ProtocolUnregister() *cobra.Command {
 		Use:   "unregister",
 		Short: "Remove apono:// URI scheme handler from macOS",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if runtime.GOOS != "darwin" {
+			if runtime.GOOS != darwinOS {
 				return fmt.Errorf("protocol handler is only supported on macOS")
 			}
 
@@ -25,13 +25,13 @@ func ProtocolUnregister() *cobra.Command {
 				return err
 			}
 
-			if _, err := os.Stat(appDir); os.IsNotExist(err) {
-				fmt.Fprintln(cmd.OutOrStdout(), "Protocol handler is not registered")
-				return nil
+			if _, statErr := os.Stat(appDir); os.IsNotExist(statErr) {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "Protocol handler is not registered")
+				return err
 			}
 
 			lsregister := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-			unregCmd := exec.Command(lsregister, "-u", appDir)
+			unregCmd := exec.Command(lsregister, "-u", appDir) //nolint:gosec // lsregister path is a constant
 			output, err := unregCmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("failed to unregister: %s: %s", err, string(output))
@@ -42,8 +42,8 @@ func ProtocolUnregister() *cobra.Command {
 				return fmt.Errorf("failed to remove app bundle: %w", err)
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "Unregistered apono:// protocol handler")
-			return nil
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "Unregistered apono:// protocol handler")
+			return err
 		},
 	}
 

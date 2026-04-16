@@ -13,6 +13,7 @@ func (c *Configurator) ConfigureCommands(rootCmd *cobra.Command) error {
 	rootCmd.AddCommand(protocolCmd)
 
 	protocolCmd.AddCommand(actions.ProtocolRegister())
+	protocolCmd.AddCommand(actions.ProtocolHandle())
 	protocolCmd.AddCommand(actions.ProtocolUnregister())
 	return nil
 }

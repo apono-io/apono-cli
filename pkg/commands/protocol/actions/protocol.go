@@ -6,6 +6,8 @@ import (
 	"github.com/apono-io/apono-cli/pkg/groups"
 )
 
+const darwinOS = "darwin"
+
 func Protocol() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "protocol",
