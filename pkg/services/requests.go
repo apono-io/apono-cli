@@ -78,7 +78,8 @@ func PrintAccessRequestMFALink(cmd *cobra.Command, requestID *string) error {
 	if portalURL == "" {
 		portalURL = config.PortalDefaultURL
 	}
-	link := fmt.Sprintf("%s/my-requests?enter_mfa=true", portalURL)
+
+	link := fmt.Sprintf("%s/requests/open?enter_mfa=true&status=pending-mfa&request=%s", portalURL, *requestID)
 
 	var prefixMessage string
 	if requestID != nil {
