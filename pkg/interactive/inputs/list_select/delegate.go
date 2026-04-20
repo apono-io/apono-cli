@@ -26,7 +26,7 @@ func (d selectItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 
 	var str string
 	if item.input.MultipleSelection {
-		str = multiSelectItemRender(item.data.Label, item.selected)
+		str = multiSelectItemRender(item.data.Label, item.isSelected())
 	} else {
 		str = item.data.Label
 	}
