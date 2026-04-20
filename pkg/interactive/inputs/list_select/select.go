@@ -44,7 +44,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							return m, nil
 						}
 					} else {
-						m.list.SetItems(handleItemSelection(m.list.Items(), item))
+						item.state.selected[item.data.ID] = true
 					}
 				}
 
@@ -57,7 +57,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				item, ok := m.list.SelectedItem().(selectItem)
 				if ok {
 					if item.input.MultipleSelection {
-						m.list.SetItems(handleItemSelection(m.list.Items(), item))
+						item.state.selected[item.data.ID] = !item.isSelected()
 					}
 				}
 				return m, nil
@@ -70,22 +70,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func handleItemSelection(items []list.Item, selectedItem selectItem) []list.Item {
-	for index, item := range items {
-		currentItem := item.(selectItem)
-		if currentItem.data.ID == selectedItem.data.ID {
-			currentItem.selected = !currentItem.selected
-			items[index] = currentItem
-		}
-	}
-
-	return items
-}
-
 func getNumberOfSelectedItems(items []list.Item) int {
 	var count int
 	for _, item := range items {
-		if item.(selectItem).selected {
+		if item.(selectItem).isSelected() {
 			count++
 		}
 	}
@@ -105,9 +93,10 @@ func (m model) View() string {
 }
 
 func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
+	state := &selectionState{selected: make(map[string]bool)}
 	var items []list.Item
 	for _, option := range inputModel.Options {
-		items = append(items, selectItem{data: option, input: inputModel})
+		items = append(items, selectItem{data: option, state: state, input: inputModel})
 	}
 
 	if len(items) == 1 && inputModel.AutoSelectSingleItem {
@@ -151,7 +140,7 @@ func LaunchSelector(inputModel SelectInput) ([]SelectOption, error) {
 
 	var selectedItems []SelectOption
 	for _, item := range resultModel.list.Items() {
-		if item.(selectItem).selected {
+		if item.(selectItem).isSelected() {
 			selectedItems = append(selectedItems, item.(selectItem).data)
 		}
 	}
