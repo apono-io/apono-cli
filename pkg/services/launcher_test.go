@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
 type capturingErrorHandler struct {
@@ -39,7 +40,19 @@ func newCobraCmd() *cobra.Command {
 	return cmd
 }
 
-func testLauncher(tty bool, launchers []LauncherClientModel, consumedBy ConsumedBy, runShellResult func() (int, string, error)) (*Launcher, *[]runShellCall, *[]string, *capturingErrorHandler) {
+func newLauncher(id, kind, setup, invocation string) clientapi.LauncherClientModel {
+	l := clientapi.LauncherClientModel{
+		Id:                id,
+		LauncherType:      kind,
+		InvocationCommand: invocation,
+	}
+	if setup != "" {
+		l.AuthCommand = *clientapi.NewNullableString(&setup)
+	}
+	return l
+}
+
+func testLauncher(tty bool, launchers []clientapi.LauncherClientModel, consumedBy ConsumedBy, runShellResult func() (int, string, error)) (*Launcher, *[]runShellCall, *[]string, *capturingErrorHandler) {
 	var runCalls []runShellCall
 	var wrapCalls []string
 	errorHandler := &capturingErrorHandler{}
@@ -75,8 +88,8 @@ func TestLaunchSession_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 		{"without-tty", false},
 	}
 
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "echo setup", Invocation: "echo invoke"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "echo setup", "echo invoke"),
 	}
 
 	for _, tc := range cases {
@@ -105,8 +118,8 @@ func TestLaunchSession_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 }
 
 func TestLaunchSession_TUI_TTY_runsInline(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("k9s", LauncherKindTUI, "setup", "k9s"),
 	}
 	l, runs, wraps, _ := testLauncher(true, launchers, ConsumedByOS, nil)
 
@@ -126,8 +139,8 @@ func TestLaunchSession_TUI_TTY_runsInline(t *testing.T) {
 }
 
 func TestLaunchSession_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("k9s", LauncherKindTUI, "setup", "k9s"),
 	}
 	l, runs, wraps, _ := testLauncher(false, launchers, ConsumedByOS, nil)
 
@@ -147,10 +160,10 @@ func TestLaunchSession_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 }
 
 func TestLaunchSession_unknownClient_errorsWithAvailableList(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI},
-		{ID: "tableplus", Kind: LauncherKindGUI},
-		{ID: "cli", Kind: LauncherKindTUI},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "", ""),
+		newLauncher("tableplus", LauncherKindGUI, "", ""),
+		newLauncher("cli", LauncherKindTUI, "", ""),
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByOS, nil)
 
@@ -175,8 +188,8 @@ func TestLaunchSession_unknownClient_errorsWithAvailableList(t *testing.T) {
 }
 
 func TestLaunchSession_shellNonZeroExit_reportsAndReturnsError(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "true", Invocation: "false"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "true", "false"),
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByOS, func() (int, string, error) {
 		return 1, "boom on stderr", nil
@@ -198,8 +211,8 @@ func TestLaunchSession_shellNonZeroExit_reportsAndReturnsError(t *testing.T) {
 }
 
 func TestLaunchSession_TTY_consumedByAD_blocks(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "s", "i"),
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByAD, nil)
 
@@ -220,8 +233,8 @@ func TestLaunchSession_TTY_consumedByAD_blocks(t *testing.T) {
 
 func TestLaunchSession_NoTTY_consumedByAD_proceeds(t *testing.T) {
 	// Headless context: Portal/Slack already gated upstream, CLI trusts and proceeds.
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "s", "i"),
 	}
 	l, runs, _, _ := testLauncher(false, launchers, ConsumedByAD, nil)
 
@@ -234,8 +247,8 @@ func TestLaunchSession_NoTTY_consumedByAD_proceeds(t *testing.T) {
 }
 
 func TestLaunchSession_TTY_consumedByEmpty_proceeds(t *testing.T) {
-	launchers := []LauncherClientModel{
-		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+	launchers := []clientapi.LauncherClientModel{
+		newLauncher("dbeaver", LauncherKindGUI, "s", "i"),
 	}
 	l, runs, _, _ := testLauncher(true, launchers, "", nil)
 
@@ -272,8 +285,10 @@ func TestAvailableIDs_emptyList(t *testing.T) {
 }
 
 func TestAvailableIDs_sorted(t *testing.T) {
-	got := availableIDs([]LauncherClientModel{
-		{ID: "tableplus"}, {ID: "dbeaver"}, {ID: "cli"},
+	got := availableIDs([]clientapi.LauncherClientModel{
+		newLauncher("tableplus", "", "", ""),
+		newLauncher("dbeaver", "", "", ""),
+		newLauncher("cli", "", "", ""),
 	})
 	want := "cli, dbeaver, tableplus"
 	if got != want {
