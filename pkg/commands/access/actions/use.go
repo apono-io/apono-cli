@@ -44,7 +44,7 @@ func AccessDetails() *cobra.Command {
 				if runtime.GOOS != "darwin" {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
 				}
-				// Pre-GA gate: Kinda instead of FF mechanims
+				// Pre-GA gate: Kinda instead of FF mechanism
 				if os.Getenv("APONO_LAUNCHER_PREVIEW") != "1" {
 					return fmt.Errorf("--client is in preview and not yet available; use --run to launch in your current terminal")
 				}
