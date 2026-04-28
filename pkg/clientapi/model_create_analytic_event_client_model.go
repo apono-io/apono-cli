@@ -20,9 +20,9 @@ var _ MappedNullable = &CreateAnalyticEventClientModel{}
 
 // CreateAnalyticEventClientModel struct for CreateAnalyticEventClientModel
 type CreateAnalyticEventClientModel struct {
-	EventName  string                        `json:"event_name"`
-	ClientType AnalyticClientTypeClientModel `json:"client_type"`
-	Properties map[string]interface{}        `json:"properties"`
+	EventName  string                 `json:"event_name"`
+	ClientType string                 `json:"client_type"`
+	Properties map[string]interface{} `json:"properties"`
 }
 
 type _CreateAnalyticEventClientModel CreateAnalyticEventClientModel
@@ -31,7 +31,7 @@ type _CreateAnalyticEventClientModel CreateAnalyticEventClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateAnalyticEventClientModel(eventName string, clientType AnalyticClientTypeClientModel, properties map[string]interface{}) *CreateAnalyticEventClientModel {
+func NewCreateAnalyticEventClientModel(eventName string, clientType string, properties map[string]interface{}) *CreateAnalyticEventClientModel {
 	this := CreateAnalyticEventClientModel{}
 	this.EventName = eventName
 	this.ClientType = clientType
@@ -72,9 +72,9 @@ func (o *CreateAnalyticEventClientModel) SetEventName(v string) {
 }
 
 // GetClientType returns the ClientType field value
-func (o *CreateAnalyticEventClientModel) GetClientType() AnalyticClientTypeClientModel {
+func (o *CreateAnalyticEventClientModel) GetClientType() string {
 	if o == nil {
-		var ret AnalyticClientTypeClientModel
+		var ret string
 		return ret
 	}
 
@@ -83,7 +83,7 @@ func (o *CreateAnalyticEventClientModel) GetClientType() AnalyticClientTypeClien
 
 // GetClientTypeOk returns a tuple with the ClientType field value
 // and a boolean to check if the value has been set.
-func (o *CreateAnalyticEventClientModel) GetClientTypeOk() (*AnalyticClientTypeClientModel, bool) {
+func (o *CreateAnalyticEventClientModel) GetClientTypeOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -91,7 +91,7 @@ func (o *CreateAnalyticEventClientModel) GetClientTypeOk() (*AnalyticClientTypeC
 }
 
 // SetClientType sets field value
-func (o *CreateAnalyticEventClientModel) SetClientType(v AnalyticClientTypeClientModel) {
+func (o *CreateAnalyticEventClientModel) SetClientType(v string) {
 	o.ClientType = v
 }
 

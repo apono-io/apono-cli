@@ -25,6 +25,8 @@ type AccessSessionDetailsClientModel struct {
 	Json         map[string]interface{}                      `json:"json,omitempty"`
 	Cli          NullableString                              `json:"cli,omitempty"`
 	Link         NullableAccessSessionDetailsClientModelLink `json:"link,omitempty"`
+	ConsumedBy   NullableString                              `json:"consumed_by,omitempty"`
+	Launchers    []LauncherClientModel                       `json:"launchers"`
 }
 
 type _AccessSessionDetailsClientModel AccessSessionDetailsClientModel
@@ -33,9 +35,10 @@ type _AccessSessionDetailsClientModel AccessSessionDetailsClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessSessionDetailsClientModel(instructions InstructionClientModel) *AccessSessionDetailsClientModel {
+func NewAccessSessionDetailsClientModel(instructions InstructionClientModel, launchers []LauncherClientModel) *AccessSessionDetailsClientModel {
 	this := AccessSessionDetailsClientModel{}
 	this.Instructions = instructions
+	this.Launchers = launchers
 	return &this
 }
 
@@ -233,6 +236,73 @@ func (o *AccessSessionDetailsClientModel) UnsetLink() {
 	o.Link.Unset()
 }
 
+// GetConsumedBy returns the ConsumedBy field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionDetailsClientModel) GetConsumedBy() string {
+	if o == nil || IsNil(o.ConsumedBy.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.ConsumedBy.Get()
+}
+
+// GetConsumedByOk returns a tuple with the ConsumedBy field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessSessionDetailsClientModel) GetConsumedByOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ConsumedBy.Get(), o.ConsumedBy.IsSet()
+}
+
+// HasConsumedBy returns a boolean if a field has been set.
+func (o *AccessSessionDetailsClientModel) HasConsumedBy() bool {
+	if o != nil && o.ConsumedBy.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetConsumedBy gets a reference to the given NullableString and assigns it to the ConsumedBy field.
+func (o *AccessSessionDetailsClientModel) SetConsumedBy(v string) {
+	o.ConsumedBy.Set(&v)
+}
+
+// SetConsumedByNil sets the value for ConsumedBy to be an explicit nil
+func (o *AccessSessionDetailsClientModel) SetConsumedByNil() {
+	o.ConsumedBy.Set(nil)
+}
+
+// UnsetConsumedBy ensures that no value is present for ConsumedBy, not even an explicit nil
+func (o *AccessSessionDetailsClientModel) UnsetConsumedBy() {
+	o.ConsumedBy.Unset()
+}
+
+// GetLaunchers returns the Launchers field value
+func (o *AccessSessionDetailsClientModel) GetLaunchers() []LauncherClientModel {
+	if o == nil {
+		var ret []LauncherClientModel
+		return ret
+	}
+
+	return o.Launchers
+}
+
+// GetLaunchersOk returns a tuple with the Launchers field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionDetailsClientModel) GetLaunchersOk() ([]LauncherClientModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Launchers, true
+}
+
+// SetLaunchers sets field value
+func (o *AccessSessionDetailsClientModel) SetLaunchers(v []LauncherClientModel) {
+	o.Launchers = v
+}
+
 func (o AccessSessionDetailsClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -256,6 +326,10 @@ func (o AccessSessionDetailsClientModel) ToMap() (map[string]interface{}, error)
 	if o.Link.IsSet() {
 		toSerialize["link"] = o.Link.Get()
 	}
+	if o.ConsumedBy.IsSet() {
+		toSerialize["consumed_by"] = o.ConsumedBy.Get()
+	}
+	toSerialize["launchers"] = o.Launchers
 	return toSerialize, nil
 }
 
@@ -265,6 +339,7 @@ func (o *AccessSessionDetailsClientModel) UnmarshalJSON(bytes []byte) (err error
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"instructions",
+		"launchers",
 	}
 
 	allProperties := make(map[string]interface{})

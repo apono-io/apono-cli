@@ -18,10 +18,21 @@ type SelectInput struct {
 	AutoSelectSingleItem bool
 }
 
+// selectionState is shared by pointer across all copies of selectItem
+// (including filtered copies) so toggling selection doesn't require
+// modifying list items, which would reset the filter.
+type selectionState struct {
+	selected map[string]bool
+}
+
 type selectItem struct {
-	data     SelectOption
-	selected bool
-	input    SelectInput
+	data  SelectOption
+	state *selectionState
+	input SelectInput
+}
+
+func (i selectItem) isSelected() bool {
+	return i.state.selected[i.data.ID]
 }
 
 type model struct {
