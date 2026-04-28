@@ -10,8 +10,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/spf13/cobra"
+
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 )
 
 const (
