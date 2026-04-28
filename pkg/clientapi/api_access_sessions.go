@@ -129,8 +129,14 @@ type ApiGetAccessSessionAccessDetailsRequest struct {
 	ctx        context.Context
 	ApiService *AccessSessionsAPIService
 	id         string
+	consumedBy *string
 	formatType *string
 	aponoSec   *map[string]interface{}
+}
+
+func (r ApiGetAccessSessionAccessDetailsRequest) ConsumedBy(consumedBy string) ApiGetAccessSessionAccessDetailsRequest {
+	r.consumedBy = &consumedBy
+	return r
 }
 
 func (r ApiGetAccessSessionAccessDetailsRequest) FormatType(formatType string) ApiGetAccessSessionAccessDetailsRequest {
@@ -185,6 +191,9 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGet
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.consumedBy != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "consumed_by", r.consumedBy, "")
+	}
 	if r.formatType != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "format_type", r.formatType, "")
 	}

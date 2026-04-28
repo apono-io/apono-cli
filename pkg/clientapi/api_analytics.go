@@ -117,3 +117,100 @@ func (a *AnalyticsAPIService) SendAnalyticsEventExecute(r ApiSendAnalyticsEventR
 
 	return localVarHTTPResponse, nil
 }
+
+type ApiSendAnalyticsEventsBatchRequest struct {
+	ctx                                  context.Context
+	ApiService                           *AnalyticsAPIService
+	createAnalyticEventsBatchClientModel *CreateAnalyticEventsBatchClientModel
+}
+
+func (r ApiSendAnalyticsEventsBatchRequest) CreateAnalyticEventsBatchClientModel(createAnalyticEventsBatchClientModel CreateAnalyticEventsBatchClientModel) ApiSendAnalyticsEventsBatchRequest {
+	r.createAnalyticEventsBatchClientModel = &createAnalyticEventsBatchClientModel
+	return r
+}
+
+func (r ApiSendAnalyticsEventsBatchRequest) Execute() (*http.Response, error) {
+	return r.ApiService.SendAnalyticsEventsBatchExecute(r)
+}
+
+/*
+SendAnalyticsEventsBatch Send analytics events in batch
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiSendAnalyticsEventsBatchRequest
+*/
+func (a *AnalyticsAPIService) SendAnalyticsEventsBatch(ctx context.Context) ApiSendAnalyticsEventsBatchRequest {
+	return ApiSendAnalyticsEventsBatchRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+func (a *AnalyticsAPIService) SendAnalyticsEventsBatchExecute(r ApiSendAnalyticsEventsBatchRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AnalyticsAPIService.SendAnalyticsEventsBatch")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/client/v1/analytics/bulk"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.createAnalyticEventsBatchClientModel == nil {
+		return nil, reportError("createAnalyticEventsBatchClientModel is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.createAnalyticEventsBatchClientModel
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
+}
