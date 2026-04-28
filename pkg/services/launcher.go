@@ -27,7 +27,7 @@ const (
 )
 
 type LauncherClientModel struct {
-	Id          string
+	ID          string
 	DisplayName string
 	Kind        string
 	Setup       string
@@ -57,10 +57,10 @@ func NewLauncher() *Launcher {
 	}
 }
 
-func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.AponoClient, sessionId, clientId string) error {
+func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.AponoClient, sessionID, clientID string) error {
 	handler := l.ChooseErrHandler(cobraCmd)
 
-	result, err := l.FetchLaunchers(cobraCmd.Context(), client, sessionId)
+	result, err := l.FetchLaunchers(cobraCmd.Context(), client, sessionID)
 	if err != nil {
 		_ = handler.Handle("Apono", fmt.Sprintf("Could not fetch session details: %v", err), "")
 		return err
@@ -69,14 +69,14 @@ func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.Apono
 	// In headless context Portal/Slack already gated on consumedBy before firing the URI;
 	// in TTY we have no upstream gate, so block AD-consumed creds and tell the user to reset.
 	if l.IsTTY() && result.ConsumedBy != "" && result.ConsumedBy != ConsumedByOS {
-		msg := fmt.Sprintf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again.", sessionId)
+		msg := fmt.Sprintf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again.", sessionID)
 		_ = handler.Handle("Apono", msg, "")
 		return fmt.Errorf("%s", msg)
 	}
 
-	launcher, ok := findLauncher(result.Launchers, clientId)
+	launcher, ok := findLauncher(result.Launchers, clientID)
 	if !ok {
-		msg := fmt.Sprintf("client %q is not supported for this session.\navailable: %s", clientId, availableIds(result.Launchers))
+		msg := fmt.Sprintf("client %q is not supported for this session.\navailable: %s", clientID, availableIDs(result.Launchers))
 		_ = handler.Handle("Apono", msg, "")
 		return fmt.Errorf("%s", msg)
 	}
@@ -95,7 +95,7 @@ func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.Apono
 		return l.execAndHandle(cobraCmd, l.WrapInTerminal(combined), handler)
 
 	default:
-		err := fmt.Errorf("unknown launcher kind %q for client %q", launcher.Kind, clientId)
+		err := fmt.Errorf("unknown launcher kind %q for client %q", launcher.Kind, clientID)
 		_ = handler.Handle("Apono", err.Error(), "")
 		return err
 	}
@@ -118,17 +118,17 @@ func (l *Launcher) execAndHandle(cobraCmd *cobra.Command, combined string, handl
 
 func findLauncher(launchers []LauncherClientModel, id string) (LauncherClientModel, bool) {
 	for _, l := range launchers {
-		if l.Id == id {
+		if l.ID == id {
 			return l, true
 		}
 	}
 	return LauncherClientModel{}, false
 }
 
-func availableIds(launchers []LauncherClientModel) string {
+func availableIDs(launchers []LauncherClientModel) string {
 	ids := make([]string, 0, len(launchers))
 	for _, l := range launchers {
-		ids = append(ids, l.Id)
+		ids = append(ids, l.ID)
 	}
 	sort.Strings(ids)
 	if len(ids) == 0 {
@@ -190,6 +190,6 @@ func isTTY() bool {
 }
 
 // TODO(DVL-8786): replace stub with real call once the BE endpoint and clientapi regen land.
-func fetchLaunchers(ctx context.Context, client *aponoapi.AponoClient, sessionId string) (*LauncherFetchResult, error) {
-	return stubLaunchersForSession(ctx, client, sessionId)
+func fetchLaunchers(ctx context.Context, client *aponoapi.AponoClient, sessionID string) (*LauncherFetchResult, error) {
+	return stubLaunchersForSession(ctx, client, sessionID)
 }

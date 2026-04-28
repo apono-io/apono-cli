@@ -22,7 +22,7 @@ const (
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
-	launcherId                 string
+	launcherID                 string
 }
 
 func AccessDetails() *cobra.Command {
@@ -37,7 +37,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				if cmdFlags.launcherId == "" {
+				if cmdFlags.launcherID == "" {
 					return fmt.Errorf("--client requires a launcher name (e.g. --client dbeaver)")
 				}
 				if runtime.GOOS != "darwin" {
@@ -56,7 +56,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				return services.NewLauncher().LaunchSession(cmd, client, session.Id, cmdFlags.launcherId)
+				return services.NewLauncher().LaunchSession(cmd, client, session.Id, cmdFlags.launcherID)
 			}
 
 			if len(session.ConnectionMethods) == 0 {
@@ -102,7 +102,7 @@ func AccessDetails() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
-	flags.StringVar(&cmdFlags.launcherId, clientFlagName, "", "launch the session in the named launcherId (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
+	flags.StringVar(&cmdFlags.launcherID, clientFlagName, "", "launch the session in the named client (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 

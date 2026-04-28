@@ -75,7 +75,7 @@ func TestLaunchSession_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 	}
 
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI, Setup: "echo setup", Invocation: "echo invoke"},
+		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "echo setup", Invocation: "echo invoke"},
 	}
 
 	for _, tc := range cases {
@@ -105,7 +105,7 @@ func TestLaunchSession_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 
 func TestLaunchSession_TUI_TTY_runsInline(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
+		{ID: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
 	}
 	l, runs, wraps, _ := testLauncher(true, launchers, ConsumedByOS, nil)
 
@@ -126,7 +126,7 @@ func TestLaunchSession_TUI_TTY_runsInline(t *testing.T) {
 
 func TestLaunchSession_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
+		{ID: "k9s", Kind: LauncherKindTUI, Setup: "setup", Invocation: "k9s"},
 	}
 	l, runs, wraps, _ := testLauncher(false, launchers, ConsumedByOS, nil)
 
@@ -147,9 +147,9 @@ func TestLaunchSession_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 
 func TestLaunchSession_unknownClient_errorsWithAvailableList(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI},
-		{Id: "tableplus", Kind: LauncherKindGUI},
-		{Id: "cli", Kind: LauncherKindTUI},
+		{ID: "dbeaver", Kind: LauncherKindGUI},
+		{ID: "tableplus", Kind: LauncherKindGUI},
+		{ID: "cli", Kind: LauncherKindTUI},
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByOS, nil)
 
@@ -175,7 +175,7 @@ func TestLaunchSession_unknownClient_errorsWithAvailableList(t *testing.T) {
 
 func TestLaunchSession_shellNonZeroExit_reportsAndReturnsError(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI, Setup: "true", Invocation: "false"},
+		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "true", Invocation: "false"},
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByOS, func() (int, string, error) {
 		return 1, "boom on stderr", nil
@@ -198,7 +198,7 @@ func TestLaunchSession_shellNonZeroExit_reportsAndReturnsError(t *testing.T) {
 
 func TestLaunchSession_TTY_consumedByAD_blocks(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
 	}
 	l, runs, _, errorHandler := testLauncher(true, launchers, ConsumedByAD, nil)
 
@@ -220,7 +220,7 @@ func TestLaunchSession_TTY_consumedByAD_blocks(t *testing.T) {
 func TestLaunchSession_NoTTY_consumedByAD_proceeds(t *testing.T) {
 	// Headless context: Portal/Slack already gated upstream, CLI trusts and proceeds.
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
 	}
 	l, runs, _, _ := testLauncher(false, launchers, ConsumedByAD, nil)
 
@@ -234,7 +234,7 @@ func TestLaunchSession_NoTTY_consumedByAD_proceeds(t *testing.T) {
 
 func TestLaunchSession_TTY_consumedByEmpty_proceeds(t *testing.T) {
 	launchers := []LauncherClientModel{
-		{Id: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
+		{ID: "dbeaver", Kind: LauncherKindGUI, Setup: "s", Invocation: "i"},
 	}
 	l, runs, _, _ := testLauncher(true, launchers, "", nil)
 
@@ -265,18 +265,18 @@ func TestJoinSetupAndInvocation(t *testing.T) {
 }
 
 func TestAvailableIDs_emptyList(t *testing.T) {
-	if got := availableIds(nil); got != "(none)" {
+	if got := availableIDs(nil); got != "(none)" {
 		t.Errorf("expected '(none)' for empty list, got %q", got)
 	}
 }
 
 func TestAvailableIDs_sorted(t *testing.T) {
-	got := availableIds([]LauncherClientModel{
-		{Id: "tableplus"}, {Id: "dbeaver"}, {Id: "cli"},
+	got := availableIDs([]LauncherClientModel{
+		{ID: "tableplus"}, {ID: "dbeaver"}, {ID: "cli"},
 	})
 	want := "cli, dbeaver, tableplus"
 	if got != want {
-		t.Errorf("availableIds() = %q, want %q", got, want)
+		t.Errorf("availableIDs() = %q, want %q", got, want)
 	}
 }
 
