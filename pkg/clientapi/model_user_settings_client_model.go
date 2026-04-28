@@ -25,6 +25,7 @@ type UserSettingsClientModel struct {
 	RequestCustomFields             []RequestCustomFieldModel `json:"request_custom_fields"`
 	LogoutRedirectUrl               NullableString            `json:"logout_redirect_url,omitempty"`
 	DisableApproverReason           NullableBool              `json:"disable_approver_reason,omitempty"`
+	EnableAiFeatures                bool                      `json:"enable_ai_features"`
 }
 
 type _UserSettingsClientModel UserSettingsClientModel
@@ -33,11 +34,12 @@ type _UserSettingsClientModel UserSettingsClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewUserSettingsClientModel(requireDurationForAccessRequest bool, mfaEnabledForAccount bool, requestCustomFields []RequestCustomFieldModel) *UserSettingsClientModel {
+func NewUserSettingsClientModel(requireDurationForAccessRequest bool, mfaEnabledForAccount bool, requestCustomFields []RequestCustomFieldModel, enableAiFeatures bool) *UserSettingsClientModel {
 	this := UserSettingsClientModel{}
 	this.RequireDurationForAccessRequest = requireDurationForAccessRequest
 	this.MfaEnabledForAccount = mfaEnabledForAccount
 	this.RequestCustomFields = requestCustomFields
+	this.EnableAiFeatures = enableAiFeatures
 	return &this
 }
 
@@ -207,6 +209,30 @@ func (o *UserSettingsClientModel) UnsetDisableApproverReason() {
 	o.DisableApproverReason.Unset()
 }
 
+// GetEnableAiFeatures returns the EnableAiFeatures field value
+func (o *UserSettingsClientModel) GetEnableAiFeatures() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.EnableAiFeatures
+}
+
+// GetEnableAiFeaturesOk returns a tuple with the EnableAiFeatures field value
+// and a boolean to check if the value has been set.
+func (o *UserSettingsClientModel) GetEnableAiFeaturesOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.EnableAiFeatures, true
+}
+
+// SetEnableAiFeatures sets field value
+func (o *UserSettingsClientModel) SetEnableAiFeatures(v bool) {
+	o.EnableAiFeatures = v
+}
+
 func (o UserSettingsClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -226,6 +252,7 @@ func (o UserSettingsClientModel) ToMap() (map[string]interface{}, error) {
 	if o.DisableApproverReason.IsSet() {
 		toSerialize["disable_approver_reason"] = o.DisableApproverReason.Get()
 	}
+	toSerialize["enable_ai_features"] = o.EnableAiFeatures
 	return toSerialize, nil
 }
 
@@ -237,6 +264,7 @@ func (o *UserSettingsClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		"require_duration_for_access_request",
 		"mfa_enabled_for_account",
 		"request_custom_fields",
+		"enable_ai_features",
 	}
 
 	allProperties := make(map[string]interface{})

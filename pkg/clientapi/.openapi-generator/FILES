@@ -14,6 +14,7 @@ api_user_session.go
 client.go
 configuration.go
 model_access_details_client_model.go
+model_access_elevated_client_model.go
 model_access_group_client_model.go
 model_access_group_status.go
 model_access_group_status_client_model.go
@@ -42,7 +43,6 @@ model_account_client_model.go
 model_action_approval_status_response.go
 model_agent_auth_request_app_model.go
 model_agent_auth_response_app_model.go
-model_analytic_client_type_client_model.go
 model_approval_result_client_model.go
 model_assistant_conversation_client_model.go
 model_assistant_conversation_suggestion_client_model.go
@@ -56,6 +56,7 @@ model_assistant_message_data_client_model_markdown.go
 model_assistant_message_feedback_client_model.go
 model_assistant_message_request_model.go
 model_assistant_message_response_client_model.go
+model_batch_session_events_request_client_model.go
 model_bundle_client_model.go
 model_challenge_approver_client_model.go
 model_challenge_info_client_model.go
@@ -66,7 +67,9 @@ model_client_challenge_status.go
 model_create_access_request_client_model.go
 model_create_action_approval_request.go
 model_create_analytic_event_client_model.go
+model_create_analytic_events_batch_client_model.go
 model_create_and_update_access_request_template_client_model.go
+model_create_session_response_client_model.go
 model_create_user_personal_token_request_client_model.go
 model_credentials_client_model.go
 model_dry_run_access_request_error.go
@@ -79,6 +82,7 @@ model_icons_config_client_model.go
 model_instruction_client_model.go
 model_integration_client_model.go
 model_justification_validation_response.go
+model_launcher_client_model.go
 model_link_client_model.go
 model_mcp_error.go
 model_mcp_request.go
@@ -134,7 +138,11 @@ model_resource_client_model.go
 model_resource_filter.go
 model_resource_filter_type.go
 model_resource_type_client_model.go
+model_session_event_client_model.go
+model_session_event_client_model_access_elevated.go
+model_session_event_client_model_tool_activity.go
 model_session_type_client_model.go
+model_tool_activity_client_model.go
 model_trust_policy_matrix_client_model.go
 model_unmasked.go
 model_update_expiry_request_client_model.go

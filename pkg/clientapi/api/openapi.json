@@ -706,6 +706,37 @@
         }
       }
     },
+    "/api/client/v1/access-requests/{id}/dry-run": {
+      "post": {
+        "tags": [
+          "Access Requests"
+        ],
+        "summary": "Dry run validation for an existing access request",
+        "operationId": "dryRunAccessRequestById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DryRunClientResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/access-requests/{id}/extend": {
       "post": {
         "tags": [
@@ -1204,6 +1235,14 @@
             }
           },
           {
+            "name": "consumed_by",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
             "name": "format_type",
             "in": "query",
             "schema": {
@@ -1366,6 +1405,30 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateAnalyticEventClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/client/v1/analytics/bulk": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Send analytics events in batch",
+        "operationId": "sendAnalyticsEventsBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnalyticEventsBatchClientModel"
               }
             }
           },
@@ -2525,6 +2588,43 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Access Assistant"
+        ],
+        "summary": "Remove conversation message feedback",
+        "operationId": "removeAssistantMessageFeedback",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/client/v1/agentic/auth": {
@@ -2553,6 +2653,85 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/sessions": {
+      "post": {
+        "tags": [
+          "Agentic"
+        ],
+        "summary": "Start a new agent session",
+        "operationId": "startAgentSession",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSessionResponseClientModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/sessions/{id}/end": {
+      "put": {
+        "tags": [
+          "Agentic"
+        ],
+        "summary": "End an agent session",
+        "operationId": "endAgentSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/client/v1/agentic/sessions/{id}/events": {
+      "post": {
+        "tags": [
+          "Agentic"
+        ],
+        "summary": "Send batch of session events",
+        "operationId": "sendAgentSessionEvents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchSessionEventsRequestClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -3010,7 +3189,8 @@
       },
       "AccessSessionDetailsClientModel": {
         "required": [
-          "instructions"
+          "instructions",
+          "launchers"
         ],
         "type": "object",
         "properties": {
@@ -3042,6 +3222,16 @@
               }
             ],
             "nullable": true
+          },
+          "consumed_by": {
+            "type": "string",
+            "nullable": true
+          },
+          "launchers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LauncherClientModel"
+            }
           }
         }
       },
@@ -3199,12 +3389,6 @@
             "type": "string"
           }
         }
-      },
-      "AnalyticClientTypeClientModel": {
-        "enum": [
-          "CLI"
-        ],
-        "type": "string"
       },
       "ApprovalResultClientModel": {
         "type": "object",
@@ -3482,10 +3666,24 @@
             "type": "string"
           },
           "client_type": {
-            "$ref": "#/components/schemas/AnalyticClientTypeClientModel"
+            "type": "string"
           },
           "properties": {
             "type": "object"
+          }
+        }
+      },
+      "CreateAnalyticEventsBatchClientModel": {
+        "required": [
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateAnalyticEventClientModel"
+            }
           }
         }
       },
@@ -3779,6 +3977,33 @@
           },
           "has_ticket_id_url": {
             "type": "boolean"
+          }
+        }
+      },
+      "LauncherClientModel": {
+        "required": [
+          "id",
+          "display_name",
+          "launcher_type",
+          "invocation_command"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "launcher_type": {
+            "type": "string"
+          },
+          "auth_command": {
+            "type": "string",
+            "nullable": true
+          },
+          "invocation_command": {
+            "type": "string"
           }
         }
       },
@@ -4438,7 +4663,8 @@
         "required": [
           "require_duration_for_access_request",
           "mfa_enabled_for_account",
-          "request_custom_fields"
+          "request_custom_fields",
+          "enable_ai_features"
         ],
         "type": "object",
         "properties": {
@@ -4461,6 +4687,9 @@
           "disable_approver_reason": {
             "type": "boolean",
             "nullable": true
+          },
+          "enable_ai_features": {
+            "type": "boolean"
           }
         }
       },
@@ -4953,6 +5182,17 @@
           }
         }
       },
+      "AccessElevatedClientModel": {
+        "required": [
+          "access_request_id"
+        ],
+        "type": "object",
+        "properties": {
+          "access_request_id": {
+            "type": "string"
+          }
+        }
+      },
       "AgentAuthRequestAppModel": {
         "required": [
           "agent_platform",
@@ -4979,6 +5219,31 @@
             "type": "string"
           },
           "agent_token": {
+            "type": "string"
+          }
+        }
+      },
+      "BatchSessionEventsRequestClientModel": {
+        "required": [
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionEventClientModel"
+            }
+          }
+        }
+      },
+      "CreateSessionResponseClientModel": {
+        "required": [
+          "session_id"
+        ],
+        "type": "object",
+        "properties": {
+          "session_id": {
             "type": "string"
           }
         }
@@ -5163,6 +5428,84 @@
             "$ref": "#/components/schemas/TrustPolicyMatrixClientModel"
           },
           "alert_config_id": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SessionEventClientModel": {
+        "required": [
+          "type",
+          "event_start_time"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "event_start_time": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "event_end_time": {
+            "type": "number",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
+          },
+          "tool_activity": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolActivityClientModel"
+              }
+            ],
+            "nullable": true
+          },
+          "access_elevated": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccessElevatedClientModel"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "ToolActivityClientModel": {
+        "required": [
+          "event_group_id",
+          "tool_execution_count",
+          "tool_name"
+        ],
+        "type": "object",
+        "properties": {
+          "event_group_id": {
+            "type": "string"
+          },
+          "tool_execution_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "intent_action": {
+            "type": "string",
+            "nullable": true
+          },
+          "enforcement_decision": {
+            "type": "string",
+            "nullable": true
+          },
+          "mcp_server_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "resource_id": {
             "type": "string",
             "nullable": true
           }
