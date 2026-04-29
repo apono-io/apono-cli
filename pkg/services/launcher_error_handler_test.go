@@ -2,8 +2,6 @@ package services
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -50,30 +48,37 @@ func TestTerminalErrorHandler_emptyTitleDefaultsToApono(t *testing.T) {
 	}
 }
 
-func TestHeadlessErrorHandler_writesLog(t *testing.T) {
-	logDir := t.TempDir()
-	frozenTime := time.Date(2026, 4, 29, 10, 30, 0, 0, time.UTC)
-	var capturedArgs []string
-
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			capturedArgs = args
+// fakeHandler returns a headlessErrorHandler with both side channels (osascript
+// dialog + log append) captured in test-owned variables. Callers inspect
+// *capturedScript and *logBuf after Handle to verify behavior. The clock is
+// frozen at 2026-04-29T10:30:00Z so log-line assertions can match a literal
+// RFC3339 timestamp.
+func fakeHandler(t *testing.T) (h *headlessErrorHandler, capturedScript *string, logBuf *bytes.Buffer) {
+	t.Helper()
+	capturedScript = new(string)
+	logBuf = &bytes.Buffer{}
+	h = &headlessErrorHandler{
+		displayDialog: func(script string) error {
+			*capturedScript = script
 			return nil
 		},
-		logDir: logDir,
-		now:    func() time.Time { return frozenTime },
+		appendLog: func(line string) {
+			logBuf.WriteString(line)
+			logBuf.WriteByte('\n')
+		},
+		now: func() time.Time { return time.Date(2026, 4, 29, 10, 30, 0, 0, time.UTC) },
 	}
+	return
+}
+
+func TestHeadlessErrorHandler_appendsLogLine(t *testing.T) {
+	h, _, logBuf := fakeHandler(t)
 
 	if err := h.Handle("Apono", "session not found", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log"))
-	if err != nil {
-		t.Fatalf("expected log file to exist: %v", err)
-	}
-	logLine := string(logBytes)
-
+	logLine := logBuf.String()
 	if !strings.Contains(logLine, "2026-04-29T10:30:00Z") {
 		t.Errorf("expected RFC3339 timestamp in log, got %q", logLine)
 	}
@@ -83,30 +88,16 @@ func TestHeadlessErrorHandler_writesLog(t *testing.T) {
 	if !strings.Contains(logLine, "session not found") {
 		t.Errorf("expected message in log, got %q", logLine)
 	}
-	if len(capturedArgs) == 0 {
-		t.Error("expected osascript to be invoked")
-	}
 }
 
-func TestHeadlessErrorHandler_callsOsascriptWithDialog(t *testing.T) {
-	var capturedArgs []string
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			capturedArgs = args
-			return nil
-		},
-		logDir: t.TempDir(),
-		now:    time.Now,
-	}
+func TestHeadlessErrorHandler_buildsDisplayDialogScript(t *testing.T) {
+	h, capturedScript, _ := fakeHandler(t)
 
 	if err := h.Handle("Apono", "session not found", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	if len(capturedArgs) != 2 || capturedArgs[0] != "-e" {
-		t.Fatalf("expected osascript called with [-e <script>], got %v", capturedArgs)
-	}
-	script := capturedArgs[1]
+	script := *capturedScript
 	if !strings.Contains(script, "display dialog") {
 		t.Errorf("expected script to contain 'display dialog', got %q", script)
 	}
@@ -122,21 +113,13 @@ func TestHeadlessErrorHandler_callsOsascriptWithDialog(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_includesStderrTailInDialog(t *testing.T) {
-	var capturedArgs []string
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			capturedArgs = args
-			return nil
-		},
-		logDir: t.TempDir(),
-		now:    time.Now,
-	}
+	h, capturedScript, _ := fakeHandler(t)
 
 	if err := h.Handle("Apono", "command failed", "boom on stderr"); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	script := capturedArgs[1]
+	script := *capturedScript
 	if !strings.Contains(script, "command failed") {
 		t.Errorf("expected dialog to contain message, got %q", script)
 	}
@@ -146,22 +129,14 @@ func TestHeadlessErrorHandler_includesStderrTailInDialog(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_truncatesLongStderrTail(t *testing.T) {
-	var capturedArgs []string
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			capturedArgs = args
-			return nil
-		},
-		logDir: t.TempDir(),
-		now:    time.Now,
-	}
+	h, capturedScript, _ := fakeHandler(t)
 
 	longStderr := strings.Repeat("x", 1000)
 	if err := h.Handle("Apono", "msg", longStderr); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	script := capturedArgs[1]
+	script := *capturedScript
 	if strings.Contains(script, strings.Repeat("x", 1000)) {
 		t.Errorf("expected stderr tail to be truncated in dialog, got %q", script)
 	}
@@ -171,23 +146,13 @@ func TestHeadlessErrorHandler_truncatesLongStderrTail(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_logEscapesNewlinesInStderr(t *testing.T) {
-	logDir := t.TempDir()
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error { return nil },
-		logDir:    logDir,
-		now:       time.Now,
-	}
+	h, _, logBuf := fakeHandler(t)
 
 	if err := h.Handle("Apono", "msg", "line1\nline2\nline3"); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log"))
-	if err != nil {
-		t.Fatalf("read log: %v", err)
-	}
-	logStr := string(logBytes)
-
+	logStr := logBuf.String()
 	if strings.Count(logStr, "\n") != 1 {
 		t.Errorf("expected single trailing newline in log line, got %q", logStr)
 	}
@@ -197,49 +162,36 @@ func TestHeadlessErrorHandler_logEscapesNewlinesInStderr(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_emptyTitleDefaultsToApono(t *testing.T) {
-	logDir := t.TempDir()
-	var capturedArgs []string
-	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			capturedArgs = args
-			return nil
-		},
-		logDir: logDir,
-		now:    time.Now,
-	}
+	h, capturedScript, logBuf := fakeHandler(t)
 
 	if err := h.Handle("", "msg", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, _ := os.ReadFile(filepath.Join(logDir, "launcher.log"))
-	if !strings.Contains(string(logBytes), "Apono") {
-		t.Errorf("expected default title 'Apono' in log, got %q", string(logBytes))
+	if !strings.Contains(logBuf.String(), "Apono") {
+		t.Errorf("expected default title 'Apono' in log, got %q", logBuf.String())
 	}
-
-	script := capturedArgs[1]
-	if !strings.Contains(script, `with title "Apono"`) {
-		t.Errorf("expected default title 'Apono' in dialog, got %q", script)
+	if !strings.Contains(*capturedScript, `with title "Apono"`) {
+		t.Errorf("expected default title 'Apono' in dialog, got %q", *capturedScript)
 	}
 }
 
-func TestHeadlessErrorHandler_swallowsLogDirError(t *testing.T) {
-	// Empty logDir disables logging entirely; Handle should still succeed.
-	var osascriptCalled bool
+func TestHeadlessErrorHandler_skipsLoggingWhenSinkNil(t *testing.T) {
+	var capturedScript string
 	h := &headlessErrorHandler{
-		osascript: func(args ...string) error {
-			osascriptCalled = true
+		displayDialog: func(script string) error {
+			capturedScript = script
 			return nil
 		},
-		logDir: "",
-		now:    time.Now,
+		appendLog: nil,
+		now:       time.Now,
 	}
 
 	if err := h.Handle("Apono", "msg", ""); err != nil {
-		t.Fatalf("Handle should not error when log dir disabled: %v", err)
+		t.Fatalf("Handle should not error when log sink nil: %v", err)
 	}
-	if !osascriptCalled {
-		t.Error("expected osascript to still be called when log dir disabled")
+	if capturedScript == "" {
+		t.Error("expected dialog to still fire when log sink nil")
 	}
 }
 
