@@ -1,8 +1,10 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -27,7 +29,7 @@ func Unregister() *cobra.Command {
 				return err
 			}
 
-			if out, lsErr := runCommand(lsregisterPath, "-u", bundleDir).CombinedOutput(); lsErr != nil {
+			if out, lsErr := unregisterFromLaunchServices(bundleDir); lsErr != nil {
 				return fmt.Errorf("lsregister -u: %w: %s", lsErr, string(out))
 			}
 
@@ -39,4 +41,8 @@ func Unregister() *cobra.Command {
 			return err
 		},
 	}
+}
+
+func unregisterFromLaunchServices(bundleDir string) ([]byte, error) {
+	return exec.CommandContext(context.Background(), lsregisterPath, "-u", bundleDir).CombinedOutput()
 }

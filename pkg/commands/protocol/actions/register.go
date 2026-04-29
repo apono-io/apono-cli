@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,14 +18,28 @@ const (
 	bundleDisplayName = "Apono Connect"
 	urlSchemeName     = "Apono Connect"
 	urlScheme         = "apono"
+
+	applicationsDirName             = "Applications"
+	applicationsDirPerm os.FileMode = 0o700
+	handlerScriptPerm   os.FileMode = 0o600
 )
 
 const lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 
-// runCommand is the indirection through which all subprocess invocations in
-// this package go. Defaulting to exec.Command, but exposed as a package var
-// so tests can swap in a fake runner without spawning real processes.
-var runCommand = exec.Command
+const urlTypesValue = `<dict><key>CFBundleURLName</key><string>` + urlSchemeName +
+	`</string><key>CFBundleURLSchemes</key><array><string>` +
+	urlScheme +
+	`</string></array></dict>`
+
+var infoPlistEntries = []struct {
+	key, valueType, value string
+}{
+	{"CFBundleIdentifier", "-string", bundleIdentifier},
+	{"CFBundleName", "-string", bundleDisplayName},
+	{"CFBundleDisplayName", "-string", bundleDisplayName},
+	{"LSUIElement", "-bool", "true"},
+	{"CFBundleURLTypes", "-array", urlTypesValue},
+}
 
 // AppleScript shim baked into the .app's Scripts/main.scpt by osacompile.
 // The whole script does is invoke handler.sh via zsh-as-interpreter (no +x
@@ -125,8 +140,8 @@ func bundlePath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("home dir: %w", err)
 	}
-	apps := filepath.Join(home, "Applications")
-	if err = os.MkdirAll(apps, 0o700); err != nil {
+	apps := filepath.Join(home, applicationsDirName)
+	if err = os.MkdirAll(apps, applicationsDirPerm); err != nil {
 		return "", fmt.Errorf("mkdir %s: %w", apps, err)
 	}
 	return filepath.Join(apps, bundleDirName), nil
@@ -168,41 +183,29 @@ func compileAppleScript(bundleDir string) error {
 		return fmt.Errorf("close applescript temp: %w", err)
 	}
 
-	out, err := runCommand("osacompile", "-o", bundleDir, tmpPath).CombinedOutput()
+	out, err := runOsaCompile(bundleDir, tmpPath)
 	if err != nil {
 		return fmt.Errorf("osacompile: %w: %s", err, string(out))
 	}
 	return nil
 }
 
+func runOsaCompile(outputBundle, scriptPath string) ([]byte, error) {
+	return exec.CommandContext(context.Background(), "osacompile", "-o", outputBundle, scriptPath).CombinedOutput()
+}
+
 func patchInfoPlist(bundleDir string) error {
 	plist := filepath.Join(bundleDir, "Contents", "Info.plist")
-	urlTypesValue := fmt.Sprintf(
-		`<dict><key>CFBundleURLName</key><string>%s</string>`+
-			`<key>CFBundleURLSchemes</key><array><string>%s</string></array></dict>`,
-		urlSchemeName, urlScheme,
-	)
-	writes := []struct {
-		key       string
-		valueType string
-		value     string
-	}{
-		{"CFBundleIdentifier", "-string", bundleIdentifier},
-		{"CFBundleName", "-string", bundleDisplayName},
-		{"CFBundleDisplayName", "-string", bundleDisplayName},
-		{"LSUIElement", "-bool", "true"},
-		{"CFBundleURLTypes", "-array", urlTypesValue},
-	}
-	for _, w := range writes {
-		if err := defaultsWrite(plist, w.key, w.valueType, w.value); err != nil {
+	for _, e := range infoPlistEntries {
+		if err := writePlistEntry(plist, e.key, e.valueType, e.value); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func defaultsWrite(plist, key, valueType, value string) error {
-	out, err := runCommand("defaults", "write", plist, key, valueType, value).CombinedOutput()
+func writePlistEntry(plist, key, valueType, value string) error {
+	out, err := exec.CommandContext(context.Background(), "defaults", "write", plist, key, valueType, value).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("defaults write %s: %w: %s", key, err, string(out))
 	}
@@ -218,15 +221,15 @@ func handlerScriptBody(aponoBinary string) string {
 func writeHandlerScript(bundleDir, aponoBinary string) error {
 	target := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
 	// AppleScript invokes this via `zsh -l handler.sh ...`, so the file is
-	// read by zsh as a script — no executable bit required, 0o600 is enough.
-	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), 0o600); err != nil {
+	// read by zsh as a script — no executable bit required.
+	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), handlerScriptPerm); err != nil {
 		return fmt.Errorf("write handler.sh: %w", err)
 	}
 	return nil
 }
 
 func codesignAdHoc(bundleDir string) error {
-	out, err := runCommand("codesign", "--force", "--sign", "-", bundleDir).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "codesign", "--force", "--sign", "-", bundleDir).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("codesign: %w: %s", err, string(out))
 	}
@@ -234,7 +237,7 @@ func codesignAdHoc(bundleDir string) error {
 }
 
 func registerWithLaunchServices(bundleDir string) error {
-	out, err := runCommand(lsregisterPath, "-R", bundleDir).CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), lsregisterPath, "-R", bundleDir).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("lsregister: %w: %s", err, string(out))
 	}
