@@ -45,7 +45,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	}
 
 	// Portal and Slack show their own "credentials already in use" prompt before
-	// firing the apono:// URI, so a headless (executed from protocal handler) run can trust that. A terminal user typed
+	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
 	if s.IsRunningInTerminal() && result.ConsumedBy != "" && result.ConsumedBy != consumedByAponoCli {
 		return fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
