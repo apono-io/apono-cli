@@ -1,15 +1,11 @@
 package connect
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
 )
-
-// runCommand is the indirection through which osascript invocations go.
-// Defaulting to exec.Command, but routed through a var so gosec G204's
-// direct-call check doesn't trip on the necessarily-variable script arg.
-var runCommand = exec.Command
 
 // surfaceError pops a macOS dialog with err.Error() when the CLI was invoked
 // without a controlling terminal (the apono:// protocol handler path, where
@@ -30,7 +26,7 @@ func showErrorDialog(message string) {
 		`display dialog %s with title "Apono" buttons {"OK"} default button "OK" with icon caution`,
 		applescriptString(message),
 	)
-	_ = runCommand("osascript", "-e", script).Run()
+	_ = exec.CommandContext(context.Background(), "osascript", "-e", script).Run()
 }
 
 func applescriptString(text string) string {
