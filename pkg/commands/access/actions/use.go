@@ -2,11 +2,11 @@ package actions
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -23,7 +23,7 @@ const (
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
-	launcherID                 string
+	clientID                 string
 }
 
 func AccessDetails() *cobra.Command {
@@ -38,15 +38,11 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				if cmdFlags.launcherID == "" {
-					return fmt.Errorf("--client requires a launcher name (e.g. --client dbeaver)")
+				if cmdFlags.clientID == "" {
+					return fmt.Errorf("--client requires a client name (e.g. --client dbeaver)")
 				}
 				if runtime.GOOS != "darwin" {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
-				}
-				// Pre-GA gate: Kinda instead of FF mechanism
-				if os.Getenv("APONO_LAUNCHER_PREVIEW") != "1" {
-					return fmt.Errorf("--client is in preview and not yet available; use --run to launch in your current terminal")
 				}
 			}
 
@@ -61,7 +57,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				return services.NewLauncher().LaunchSession(cmd, client, session.Id, cmdFlags.launcherID)
+				return connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID)
 			}
 
 			if len(session.ConnectionMethods) == 0 {
@@ -107,7 +103,7 @@ func AccessDetails() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
-	flags.StringVar(&cmdFlags.launcherID, clientFlagName, "", "launch the session in the named client (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
+	flags.StringVar(&cmdFlags.clientID, clientFlagName, "", "start the named client app for this session (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
