@@ -21,6 +21,11 @@ const (
 
 const lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 
+// runCommand is the indirection through which all subprocess invocations in
+// this package go. Defaulting to exec.Command, but exposed as a package var
+// so tests can swap in a fake runner without spawning real processes.
+var runCommand = exec.Command
+
 // AppleScript shim baked into the .app's Scripts/main.scpt by osacompile.
 // The whole script does is forward the URL to handler.sh inside the bundle
 // and pop a dialog if it fails. Exit code 64 (EX_USAGE) → invalid URL.
@@ -38,8 +43,8 @@ const appleScriptTemplate = `on open location theURL
 end open location
 `
 
-// handler.sh body. __APONO_BINARY__ is replaced at register time with the
-// absolute path to the running CLI, captured via os.Executable().
+// handlerShellTemplate body. __APONO_BINARY__ is replaced at register time
+// with the absolute path to the running CLI, captured via os.Executable().
 const handlerShellTemplate = `#!/bin/zsh
 set -e
 uri="$1"
@@ -91,11 +96,11 @@ func Register() *cobra.Command {
 				return err
 			}
 
-			if err := buildAppBundle(bundleDir, aponoBinary); err != nil {
+			if err = buildAppBundle(bundleDir, aponoBinary); err != nil {
 				return fmt.Errorf("build app bundle: %w", err)
 			}
 
-			if err := registerWithLaunchServices(bundleDir); err != nil {
+			if err = registerWithLaunchServices(bundleDir); err != nil {
 				return fmt.Errorf("register with LaunchServices: %w", err)
 			}
 
@@ -120,7 +125,7 @@ func bundlePath() (string, error) {
 		return "", fmt.Errorf("home dir: %w", err)
 	}
 	apps := filepath.Join(home, "Applications")
-	if err := os.MkdirAll(apps, 0o750); err != nil {
+	if err = os.MkdirAll(apps, 0o700); err != nil {
 		return "", fmt.Errorf("mkdir %s: %w", apps, err)
 	}
 	return filepath.Join(apps, bundleDirName), nil
@@ -154,15 +159,15 @@ func compileAppleScript(bundleDir string) error {
 	tmpPath := tmp.Name()
 	defer func() { _ = os.Remove(tmpPath) }()
 
-	if _, err := tmp.WriteString(appleScriptTemplate); err != nil {
+	if _, err = tmp.WriteString(appleScriptTemplate); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("write applescript: %w", err)
 	}
-	if err := tmp.Close(); err != nil {
+	if err = tmp.Close(); err != nil {
 		return fmt.Errorf("close applescript temp: %w", err)
 	}
 
-	out, err := exec.Command("osacompile", "-o", bundleDir, tmpPath).CombinedOutput()
+	out, err := runCommand("osacompile", "-o", bundleDir, tmpPath).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("osacompile: %w: %s", err, string(out))
 	}
@@ -195,28 +200,30 @@ func patchInfoPlist(bundleDir string) error {
 	return nil
 }
 
-// defaultsWrite shells out to `defaults write <plist> <key> <valueType> <value>`
-// with each fragment passed as a separate explicit positional — no variadic
-// spread, so gosec G204 has no surface to flag.
 func defaultsWrite(plist, key, valueType, value string) error {
-	out, err := exec.Command("defaults", "write", plist, key, valueType, value).CombinedOutput()
+	out, err := runCommand("defaults", "write", plist, key, valueType, value).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("defaults write %s: %w: %s", key, err, string(out))
 	}
 	return nil
 }
 
+// handlerScriptBody returns the handler.sh contents with the apono binary path
+// substituted. Pure, side-effect-free — used by writeHandlerScript and tests.
+func handlerScriptBody(aponoBinary string) string {
+	return strings.ReplaceAll(handlerShellTemplate, "__APONO_BINARY__", aponoBinary)
+}
+
 func writeHandlerScript(bundleDir, aponoBinary string) error {
-	body := strings.ReplaceAll(handlerShellTemplate, "__APONO_BINARY__", aponoBinary)
 	target := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
-	if err := os.WriteFile(target, []byte(body), 0o755); err != nil {
+	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), 0o700); err != nil {
 		return fmt.Errorf("write handler.sh: %w", err)
 	}
 	return nil
 }
 
 func codesignAdHoc(bundleDir string) error {
-	out, err := exec.Command("codesign", "--force", "--sign", "-", bundleDir).CombinedOutput()
+	out, err := runCommand("codesign", "--force", "--sign", "-", bundleDir).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("codesign: %w: %s", err, string(out))
 	}
@@ -224,7 +231,7 @@ func codesignAdHoc(bundleDir string) error {
 }
 
 func registerWithLaunchServices(bundleDir string) error {
-	out, err := exec.Command(lsregisterPath, "-R", bundleDir).CombinedOutput()
+	out, err := runCommand(lsregisterPath, "-R", bundleDir).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("lsregister: %w: %s", err, string(out))
 	}
