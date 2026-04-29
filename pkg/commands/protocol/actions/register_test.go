@@ -18,13 +18,12 @@ func TestHandlerScriptBody_substitutesAponoBinaryPath(t *testing.T) {
 	}
 }
 
-func TestHandlerScriptBody_includesPreviewEnvAndRequiredFlags(t *testing.T) {
+func TestHandlerScriptBody_setsAccountEnvAndRequiredFlags(t *testing.T) {
 	body := handlerScriptBody("/usr/local/bin/apono")
 
 	wantSubstrings := []string{
-		"export APONO_LAUNCHER_PREVIEW=1",
+		`export _APONO_ACCOUNT_ID_="$account"`,
 		`--client "$client"`,
-		`--account "$account"`,
 		`exit 64`,
 	}
 	for _, want := range wantSubstrings {

@@ -74,8 +74,8 @@ fi
 session=$(printf '%b' "${session//%/\\x}")
 account=$(printf '%b' "${account//%/\\x}")
 client=$(printf '%b' "${client//%/\\x}")
-export APONO_LAUNCHER_PREVIEW=1
-exec "__APONO_BINARY__" access use "$session" --client "$client" --account "$account"
+export _APONO_ACCOUNT_ID_="$account"
+exec "__APONO_BINARY__" access use "$session" --client "$client"
 `
 
 func Register() *cobra.Command {
