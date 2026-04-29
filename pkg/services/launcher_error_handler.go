@@ -3,19 +3,33 @@ package services
 import (
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	headlessLogFileName     = "launcher.log"
+	headlessStderrTailLimit = 500
 )
 
 type ErrorHandler interface {
 	Handle(title, message, stderrTail string) error
 }
 
+func ChooseErrorHandler(cobraCmd *cobra.Command) ErrorHandler {
+	return chooseErrorHandler(cobraCmd)
+}
+
 func chooseErrorHandler(cobraCmd *cobra.Command) ErrorHandler {
 	if isTTY() {
 		return &terminalErrorHandler{out: cobraCmd.ErrOrStderr()}
 	}
-	return &headlessErrorHandler{}
+	return newHeadlessErrorHandler()
 }
 
 type terminalErrorHandler struct {
@@ -34,9 +48,93 @@ func (t *terminalErrorHandler) Handle(title, message, stderrTail string) error {
 	return err
 }
 
-// TODO(DVL-8794): osascript display-dialog + log file under ~/Library/Logs/apono/.
-type headlessErrorHandler struct{}
+// headlessErrorHandler surfaces errors to the user via osascript dialog when
+// the CLI is invoked without a TTY (e.g. by the Apono Connect.app protocol
+// handler). All errors are also appended to ~/Library/Logs/apono/launcher.log
+// regardless of whether the dialog succeeds.
+type headlessErrorHandler struct {
+	osascript func(args ...string) error
+	logDir    string
+	now       func() time.Time
+}
 
-func (h *headlessErrorHandler) Handle(_, _, _ string) error {
-	return nil
+func newHeadlessErrorHandler() *headlessErrorHandler {
+	return &headlessErrorHandler{
+		osascript: runOsascript,
+		logDir:    defaultLauncherLogDir(),
+		now:       time.Now,
+	}
+}
+
+func (h *headlessErrorHandler) Handle(title, message, stderrTail string) error {
+	if title == "" {
+		title = "Apono"
+	}
+
+	h.writeLog(title, message, stderrTail)
+
+	body := message
+	if stderrTail != "" {
+		body = fmt.Sprintf("%s\n\n%s", message, truncateStderrTail(stderrTail, headlessStderrTailLimit))
+	}
+
+	script := fmt.Sprintf(
+		`display dialog %s with title %s buttons {"OK"} default button "OK" with icon caution`,
+		applescriptString(body),
+		applescriptString(title),
+	)
+	return h.osascript("-e", script)
+}
+
+func (h *headlessErrorHandler) writeLog(title, message, stderrTail string) {
+	if h.logDir == "" {
+		return
+	}
+	if err := os.MkdirAll(h.logDir, 0o750); err != nil {
+		return
+	}
+	f, err := os.OpenFile(
+		filepath.Join(h.logDir, headlessLogFileName),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0o640,
+	)
+	if err != nil {
+		return
+	}
+	defer func() { _ = f.Close() }()
+
+	line := fmt.Sprintf("%s\t%s\t%s", h.now().UTC().Format(time.RFC3339), title, message)
+	if stderrTail != "" {
+		line = fmt.Sprintf("%s\tstderr=%s", line, strings.ReplaceAll(stderrTail, "\n", "⏎"))
+	}
+	_, _ = fmt.Fprintln(f, line)
+}
+
+func defaultLauncherLogDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, "Library", "Logs", "apono")
+}
+
+func runOsascript(args ...string) error {
+	return exec.Command("osascript", args...).Run() //nolint:gosec // args are constructed internally, never user-controlled
+}
+
+// applescriptString quotes a Go string as an AppleScript double-quoted literal.
+// Escapes \ and " — sufficient for `display dialog` text and titles.
+func applescriptString(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return `"` + s + `"`
+}
+
+// truncateStderrTail keeps the last n characters of s, prefixing with "…"
+// if truncation occurred.
+func truncateStderrTail(s string, n int) string {
+	if n <= 0 || len(s) <= n {
+		return s
+	}
+	return "…" + s[len(s)-n:]
 }
