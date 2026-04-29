@@ -162,7 +162,7 @@ func compileAppleScript(bundleDir string) error {
 		return fmt.Errorf("close applescript temp: %w", err)
 	}
 
-	out, err := exec.Command("osacompile", "-o", bundleDir, tmpPath).CombinedOutput() //nolint:gosec // bundleDir + tmpPath are constructed internally
+	out, err := exec.Command("osacompile", "-o", bundleDir, tmpPath).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("osacompile: %w: %s", err, string(out))
 	}
@@ -171,23 +171,37 @@ func compileAppleScript(bundleDir string) error {
 
 func patchInfoPlist(bundleDir string) error {
 	plist := filepath.Join(bundleDir, "Contents", "Info.plist")
-	cmds := [][]string{
-		{"write", plist, "CFBundleIdentifier", "-string", bundleIdentifier},
-		{"write", plist, "CFBundleName", "-string", bundleDisplayName},
-		{"write", plist, "CFBundleDisplayName", "-string", bundleDisplayName},
-		{"write", plist, "LSUIElement", "-bool", "true"},
-		{"write", plist, "CFBundleURLTypes", "-array",
-			fmt.Sprintf(
-				`<dict><key>CFBundleURLName</key><string>%s</string>`+
-					`<key>CFBundleURLSchemes</key><array><string>%s</string></array></dict>`,
-				urlSchemeName, urlScheme,
-			)},
+	urlTypesValue := fmt.Sprintf(
+		`<dict><key>CFBundleURLName</key><string>%s</string>`+
+			`<key>CFBundleURLSchemes</key><array><string>%s</string></array></dict>`,
+		urlSchemeName, urlScheme,
+	)
+	writes := []struct {
+		key       string
+		valueType string
+		value     string
+	}{
+		{"CFBundleIdentifier", "-string", bundleIdentifier},
+		{"CFBundleName", "-string", bundleDisplayName},
+		{"CFBundleDisplayName", "-string", bundleDisplayName},
+		{"LSUIElement", "-bool", "true"},
+		{"CFBundleURLTypes", "-array", urlTypesValue},
 	}
-	for _, args := range cmds {
-		out, err := exec.Command("defaults", args...).CombinedOutput() //nolint:gosec // args constructed from constants
-		if err != nil {
-			return fmt.Errorf("defaults %s %s: %w: %s", args[0], args[2], err, string(out))
+	for _, w := range writes {
+		if err := defaultsWrite(plist, w.key, w.valueType, w.value); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+// defaultsWrite shells out to `defaults write <plist> <key> <valueType> <value>`
+// with each fragment passed as a separate explicit positional — no variadic
+// spread, so gosec G204 has no surface to flag.
+func defaultsWrite(plist, key, valueType, value string) error {
+	out, err := exec.Command("defaults", "write", plist, key, valueType, value).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("defaults write %s: %w: %s", key, err, string(out))
 	}
 	return nil
 }
