@@ -6,24 +6,28 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const (
-	outputFlagName = "output"
-	runFlagName    = "run"
-	clientFlagName = "client"
+	outputFlagName  = "output"
+	runFlagName     = "run"
+	clientFlagName  = "client"
+	accountFlagName = "account"
+	profileFlagName = "profile"
 )
 
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
 	launcherID                 string
+	accountID                  string
 }
 
 func AccessDetails() *cobra.Command {
@@ -47,6 +51,18 @@ func AccessDetails() *cobra.Command {
 				// Pre-GA gate: Kinda instead of FF mechanism
 				if os.Getenv("APONO_LAUNCHER_PREVIEW") != "1" {
 					return fmt.Errorf("--client is in preview and not yet available; use --run to launch in your current terminal")
+				}
+			}
+
+			if cmd.Flags().Changed(accountFlagName) {
+				if cmdFlags.accountID == "" {
+					return fmt.Errorf("--account requires an account ID")
+				}
+				if cmd.Flags().Changed(profileFlagName) {
+					return fmt.Errorf("--account and --profile are mutually exclusive")
+				}
+				if err := overrideClientByAccountID(cmd, cmdFlags.accountID); err != nil {
+					return err
 				}
 			}
 
@@ -108,10 +124,35 @@ func AccessDetails() *cobra.Command {
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 	flags.StringVar(&cmdFlags.launcherID, clientFlagName, "", "launch the session in the named client (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
+	flags.StringVar(&cmdFlags.accountID, accountFlagName, "", "use the profile that belongs to this Apono account ID instead of the active profile (used by the apono:// protocol handler)")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
 	return cmd
+}
+
+// overrideClientByAccountID swaps the context's client to one built from the
+// profile matching accountID. The active profile on disk is untouched, and
+// errors route through the launcher's TTY/headless handler so the apono://
+// protocol handler shows a dialog instead of failing silently.
+func overrideClientByAccountID(cmd *cobra.Command, accountID string) error {
+	profileName, _, err := config.GetProfileByAccountID(accountID)
+	if err != nil {
+		msg := fmt.Sprintf("Not logged in to account %s. Run `apono login` to add it.", accountID)
+		_ = services.ChooseErrorHandler(cmd).Handle("Apono", msg, "")
+		return fmt.Errorf("%s", msg)
+	}
+
+	overrideClient, err := aponoapi.CreateClient(cmd.Context(), string(profileName))
+	if err != nil {
+		msg := fmt.Sprintf("Failed to authenticate to account %s: %v", accountID, err)
+		_ = services.ChooseErrorHandler(cmd).Handle("Apono", msg, "")
+		return fmt.Errorf("%s", msg)
+	}
+
+	cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), overrideClient))
+	cmd.SetContext(config.CreateProfileContext(cmd.Context(), string(profileName)))
+	return nil
 }
 
 func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {
