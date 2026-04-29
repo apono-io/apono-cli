@@ -3,7 +3,6 @@ package actions
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -24,15 +23,15 @@ func Unregister() *cobra.Command {
 			}
 
 			if _, statErr := os.Stat(bundleDir); os.IsNotExist(statErr) {
-				_, err := fmt.Fprintln(cmd.OutOrStdout(), "Protocol handler is not registered")
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "Protocol handler is not registered")
 				return err
 			}
 
-			if out, err := exec.Command(lsregisterPath, "-u", bundleDir).CombinedOutput(); err != nil {
-				return fmt.Errorf("lsregister -u: %w: %s", err, string(out))
+			if out, lsErr := runCommand(lsregisterPath, "-u", bundleDir).CombinedOutput(); lsErr != nil {
+				return fmt.Errorf("lsregister -u: %w: %s", lsErr, string(out))
 			}
 
-			if err := os.RemoveAll(bundleDir); err != nil {
+			if err = os.RemoveAll(bundleDir); err != nil {
 				return fmt.Errorf("remove %s: %w", bundleDir, err)
 			}
 

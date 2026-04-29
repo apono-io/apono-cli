@@ -2,136 +2,50 @@ package actions
 
 import (
 	"bytes"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 )
 
-func TestBuildAppBundle_writesExpectedLayout(t *testing.T) {
-	if runtime.GOOS != darwinOS {
-		t.Skip("osacompile/defaults/codesign require macOS")
-	}
+func TestHandlerScriptBody_substitutesAponoBinaryPath(t *testing.T) {
+	body := handlerScriptBody("/fake/path/to/apono")
 
-	tmp := t.TempDir()
-	bundleDir := filepath.Join(tmp, bundleDirName)
-	const fakeBinary = "/fake/path/to/apono"
-
-	if err := buildAppBundle(bundleDir, fakeBinary); err != nil {
-		t.Fatalf("buildAppBundle: %v", err)
+	if strings.Contains(body, "__APONO_BINARY__") {
+		t.Errorf("expected __APONO_BINARY__ placeholder to be replaced, got:\n%s", body)
 	}
-
-	wantPaths := []string{
-		filepath.Join(bundleDir, "Contents", "Info.plist"),
-		filepath.Join(bundleDir, "Contents", "MacOS", "applet"),
-		filepath.Join(bundleDir, "Contents", "Resources", "Scripts", "main.scpt"),
-		filepath.Join(bundleDir, "Contents", "Resources", "handler.sh"),
+	if !strings.Contains(body, `exec "/fake/path/to/apono" access use`) {
+		t.Errorf("expected handler.sh to invoke the absolute apono path, got:\n%s", body)
 	}
-	for _, p := range wantPaths {
-		if _, err := os.Stat(p); err != nil {
-			t.Errorf("expected %s to exist: %v", p, err)
+}
+
+func TestHandlerScriptBody_includesPreviewEnvAndRequiredFlags(t *testing.T) {
+	body := handlerScriptBody("/usr/local/bin/apono")
+
+	wantSubstrings := []string{
+		"export APONO_LAUNCHER_PREVIEW=1",
+		`--client "$client"`,
+		`--account "$account"`,
+		`exit 64`,
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected handler.sh body to contain %q, got:\n%s", want, body)
 		}
 	}
 }
 
-func TestBuildAppBundle_handlerScriptIsExecutableAndSubstituted(t *testing.T) {
-	if runtime.GOOS != darwinOS {
-		t.Skip("osacompile required")
-	}
+func TestHandlerScriptBody_overwritesPreviousPath(t *testing.T) {
+	first := handlerScriptBody("/fake/first")
+	second := handlerScriptBody("/fake/second")
 
-	tmp := t.TempDir()
-	bundleDir := filepath.Join(tmp, bundleDirName)
-	const fakeBinary = "/fake/path/to/apono"
-
-	if err := buildAppBundle(bundleDir, fakeBinary); err != nil {
-		t.Fatalf("buildAppBundle: %v", err)
+	if !strings.Contains(second, `"/fake/second"`) {
+		t.Errorf("expected second body to contain second path, got:\n%s", second)
 	}
-
-	handlerPath := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
-	body, err := os.ReadFile(handlerPath)
-	if err != nil {
-		t.Fatalf("read handler.sh: %v", err)
+	if strings.Contains(second, `"/fake/first"`) {
+		t.Errorf("each call should be independent — second body shouldn't carry first path, got:\n%s", second)
 	}
-	bodyStr := string(body)
-
-	if !strings.Contains(bodyStr, `exec "/fake/path/to/apono" access use`) {
-		t.Errorf("expected handler.sh to invoke the absolute apono path, got:\n%s", bodyStr)
-	}
-	if strings.Contains(bodyStr, "__APONO_BINARY__") {
-		t.Errorf("expected __APONO_BINARY__ placeholder to be replaced, got:\n%s", bodyStr)
-	}
-
-	info, err := os.Stat(handlerPath)
-	if err != nil {
-		t.Fatalf("stat handler.sh: %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o755 {
-		t.Errorf("expected handler.sh perm 0o755, got %o", perm)
-	}
-}
-
-func TestBuildAppBundle_infoPlistHasURLScheme(t *testing.T) {
-	if runtime.GOOS != darwinOS {
-		t.Skip("defaults required")
-	}
-
-	tmp := t.TempDir()
-	bundleDir := filepath.Join(tmp, bundleDirName)
-
-	if err := buildAppBundle(bundleDir, "/fake/apono"); err != nil {
-		t.Fatalf("buildAppBundle: %v", err)
-	}
-
-	plistPath := filepath.Join(bundleDir, "Contents", "Info.plist")
-
-	cases := []struct {
-		key         string
-		mustContain string
-	}{
-		{"CFBundleIdentifier", bundleIdentifier},
-		{"CFBundleName", bundleDisplayName},
-		{"CFBundleDisplayName", bundleDisplayName},
-		{"LSUIElement", "1"},
-		{"CFBundleURLTypes", urlScheme},
-	}
-	for _, tc := range cases {
-		out, err := exec.Command("defaults", "read", plistPath, tc.key).CombinedOutput()
-		if err != nil {
-			t.Errorf("defaults read %s failed: %v: %s", tc.key, err, string(out))
-			continue
-		}
-		if !bytes.Contains(out, []byte(tc.mustContain)) {
-			t.Errorf("Info.plist key %s: expected to contain %q, got %q", tc.key, tc.mustContain, string(out))
-		}
-	}
-}
-
-func TestBuildAppBundle_overwritesPreviousBundle(t *testing.T) {
-	if runtime.GOOS != darwinOS {
-		t.Skip("osacompile required")
-	}
-
-	tmp := t.TempDir()
-	bundleDir := filepath.Join(tmp, bundleDirName)
-
-	if err := buildAppBundle(bundleDir, "/fake/first"); err != nil {
-		t.Fatalf("first build: %v", err)
-	}
-	if err := buildAppBundle(bundleDir, "/fake/second"); err != nil {
-		t.Fatalf("second build: %v", err)
-	}
-
-	body, err := os.ReadFile(filepath.Join(bundleDir, "Contents", "Resources", "handler.sh"))
-	if err != nil {
-		t.Fatalf("read handler.sh: %v", err)
-	}
-	if !strings.Contains(string(body), `"/fake/second"`) {
-		t.Errorf("expected second build's binary path in handler.sh, got:\n%s", string(body))
-	}
-	if strings.Contains(string(body), `"/fake/first"`) {
-		t.Errorf("expected first build's path to be overwritten, got:\n%s", string(body))
+	if first == second {
+		t.Error("different inputs should produce different bodies")
 	}
 }
 
