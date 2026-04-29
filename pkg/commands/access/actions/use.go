@@ -2,9 +2,11 @@ package actions
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -15,11 +17,13 @@ import (
 const (
 	outputFlagName = "output"
 	runFlagName    = "run"
+	clientFlagName = "client"
 )
 
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
+	clientID                   string
 }
 
 func AccessDetails() *cobra.Command {
@@ -33,6 +37,15 @@ func AccessDetails() *cobra.Command {
 				return fmt.Errorf("missing session id")
 			}
 
+			if cmd.Flags().Changed(clientFlagName) {
+				if cmdFlags.clientID == "" {
+					return fmt.Errorf("--client requires a client name (e.g. --client dbeaver)")
+				}
+				if runtime.GOOS != "darwin" {
+					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
+				}
+			}
+
 			client, err := aponoapi.GetClient(cmd.Context())
 			if err != nil {
 				return err
@@ -41,6 +54,10 @@ func AccessDetails() *cobra.Command {
 			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
 			if err != nil {
 				return fmt.Errorf("access session with id %s not found", args[0])
+			}
+
+			if cmd.Flags().Changed(clientFlagName) {
+				return connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID)
 			}
 
 			if len(session.ConnectionMethods) == 0 {
@@ -86,6 +103,9 @@ func AccessDetails() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
+	flags.StringVar(&cmdFlags.clientID, clientFlagName, "", "start the named client app for this session (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
+
+	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
 	return cmd
 }
