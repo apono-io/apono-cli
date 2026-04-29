@@ -90,13 +90,13 @@ func (h *headlessErrorHandler) writeLog(title, message, stderrTail string) {
 	if h.logDir == "" {
 		return
 	}
-	if err := os.MkdirAll(h.logDir, 0o750); err != nil {
+	if err := os.MkdirAll(h.logDir, 0o700); err != nil {
 		return
 	}
 	f, err := os.OpenFile(
 		filepath.Join(h.logDir, headlessLogFileName),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0o640,
+		0o600,
 	)
 	if err != nil {
 		return

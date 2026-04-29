@@ -68,7 +68,7 @@ func TestHeadlessErrorHandler_writesLog(t *testing.T) {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log"))
+	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log")) //nolint:gosec // logDir is t.TempDir()
 	if err != nil {
 		t.Fatalf("expected log file to exist: %v", err)
 	}
@@ -182,7 +182,7 @@ func TestHeadlessErrorHandler_logEscapesNewlinesInStderr(t *testing.T) {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log"))
+	logBytes, err := os.ReadFile(filepath.Join(logDir, "launcher.log")) //nolint:gosec // logDir is t.TempDir()
 	if err != nil {
 		t.Fatalf("read log: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestHeadlessErrorHandler_emptyTitleDefaultsToApono(t *testing.T) {
 		t.Fatalf("Handle returned error: %v", err)
 	}
 
-	logBytes, _ := os.ReadFile(filepath.Join(logDir, "launcher.log"))
+	logBytes, _ := os.ReadFile(filepath.Join(logDir, "launcher.log")) //nolint:gosec // logDir is t.TempDir()
 	if !strings.Contains(string(logBytes), "Apono") {
 		t.Errorf("expected default title 'Apono' in log, got %q", string(logBytes))
 	}
