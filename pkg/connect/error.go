@@ -16,16 +16,19 @@ func surfaceError(err error) error {
 		return nil
 	}
 	if !isRunningInTerminal() {
-		showErrorDialog(err.Error())
+		runOsascript(buildErrorDialogScript(err.Error()))
 	}
 	return err
 }
 
-func showErrorDialog(message string) {
-	script := fmt.Sprintf(
+func buildErrorDialogScript(message string) string {
+	return fmt.Sprintf(
 		`display dialog %s with title "Apono" buttons {"OK"} default button "OK" with icon caution`,
 		applescriptString(message),
 	)
+}
+
+func runOsascript(script string) {
 	_ = exec.CommandContext(context.Background(), "osascript", "-e", script).Run()
 }
 
