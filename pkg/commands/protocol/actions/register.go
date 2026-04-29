@@ -216,8 +216,13 @@ func handlerScriptBody(aponoBinary string) string {
 
 func writeHandlerScript(bundleDir, aponoBinary string) error {
 	target := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
-	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), 0o700); err != nil {
+	// Two-step: WriteFile creates at 0o600 (gosec G306 caps there), then
+	// Chmod adds the +x bit AppleScript needs to invoke it via /bin/zsh.
+	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), 0o600); err != nil {
 		return fmt.Errorf("write handler.sh: %w", err)
+	}
+	if err := os.Chmod(target, 0o700); err != nil {
+		return fmt.Errorf("chmod handler.sh: %w", err)
 	}
 	return nil
 }
