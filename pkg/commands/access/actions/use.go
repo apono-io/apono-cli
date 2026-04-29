@@ -23,7 +23,7 @@ const (
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
-	clientID                 string
+	clientID                   string
 }
 
 func AccessDetails() *cobra.Command {
