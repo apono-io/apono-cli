@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -16,18 +17,17 @@ import (
 )
 
 const (
-	outputFlagName  = "output"
-	runFlagName     = "run"
-	clientFlagName  = "client"
-	accountFlagName = "account"
-	profileFlagName = "profile"
+	outputFlagName = "output"
+	runFlagName    = "run"
+	clientFlagName = "client"
+
+	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
 )
 
 type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
 	clientID                   string
-	accountID                  string
 }
 
 func AccessDetails() *cobra.Command {
@@ -50,15 +50,9 @@ func AccessDetails() *cobra.Command {
 				}
 			}
 
-			if cmd.Flags().Changed(accountFlagName) {
-				if cmdFlags.accountID == "" {
-					return fmt.Errorf("--account requires an account ID")
-				}
-				if cmd.Flags().Changed(profileFlagName) {
-					return fmt.Errorf("--account and --profile are mutually exclusive")
-				}
-				if err := overrideClientByAccountID(cmd, cmdFlags.accountID); err != nil {
-					return err
+			if accountID := os.Getenv(accountIDEnvVar); accountID != "" {
+				if err := overrideClientByAccountID(cmd, accountID); err != nil {
+					return connect.SurfaceError(err)
 				}
 			}
 
@@ -120,7 +114,6 @@ func AccessDetails() *cobra.Command {
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 	flags.StringVar(&cmdFlags.clientID, clientFlagName, "", "start the named client app for this session (e.g. dbeaver, tableplus, k9s, cli) — macOS only")
-	flags.StringVar(&cmdFlags.accountID, accountFlagName, "", "use the profile that belongs to this Apono account ID instead of the active profile (used by the apono:// protocol handler)")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
@@ -130,14 +123,14 @@ func AccessDetails() *cobra.Command {
 // overrideClientByAccountID swaps the context's client to one built from the
 // profile matching accountID. The active profile on disk is untouched.
 func overrideClientByAccountID(cmd *cobra.Command, accountID string) error {
-	profileName, _, err := config.GetProfileByAccountID(accountID)
+	profileName, err := config.GetProfileByAccountID(accountID)
 	if err != nil {
-		return connect.SurfaceError(fmt.Errorf("not logged in to account %s. Run `apono login` to add it", accountID))
+		return fmt.Errorf("not logged in to account %s. Run `apono login` to add it", accountID)
 	}
 
 	overrideClient, err := aponoapi.CreateClient(cmd.Context(), string(profileName))
 	if err != nil {
-		return connect.SurfaceError(fmt.Errorf("failed to authenticate to account %s: %w", accountID, err))
+		return fmt.Errorf("failed to authenticate to account %s: %w", accountID, err)
 	}
 
 	cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), overrideClient))
