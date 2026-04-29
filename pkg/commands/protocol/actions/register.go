@@ -27,12 +27,13 @@ const lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/Framew
 var runCommand = exec.Command
 
 // AppleScript shim baked into the .app's Scripts/main.scpt by osacompile.
-// The whole script does is forward the URL to handler.sh inside the bundle
-// and pop a dialog if it fails. Exit code 64 (EX_USAGE) → invalid URL.
+// The whole script does is invoke handler.sh via zsh-as-interpreter (no +x
+// required on the script file) and pop a dialog if it fails. Exit code 64
+// (EX_USAGE) → invalid URL.
 const appleScriptTemplate = `on open location theURL
 	set scriptPath to POSIX path of ((path to me as text) & "Contents:Resources:handler.sh")
 	try
-		do shell script "/bin/zsh -lc " & quoted form of (quoted form of scriptPath & " " & quoted form of theURL)
+		do shell script "/bin/zsh -l " & quoted form of scriptPath & " " & quoted form of theURL
 	on error errMsg number errNum
 		if errNum is 64 then
 			display dialog "Invalid launch URL. Please try again from the portal." with title "Apono" buttons {"OK"} default button "OK" with icon caution
@@ -216,13 +217,10 @@ func handlerScriptBody(aponoBinary string) string {
 
 func writeHandlerScript(bundleDir, aponoBinary string) error {
 	target := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
-	// Two-step: WriteFile creates at 0o600 (gosec G306 caps there), then
-	// Chmod adds the +x bit AppleScript needs to invoke it via /bin/zsh.
+	// AppleScript invokes this via `zsh -l handler.sh ...`, so the file is
+	// read by zsh as a script — no executable bit required, 0o600 is enough.
 	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), 0o600); err != nil {
 		return fmt.Errorf("write handler.sh: %w", err)
-	}
-	if err := os.Chmod(target, 0o700); err != nil {
-		return fmt.Errorf("chmod handler.sh: %w", err)
 	}
 	return nil
 }
