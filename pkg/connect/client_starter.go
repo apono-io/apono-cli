@@ -24,7 +24,7 @@ const (
 
 type ClientStarter struct {
 	FetchClients               func(context.Context, *aponoapi.AponoClient, string) (*ClientFetchResult, error)
-	RunShellCommand                   func(*cobra.Command, string) (int, string, error)
+	RunShellCommand            func(*cobra.Command, string) (int, string, error)
 	BuildTerminalLaunchCommand func(string) string
 	IsRunningInTerminal        func() bool
 }
