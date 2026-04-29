@@ -16,7 +16,7 @@ func SurfaceError(err error) error {
 		return nil
 	}
 	if !isRunningInTerminal() {
-		runOsascript(buildErrorDialogScript(err.Error()))
+		runOsaScript(buildErrorDialogScript(err.Error()))
 	}
 	return err
 }
@@ -28,7 +28,7 @@ func buildErrorDialogScript(message string) string {
 	)
 }
 
-func runOsascript(script string) {
+func runOsaScript(script string) {
 	_ = exec.CommandContext(context.Background(), "osascript", "-e", script).Run()
 }
 
