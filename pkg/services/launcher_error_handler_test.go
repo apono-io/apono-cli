@@ -127,4 +127,3 @@ func TestApplescriptString_escapesQuotesAndBackslashes(t *testing.T) {
 		}
 	}
 }
-
