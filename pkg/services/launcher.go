@@ -48,7 +48,7 @@ func NewLauncher() *Launcher {
 		RunShell:         runShell,
 		WrapInTerminal:   wrapInTerminal,
 		IsTTY:            isTTY,
-		ChooseErrHandler: chooseErrorHandler,
+		ChooseErrHandler: ChooseErrorHandler,
 	}
 }
 
@@ -57,7 +57,7 @@ func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.Apono
 
 	result, err := l.FetchLaunchers(cobraCmd.Context(), client, sessionID)
 	if err != nil {
-		_ = errorHandler.Handle("Apono", fmt.Sprintf("Could not fetch session details: %v", err), "")
+		_ = errorHandler.Handle(defaultErrorTitle, fmt.Sprintf("Could not fetch session details: %v", err), "")
 		return err
 	}
 
@@ -65,14 +65,14 @@ func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.Apono
 	// in TTY we have no upstream gate, so block AD-consumed creds and tell the user to reset.
 	if l.IsTTY() && result.ConsumedBy != "" && result.ConsumedBy != ConsumedByOS {
 		msg := fmt.Sprintf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again.", sessionID)
-		_ = errorHandler.Handle("Apono", msg, "")
+		_ = errorHandler.Handle(defaultErrorTitle, msg, "")
 		return fmt.Errorf("%s", msg)
 	}
 
 	launcher, ok := findLauncher(result.Launchers, clientID)
 	if !ok {
 		msg := fmt.Sprintf("client %q is not supported for this session.\navailable: %s", clientID, availableIDs(result.Launchers))
-		_ = errorHandler.Handle("Apono", msg, "")
+		_ = errorHandler.Handle(defaultErrorTitle, msg, "")
 		return fmt.Errorf("%s", msg)
 	}
 
@@ -91,7 +91,7 @@ func (l *Launcher) LaunchSession(cobraCmd *cobra.Command, client *aponoapi.Apono
 
 	default:
 		err := fmt.Errorf("unknown launcher kind %q for client %q", launcher.LauncherType, clientID)
-		_ = errorHandler.Handle("Apono", err.Error(), "")
+		_ = errorHandler.Handle(defaultErrorTitle, err.Error(), "")
 		return err
 	}
 }
@@ -103,11 +103,11 @@ func (l *Launcher) execAndHandle(cobraCmd *cobra.Command, combined string, error
 	}
 
 	if err != nil {
-		_ = errorHandler.Handle("Apono", fmt.Sprintf("Failed to launch: %v", err), stderr)
+		_ = errorHandler.Handle(defaultErrorTitle, fmt.Sprintf("Failed to launch: %v", err), stderr)
 		return err
 	}
 	msg := fmt.Sprintf("Launcher exited with code %d.", exitCode)
-	_ = errorHandler.Handle("Apono", msg, stderr)
+	_ = errorHandler.Handle(defaultErrorTitle, msg, stderr)
 	return fmt.Errorf("launcher exited with code %d", exitCode)
 }
 
