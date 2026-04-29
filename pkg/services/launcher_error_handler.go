@@ -53,16 +53,16 @@ func (t *terminalErrorHandler) Handle(title, message, stderrTail string) error {
 // handler). All errors are also appended to ~/Library/Logs/apono/launcher.log
 // regardless of whether the dialog succeeds.
 type headlessErrorHandler struct {
-	osascript func(args ...string) error
-	logDir    string
-	now       func() time.Time
+	displayDialog func(script string) error
+	appendLog     func(line string)
+	now           func() time.Time
 }
 
 func newHeadlessErrorHandler() *headlessErrorHandler {
 	return &headlessErrorHandler{
-		osascript: runOsascript,
-		logDir:    defaultLauncherLogDir(),
-		now:       time.Now,
+		displayDialog: runOsascript,
+		appendLog:     appendToDefaultLogFile,
+		now:           time.Now,
 	}
 }
 
@@ -83,43 +83,43 @@ func (h *headlessErrorHandler) Handle(title, message, stderrTail string) error {
 		applescriptString(body),
 		applescriptString(title),
 	)
-	return h.osascript("-e", script)
+	return h.displayDialog(script)
 }
 
 func (h *headlessErrorHandler) writeLog(title, message, stderrTail string) {
-	if h.logDir == "" {
+	if h.appendLog == nil {
 		return
 	}
-	if err := os.MkdirAll(h.logDir, 0o750); err != nil {
-		return
-	}
-	f, err := os.OpenFile(
-		filepath.Join(h.logDir, headlessLogFileName),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0o640,
-	)
-	if err != nil {
-		return
-	}
-	defer func() { _ = f.Close() }()
-
 	line := fmt.Sprintf("%s\t%s\t%s", h.now().UTC().Format(time.RFC3339), title, message)
 	if stderrTail != "" {
 		line = fmt.Sprintf("%s\tstderr=%s", line, strings.ReplaceAll(stderrTail, "\n", "⏎"))
 	}
+	h.appendLog(line)
+}
+
+// appendToDefaultLogFile is the production sink: open ~/Library/Logs/apono/launcher.log,
+// append the line, close. Errors are swallowed — logging is best-effort and
+// must never block the user-facing dialog.
+func appendToDefaultLogFile(line string) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	dir := filepath.Join(home, "Library", "Logs", "apono")
+	if err = os.MkdirAll(dir, 0o700); err != nil {
+		return
+	}
+	logPath := filepath.Clean(filepath.Join(dir, headlessLogFileName))
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer func() { _ = f.Close() }()
 	_, _ = fmt.Fprintln(f, line)
 }
 
-func defaultLauncherLogDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, "Library", "Logs", "apono")
-}
-
-func runOsascript(args ...string) error {
-	return exec.Command("osascript", args...).Run() //nolint:gosec // args are constructed internally, never user-controlled
+func runOsascript(script string) error {
+	return exec.Command("osascript", "-e", script).Run()
 }
 
 // applescriptString quotes a Go string as an AppleScript double-quoted literal.
