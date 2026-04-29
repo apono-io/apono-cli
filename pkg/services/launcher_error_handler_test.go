@@ -51,10 +51,10 @@ func TestTerminalErrorHandler_emptyTitleDefaultsToApono(t *testing.T) {
 // fakeHandler returns a headlessErrorHandler with both side channels (osascript
 // dialog + log append) captured in test-owned variables. Callers inspect
 // *capturedScript and *logBuf after Handle to verify behavior. The clock is
-// frozen at frozenTime for stable RFC3339 assertions.
-func fakeHandler(t *testing.T) (h *headlessErrorHandler, capturedScript *string, logBuf *bytes.Buffer, frozenTime time.Time) {
+// frozen at 2026-04-29T10:30:00Z so log-line assertions can match a literal
+// RFC3339 timestamp.
+func fakeHandler(t *testing.T) (h *headlessErrorHandler, capturedScript *string, logBuf *bytes.Buffer) {
 	t.Helper()
-	frozenTime = time.Date(2026, 4, 29, 10, 30, 0, 0, time.UTC)
 	capturedScript = new(string)
 	logBuf = &bytes.Buffer{}
 	h = &headlessErrorHandler{
@@ -66,13 +66,13 @@ func fakeHandler(t *testing.T) (h *headlessErrorHandler, capturedScript *string,
 			logBuf.WriteString(line)
 			logBuf.WriteByte('\n')
 		},
-		now: func() time.Time { return frozenTime },
+		now: func() time.Time { return time.Date(2026, 4, 29, 10, 30, 0, 0, time.UTC) },
 	}
 	return
 }
 
 func TestHeadlessErrorHandler_appendsLogLine(t *testing.T) {
-	h, _, logBuf, _ := fakeHandler(t)
+	h, _, logBuf := fakeHandler(t)
 
 	if err := h.Handle("Apono", "session not found", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
@@ -91,7 +91,7 @@ func TestHeadlessErrorHandler_appendsLogLine(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_buildsDisplayDialogScript(t *testing.T) {
-	h, capturedScript, _, _ := fakeHandler(t)
+	h, capturedScript, _ := fakeHandler(t)
 
 	if err := h.Handle("Apono", "session not found", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
@@ -113,7 +113,7 @@ func TestHeadlessErrorHandler_buildsDisplayDialogScript(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_includesStderrTailInDialog(t *testing.T) {
-	h, capturedScript, _, _ := fakeHandler(t)
+	h, capturedScript, _ := fakeHandler(t)
 
 	if err := h.Handle("Apono", "command failed", "boom on stderr"); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
@@ -129,7 +129,7 @@ func TestHeadlessErrorHandler_includesStderrTailInDialog(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_truncatesLongStderrTail(t *testing.T) {
-	h, capturedScript, _, _ := fakeHandler(t)
+	h, capturedScript, _ := fakeHandler(t)
 
 	longStderr := strings.Repeat("x", 1000)
 	if err := h.Handle("Apono", "msg", longStderr); err != nil {
@@ -146,7 +146,7 @@ func TestHeadlessErrorHandler_truncatesLongStderrTail(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_logEscapesNewlinesInStderr(t *testing.T) {
-	h, _, logBuf, _ := fakeHandler(t)
+	h, _, logBuf := fakeHandler(t)
 
 	if err := h.Handle("Apono", "msg", "line1\nline2\nline3"); err != nil {
 		t.Fatalf("Handle returned error: %v", err)
@@ -162,7 +162,7 @@ func TestHeadlessErrorHandler_logEscapesNewlinesInStderr(t *testing.T) {
 }
 
 func TestHeadlessErrorHandler_emptyTitleDefaultsToApono(t *testing.T) {
-	h, capturedScript, logBuf, _ := fakeHandler(t)
+	h, capturedScript, logBuf := fakeHandler(t)
 
 	if err := h.Handle("", "msg", ""); err != nil {
 		t.Fatalf("Handle returned error: %v", err)

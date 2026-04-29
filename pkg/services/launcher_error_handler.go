@@ -106,14 +106,11 @@ func appendToDefaultLogFile(line string) {
 		return
 	}
 	dir := filepath.Join(home, "Library", "Logs", "apono")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err = os.MkdirAll(dir, 0o700); err != nil {
 		return
 	}
-	f, err := os.OpenFile(
-		filepath.Join(dir, headlessLogFileName),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0o600,
-	)
+	logPath := filepath.Clean(filepath.Join(dir, headlessLogFileName))
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}
