@@ -52,9 +52,9 @@ func testClientStarter(tty bool, clients []clientapi.LauncherClientModel, consum
 			}
 			return 0, "", nil
 		},
-		BuildTerminalLaunchCommand: func(command string) string {
+		BuildTerminalLaunchCommand: func(command string) (string, error) {
 			wrapCalls = append(wrapCalls, command)
-			return "WRAPPED(" + command + ")"
+			return "WRAPPED(" + command + ")", nil
 		},
 		IsRunningInTerminal: func() bool { return tty },
 	}
