@@ -2,22 +2,27 @@ package actions
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
-
-	"github.com/spf13/cobra"
 )
 
 const (
-	outputFlagName = "output"
-	runFlagName    = "run"
-	clientFlagName = "client"
+	outputFlagName  = "output"
+	runFlagName     = "run"
+	clientFlagName  = "client"
+	profileFlagName = "profile"
+
+	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
 )
 
 type accessUseCommandFlags struct {
@@ -43,6 +48,14 @@ func AccessDetails() *cobra.Command {
 				}
 				if runtime.GOOS != "darwin" {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
+				}
+			}
+			if accountID := os.Getenv(accountIDEnvVar); accountID != "" {
+				if cmd.Flags().Changed(profileFlagName) {
+					return fmt.Errorf("%s and --profile are mutually exclusive", accountIDEnvVar)
+				}
+				if err := overrideProfileClientByAccountID(cmd, accountID); err != nil {
+					return err
 				}
 			}
 
@@ -108,6 +121,22 @@ func AccessDetails() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
 	return cmd
+}
+
+func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) error {
+	profileName, err := config.GetProfileByAccountID(accountID)
+	if err != nil {
+		return fmt.Errorf("not logged in to account %s. Run `apono login` to add it", accountID)
+	}
+
+	overrideClient, err := aponoapi.CreateClient(cmd.Context(), string(profileName))
+	if err != nil {
+		return fmt.Errorf("failed to authenticate to account %s: %w", accountID, err)
+	}
+
+	cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), overrideClient))
+	cmd.SetContext(config.CreateProfileContext(cmd.Context(), string(profileName)))
+	return nil
 }
 
 func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {

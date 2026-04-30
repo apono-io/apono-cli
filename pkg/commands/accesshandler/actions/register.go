@@ -85,12 +85,12 @@ if [[ -z "$session" || -z "$account" || -z "$client" ]]; then
   echo "missing required params in: $uri" >&2
   exit 64
 fi
-# %NN URL-decode (Apono IDs are UUIDs so this rarely fires, but cheap insurance).
-session=$(printf '%b' "${session//%/\\x}")
-account=$(printf '%b' "${account//%/\\x}")
-client=$(printf '%b' "${client//%/\\x}")
+if [[ "$session$account$client" == *%* ]]; then
+  echo "URL-encoded characters not supported in launch params" >&2
+  exit 64
+fi
 export _APONO_ACCOUNT_ID_="$account"
-exec "__APONO_BINARY__" access use "$session" --client "$client"
+exec "__APONO_BINARY__" access use "$session" --client "$client" >/dev/null
 `
 
 // Register currently builds the bundle on user invocation. Long-term this

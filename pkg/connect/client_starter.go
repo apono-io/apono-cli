@@ -41,7 +41,7 @@ func NewClientStarter() *ClientStarter {
 func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID string) error {
 	result, err := s.FetchClients(cobraCmd.Context(), apiClient, sessionID)
 	if err != nil {
-		return surfaceError(fmt.Errorf("could not fetch session details: %w", err))
+		return fmt.Errorf("could not fetch session details: %w", err)
 	}
 
 	// Portal and Slack show their own "credentials already in use" prompt before
@@ -53,7 +53,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 
 	client, ok := findClient(result.Clients, clientID)
 	if !ok {
-		return surfaceError(fmt.Errorf("client %q is not supported for this session.\navailable: %s", clientID, availableIDs(result.Clients)))
+		return fmt.Errorf("client %q is not supported for this session.\navailable: %s", clientID, availableIDs(result.Clients))
 	}
 
 	combinedCommand := combineSetupAndInvocationCommands(utils.FromNullableString(client.AuthCommand), client.InvocationCommand)
@@ -70,17 +70,17 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		return s.executeCommand(cobraCmd, s.BuildTerminalLaunchCommand(combinedCommand))
 
 	default:
-		return surfaceError(fmt.Errorf("unknown client kind %q for %q", client.LauncherType, clientID))
+		return fmt.Errorf("unknown client kind %q for %q", client.LauncherType, clientID)
 	}
 }
 
 func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, combined string) error {
 	exitCode, stderr, err := s.RunShellCommand(cobraCmd, combined)
 	if err != nil {
-		return surfaceError(fmt.Errorf("failed to start client: %w\n%s", err, stderr))
+		return fmt.Errorf("failed to start client: %w\n%s", err, stderr)
 	}
 	if exitCode != 0 {
-		return surfaceError(fmt.Errorf("client exited with code %d\n%s", exitCode, stderr))
+		return fmt.Errorf("client exited with code %d\n%s", exitCode, stderr)
 	}
 	return nil
 }
