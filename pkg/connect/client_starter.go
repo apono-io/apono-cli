@@ -27,7 +27,7 @@ const (
 type ClientStarter struct {
 	FetchClients               func(context.Context, *aponoapi.AponoClient, string) (*ClientFetchResult, error)
 	RunShellCommand            func(*cobra.Command, string) (int, string, error)
-	BuildTerminalLaunchCommand func(string) string
+	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 }
 
@@ -70,7 +70,11 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 		// Headless context (URI handler chain): no stdin terminal, so wrap the
 		// command in Terminal.app so the user sees a real terminal window.
-		return s.executeCommand(cobraCmd, s.BuildTerminalLaunchCommand(combinedCommand))
+		wrapped, err := s.BuildTerminalLaunchCommand(combinedCommand)
+		if err != nil {
+			return fmt.Errorf("build terminal launch command: %w", err)
+		}
+		return s.executeCommand(cobraCmd, wrapped)
 
 	default:
 		return fmt.Errorf("unknown client kind %q for %q", client.LauncherType, clientID)
