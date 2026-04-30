@@ -36,21 +36,22 @@ rm -- "$0"
 exec /bin/zsh -l
 `
 
+func writeLaunchScriptTo(w io.Writer, command string) error {
+	_, err := fmt.Fprintf(w, launchScriptTemplate, command)
+	return err
+}
+
 func writeLaunchScript(command string) (string, error) {
 	f, err := os.CreateTemp("", "apono-launch-*.sh")
 	if err != nil {
 		return "", err
 	}
-	if _, err := fmt.Fprintf(f, launchScriptTemplate, command); err != nil {
+	if err := writeLaunchScriptTo(f, command); err != nil {
 		_ = f.Close()
 		_ = os.Remove(f.Name())
 		return "", err
 	}
 	if err := f.Close(); err != nil {
-		_ = os.Remove(f.Name())
-		return "", err
-	}
-	if err := os.Chmod(f.Name(), 0o755); err != nil {
 		_ = os.Remove(f.Name())
 		return "", err
 	}
@@ -72,14 +73,14 @@ func hasITerm() bool {
 
 func terminalAppScript(scriptPath string) string {
 	return fmt.Sprintf(
-		`osascript -e 'tell application "Terminal" to do script "%s"' -e 'tell application "Terminal" to activate'`,
+		`osascript -e 'tell application "Terminal" to do script "/bin/zsh %s"' -e 'tell application "Terminal" to activate'`,
 		scriptPath,
 	)
 }
 
 func iTermScript(scriptPath string) string {
 	return fmt.Sprintf(
-		`osascript -e 'tell application "iTerm" to create window with default profile command "%s"' -e 'tell application "iTerm" to activate'`,
+		`osascript -e 'tell application "iTerm" to create window with default profile command "/bin/zsh %s"' -e 'tell application "iTerm" to activate'`,
 		scriptPath,
 	)
 }
