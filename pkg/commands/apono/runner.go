@@ -15,6 +15,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/commands/cliconfig"
 	"github.com/apono-io/apono-cli/pkg/commands/integrations"
 	"github.com/apono-io/apono-cli/pkg/commands/mcp"
+	"github.com/apono-io/apono-cli/pkg/commands/protocol"
 	"github.com/apono-io/apono-cli/pkg/commands/requests"
 	"github.com/apono-io/apono-cli/pkg/commands/vault"
 	"github.com/apono-io/apono-cli/pkg/groups"
@@ -36,6 +37,7 @@ func NewRunner(opts *RunnerOptions) (*Runner, error) {
 			&access.Configurator{},
 			&vault.Configurator{},
 			&mcp.Configurator{},
+			&protocol.Configurator{},
 			&cliconfig.Configurator{},
 			&accesshandler.Configurator{},
 		},
