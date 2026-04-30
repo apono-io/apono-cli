@@ -16,7 +16,7 @@ func Unregister() *cobra.Command {
 		Short: "Remove the apono:// URL handler",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runtime.GOOS != darwinOS {
-				return fmt.Errorf("protocol handler is only supported on macOS")
+				return fmt.Errorf("access-handler is only supported on macOS")
 			}
 
 			bundleDir, err := bundlePath()

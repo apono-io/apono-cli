@@ -8,10 +8,11 @@ import (
 
 const darwinOS = "darwin"
 
-func Protocol() *cobra.Command {
+func AccessHandler() *cobra.Command {
 	return &cobra.Command{
-		Use:     "protocol",
+		Use:     "access-handler",
 		Short:   "Manage the apono:// URL handler (macOS)",
+		Hidden:  true,
 		GroupID: groups.OtherCommandsGroup.ID,
 	}
 }

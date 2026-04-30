@@ -93,13 +93,16 @@ export _APONO_ACCOUNT_ID_="$account"
 exec "__APONO_BINARY__" access use "$session" --client "$client"
 `
 
+// Register currently builds the bundle on user invocation. Long-term this
+// becomes a package-install hook (Homebrew post-install, deb/rpm postinst,
+// Scoop) - manual for now.
 func Register() *cobra.Command {
 	return &cobra.Command{
 		Use:   "register",
 		Short: "Register the apono:// URL handler with macOS",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runtime.GOOS != darwinOS {
-				return fmt.Errorf("protocol handler is only supported on macOS")
+				return fmt.Errorf("access-handler is only supported on macOS")
 			}
 
 			aponoBinary, err := resolveAponoBinary()
