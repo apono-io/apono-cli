@@ -157,7 +157,7 @@ func TestStart_unknownClient_errorsWithAvailableList(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls on bad client id, got %d", len(*runs))
 	}
-	if !strings.Contains(err.Error(), "available:") {
+	if !strings.Contains(err.Error(), "Supported clients") {
 		t.Errorf("expected error to list available clients, got %q", err.Error())
 	}
 	for _, want := range []string{"cli", "dbeaver", "tableplus"} {
