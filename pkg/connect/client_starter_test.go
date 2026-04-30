@@ -77,7 +77,7 @@ func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, runs, wraps := testClientStarter(tc.tty, clients, consumedByAponoCli, nil)
+			s, runs, wraps := testClientStarter(tc.tty, clients, aponoapi.ConsumedByAponoCli, nil)
 
 			err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
 			if err != nil {
@@ -104,7 +104,7 @@ func TestStart_TUI_TTY_runsInline(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("k9s", ClientKindTUI, "setup", "k9s"),
 	}
-	s, runs, wraps := testClientStarter(true, clients, consumedByAponoCli, nil)
+	s, runs, wraps := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
 	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
 		t.Fatalf("Start returned error: %v", err)
@@ -125,7 +125,7 @@ func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("k9s", ClientKindTUI, "setup", "k9s"),
 	}
-	s, runs, wraps := testClientStarter(false, clients, consumedByAponoCli, nil)
+	s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
 
 	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
 		t.Fatalf("Start returned error: %v", err)
@@ -148,7 +148,7 @@ func TestStart_unknownClient_errorsWithAvailableList(t *testing.T) {
 		newClientModel("tableplus", ClientKindGUI, "", ""),
 		newClientModel("cli", ClientKindTUI, "", ""),
 	}
-	s, runs, _ := testClientStarter(true, clients, consumedByAponoCli, nil)
+	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
 	err := s.Start(newCobraCmd(), nil, "sess-1", "nonexistent")
 	if err == nil {
@@ -171,7 +171,7 @@ func TestStart_shellNonZeroExit_returnsErrorWithStderr(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("dbeaver", ClientKindGUI, "true", "false"),
 	}
-	s, runs, _ := testClientStarter(true, clients, consumedByAponoCli, func() (int, string, error) {
+	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
 		return 1, "boom on stderr", nil
 	})
 
@@ -270,26 +270,3 @@ func TestAvailableIDs_sorted(t *testing.T) {
 	}
 }
 
-func TestBuildTerminalLaunchCommand_escapesQuotesAndBackslashes(t *testing.T) {
-	got := buildTerminalLaunchCommand(`echo "hi" \n`)
-	if !strings.Contains(got, `\"hi\"`) {
-		t.Errorf("expected double quotes to be escaped, got %q", got)
-	}
-	if !strings.Contains(got, `\\n`) {
-		t.Errorf("expected backslashes to be escaped, got %q", got)
-	}
-	if !strings.Contains(got, `osascript`) || !strings.Contains(got, `Terminal`) {
-		t.Errorf("expected osascript Terminal call, got %q", got)
-	}
-}
-
-func TestBuildTerminalLaunchCommand_escapesSingleQuotes(t *testing.T) {
-	// Outer wrapping is `sh -c '...'`, so a raw ' inside the command would close
-	// the shell single-quoted string early. Each ' from the input must turn into
-	// the shell close-escape-reopen sequence '\''.
-	got := buildTerminalLaunchCommand(`echo 'hi'`)
-
-	if !strings.Contains(got, `'\''hi'\''`) {
-		t.Errorf("expected single quotes to be shell-escaped, got %q", got)
-	}
-}

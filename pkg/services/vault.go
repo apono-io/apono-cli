@@ -144,6 +144,7 @@ func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 
 func fetchAndCacheCredentials(ctx context.Context, client *aponoapi.AponoClient, cacheDir, integrationID string, session *clientapi.AccessSessionClientModel) (*VaultCredentials, error) {
 	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, session.Id).
+		ConsumedBy(aponoapi.ConsumedByAponoCli).
 		FormatType(JSONOutputFormat).
 		Execute()
 	if err != nil {
