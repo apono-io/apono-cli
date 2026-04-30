@@ -27,8 +27,8 @@ func main() {
 
 	err = execute(runner)
 	if err != nil {
-		fmt.Println("Error:", err.Error())
-		fmt.Println("Use '--help' to see usage.")
+		fmt.Fprintln(os.Stderr, "Error:", err.Error())
+		fmt.Fprintln(os.Stderr, "Use '--help' to see usage.")
 		os.Exit(1)
 	}
 }

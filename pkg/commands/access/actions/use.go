@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	outputFlagName = "output"
-	runFlagName    = "run"
-	clientFlagName = "client"
+	outputFlagName  = "output"
+	runFlagName     = "run"
+	clientFlagName  = "client"
+	profileFlagName = "profile"
 
 	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
 )
@@ -49,10 +50,12 @@ func AccessDetails() *cobra.Command {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
 				}
 			}
-
 			if accountID := os.Getenv(accountIDEnvVar); accountID != "" {
-				if err := overrideClientByAccountID(cmd, accountID); err != nil {
-					return connect.SurfaceError(err)
+				if cmd.Flags().Changed(profileFlagName) {
+					return fmt.Errorf("%s and --profile are mutually exclusive", accountIDEnvVar)
+				}
+				if err := overrideProfileClientByAccountID(cmd, accountID); err != nil {
+					return err
 				}
 			}
 
@@ -120,9 +123,7 @@ func AccessDetails() *cobra.Command {
 	return cmd
 }
 
-// overrideClientByAccountID swaps the context's client to one built from the
-// profile matching accountID. The active profile on disk is untouched.
-func overrideClientByAccountID(cmd *cobra.Command, accountID string) error {
+func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) error {
 	profileName, err := config.GetProfileByAccountID(accountID)
 	if err != nil {
 		return fmt.Errorf("not logged in to account %s. Run `apono login` to add it", accountID)
