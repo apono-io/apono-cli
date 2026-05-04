@@ -20,7 +20,7 @@ import (
 
 const (
 	ClientKindGUI = "GUI"
-	ClientKindTUI = "TUI"
+	ClientKindTUI = "TERMINAL"
 	ClientKindCLI = "CLI"
 )
 
