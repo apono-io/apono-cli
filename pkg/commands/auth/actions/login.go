@@ -113,10 +113,12 @@ func Login() *cobra.Command {
 				if err := eg.Wait(); err != nil {
 					return fmt.Errorf("authorization error: %s", err)
 				}
-				return nil
 			} else {
-				return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx)
+				if err := storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx); err != nil {
+					return err
+				}
 			}
+			return setupAccessHandler(cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}
 
