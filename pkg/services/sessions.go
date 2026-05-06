@@ -86,7 +86,9 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return fmt.Errorf("session %s does not support cli access", session.Id)
 	}
 
-	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).Execute()
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).
+		ConsumedBy(aponoapi.ConsumedByAponoCli).
+		Execute()
 	if err != nil {
 		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
 	}
@@ -119,7 +121,9 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 }
 
 func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, CustomInstructionMessage, error) {
-	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).Execute()
+	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).
+		ConsumedBy(aponoapi.ConsumedByAponoCli).
+		Execute()
 	if err != nil {
 		return "", "", err
 	}

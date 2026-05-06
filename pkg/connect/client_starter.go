@@ -14,12 +14,14 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/terminal"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 const (
 	ClientKindGUI = "GUI"
-	ClientKindTUI = "TUI"
+	ClientKindTUI = "TERMINAL"
+	ClientKindCLI = "CLI"
 )
 
 type ClientStarter struct {
@@ -33,7 +35,7 @@ func NewClientStarter() *ClientStarter {
 	return &ClientStarter{
 		FetchClients:               fetchClients,
 		RunShellCommand:            runShellCommand,
-		BuildTerminalLaunchCommand: buildTerminalLaunchCommand,
+		BuildTerminalLaunchCommand: terminal.BuildLaunchCommand,
 		IsRunningInTerminal:        isRunningInTerminal,
 	}
 }
@@ -47,13 +49,13 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	// Portal and Slack show their own "credentials already in use" prompt before
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
-	if s.IsRunningInTerminal() && result.ConsumedBy != "" && result.ConsumedBy != consumedByAponoCli {
+	if s.IsRunningInTerminal() && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
 		return fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
 	}
 
 	client, ok := findClient(result.Clients, clientID)
 	if !ok {
-		return fmt.Errorf("client %q is not supported for this session.\navailable: %s", clientID, availableIDs(result.Clients))
+		return fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
 	}
 
 	combinedCommand := combineSetupAndInvocationCommands(utils.FromNullableString(client.AuthCommand), client.InvocationCommand)
@@ -62,11 +64,12 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	case ClientKindGUI:
 		return s.executeCommand(cobraCmd, combinedCommand)
 
-	case ClientKindTUI:
+	case ClientKindTUI, ClientKindCLI:
 		if s.IsRunningInTerminal() {
 			return s.executeCommand(cobraCmd, combinedCommand)
 		}
-		// Headless TUI needs a real terminal window; .app/AppleScript invocation has no stdin terminal.
+		// Headless context (URI handler chain): no stdin terminal, so wrap the
+		// command in Terminal.app so the user sees a real terminal window.
 		return s.executeCommand(cobraCmd, s.BuildTerminalLaunchCommand(combinedCommand))
 
 	default:
@@ -143,21 +146,6 @@ func runShellCommand(cobraCmd *cobra.Command, command string) (exitCode int, std
 	return 0, stderr.String(), nil
 }
 
-// TODO(DVL-8799): replace Terminal.app with iTerm2 detection + fallback.
-func buildTerminalLaunchCommand(command string) string {
-	// AppleScript double-quoted string: \ and " need escaping.
-	escaped := strings.ReplaceAll(command, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-	// Outer wrapping for `sh -c` is single-quoted, so each ' must be closed,
-	// emitted literally, and reopened: ' becomes '\''.
-	escaped = strings.ReplaceAll(escaped, `'`, `'\''`)
-	return fmt.Sprintf(`osascript -e 'tell application "Terminal" to do script "%s"' -e 'tell application "Terminal" to activate'`, escaped)
-}
-
 func isRunningInTerminal() bool {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	return (fi.Mode() & os.ModeCharDevice) != 0
+	return terminal.IsRunning(os.Stdin)
 }

@@ -8,11 +8,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
-// consumedByAponoCli is the BE wire value identifying this CLI as the
-// session's credential consumer. Anything else echoed back in the response
-// means another surface (e.g. the portal's Access Details dialog) used the
-// creds first and the user must reset before we can launch.
-const consumedByAponoCli = "consumedByAponoCli"
+const CliClientID = "cli"
 
 type ClientFetchResult struct {
 	Clients    []clientapi.LauncherClientModel
@@ -22,13 +18,21 @@ type ClientFetchResult struct {
 func fetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
 	details, _, err := apiClient.ClientAPI.AccessSessionsAPI.
 		GetAccessSessionAccessDetails(ctx, sessionID).
-		ConsumedBy(consumedByAponoCli).
+		ConsumedBy(aponoapi.ConsumedByAponoCli).
 		Execute()
 	if err != nil {
 		return nil, err
 	}
+	clients := details.Launchers
+	if cli := utils.FromNullableString(details.Cli); cli != "" {
+		clients = append(clients, clientapi.LauncherClientModel{
+			Id:                CliClientID,
+			LauncherType:      ClientKindCLI,
+			InvocationCommand: cli,
+		})
+	}
 	return &ClientFetchResult{
-		Clients:    details.Launchers,
+		Clients:    clients,
 		ConsumedBy: utils.FromNullableString(details.ConsumedBy),
 	}, nil
 }

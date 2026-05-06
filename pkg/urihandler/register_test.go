@@ -1,4 +1,4 @@
-package actions
+package urihandler
 
 import (
 	"bytes"
@@ -53,10 +53,7 @@ func TestRegister_rejectsNonDarwin(t *testing.T) {
 		t.Skip("non-darwin guard test")
 	}
 
-	cmd := Register()
-	cmd.SetOut(&bytes.Buffer{})
-	cmd.SetErr(&bytes.Buffer{})
-	if err := cmd.RunE(cmd, nil); err == nil || !strings.Contains(err.Error(), "macOS") {
+	if err := Register(&bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "macOS") {
 		t.Errorf("expected non-darwin to error mentioning macOS, got %v", err)
 	}
 }
@@ -66,10 +63,7 @@ func TestUnregister_rejectsNonDarwin(t *testing.T) {
 		t.Skip("non-darwin guard test")
 	}
 
-	cmd := Unregister()
-	cmd.SetOut(&bytes.Buffer{})
-	cmd.SetErr(&bytes.Buffer{})
-	if err := cmd.RunE(cmd, nil); err == nil || !strings.Contains(err.Error(), "macOS") {
+	if err := Unregister(&bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "macOS") {
 		t.Errorf("expected non-darwin to error mentioning macOS, got %v", err)
 	}
 }

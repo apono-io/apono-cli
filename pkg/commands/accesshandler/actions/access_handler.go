@@ -6,8 +6,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/groups"
 )
 
-const darwinOS = "darwin"
-
 func AccessHandler() *cobra.Command {
 	return &cobra.Command{
 		Use:     "access-handler",
