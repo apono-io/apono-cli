@@ -12,10 +12,10 @@ import (
 	"strings"
 )
 
-//go:embed handler.applescript
+//go:embed scripts/handler.applescript
 var appleScriptTemplate string
 
-//go:embed handler.sh
+//go:embed scripts/handler.sh
 var handlerShellTemplate string
 
 const darwinOS = "darwin"
