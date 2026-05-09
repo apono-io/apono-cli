@@ -1,10 +1,12 @@
 package terminal
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -16,12 +18,11 @@ const (
 	terminalAppLaunchTemplate = `osascript -e 'tell application "%s" to do script "%s %s"' -e 'tell application "%s" to activate'`
 	iTermLaunchTemplate       = `osascript -e 'tell application "%s" to create window with default profile command "%s %s"' -e 'tell application "%s" to activate'`
 
-	launchScriptTemplate = `#!/bin/zsh
-rm -- "$0"
-%s
-exec /bin/zsh -l
-`
+	launchCommandPlaceholder = "__APONO_COMMAND__"
 )
+
+//go:embed scripts/launch.sh
+var launchScriptTemplate string
 
 func IsRunning(in io.Reader) bool {
 	f, ok := in.(*os.File)
@@ -47,7 +48,8 @@ func BuildLaunchCommand(command string) (string, error) {
 }
 
 func writeLaunchScriptTo(w io.Writer, command string) error {
-	_, err := fmt.Fprintf(w, launchScriptTemplate, command)
+	body := strings.ReplaceAll(launchScriptTemplate, launchCommandPlaceholder, command)
+	_, err := io.WriteString(w, body)
 	return err
 }
 
