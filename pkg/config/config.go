@@ -21,8 +21,9 @@ var (
 )
 
 type Config struct {
-	Auth          AuthConfig          `json:"auth"`
-	Notifications NotificationsConfig `json:"notifications"`
+	Auth                   AuthConfig          `json:"auth"`
+	Notifications          NotificationsConfig `json:"notifications"`
+	AccessHandlerAnnounced bool                `json:"access_handler_announced,omitempty"`
 }
 
 type NotificationsConfig struct {
@@ -101,6 +102,23 @@ func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
 	}
 
 	return &sessionCfg, nil
+}
+
+func IsAccessHandlerAnnounced() bool {
+	cfg, err := Get()
+	if err != nil {
+		return false
+	}
+	return cfg.AccessHandlerAnnounced
+}
+
+func MarkAccessHandlerAnnounced() error {
+	cfg, err := Get()
+	if err != nil {
+		return err
+	}
+	cfg.AccessHandlerAnnounced = true
+	return Save(cfg)
 }
 
 func IsFeatureAnnouncementNotificationsEnabled() bool {
