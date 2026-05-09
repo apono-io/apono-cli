@@ -10,8 +10,10 @@ import (
 	"github.com/apono-io/apono-cli/pkg/urihandler"
 )
 
+const darwinOS = "darwin"
+
 func setupAccessHandler(in io.Reader, out io.Writer) error {
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS != darwinOS {
 		return nil
 	}
 	if !terminal.IsRunning(in) {
@@ -21,7 +23,7 @@ func setupAccessHandler(in io.Reader, out io.Writer) error {
 		return nil
 	}
 
-	if _, err := fmt.Fprintln(out, "\nInstalling the apono:// URL handler so portal and Slack launches work."); err != nil {
+	if _, err := fmt.Fprintln(out, "\nInstalling the apono:// URL handler. Required to open sessions launched from the Apono portal and Slack."); err != nil {
 		return err
 	}
 
