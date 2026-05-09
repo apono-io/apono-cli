@@ -5,4 +5,4 @@ package aponoapi
 // consumed by the CLI; if the BE echoes back a different value, another
 // surface (Portal AD dialog, Slack, etc.) used the creds first and the user
 // must reset before we can launch.
-const ConsumedByAponoCli = "consumedByAponoCli"
+const ConsumedByAponoCli = "apono_cli"
