@@ -7,6 +7,22 @@ import (
 	"path/filepath"
 )
 
+const (
+	terminalAppName = "Terminal"
+	iTermAppName    = "iTerm"
+
+	binZsh = "/bin/zsh"
+
+	terminalAppLaunchTemplate = `osascript -e 'tell application "%s" to do script "%s %s"' -e 'tell application "%s" to activate'`
+	iTermLaunchTemplate       = `osascript -e 'tell application "%s" to create window with default profile command "%s %s"' -e 'tell application "%s" to activate'`
+
+	launchScriptTemplate = `#!/bin/zsh
+rm -- "$0"
+%s
+exec /bin/zsh -l
+`
+)
+
 func IsRunning(in io.Reader) bool {
 	f, ok := in.(*os.File)
 	if !ok {
@@ -25,16 +41,10 @@ func BuildLaunchCommand(command string) (string, error) {
 		return "", fmt.Errorf("write launch script: %w", err)
 	}
 	if hasITerm() {
-		return iTermScript(scriptPath), nil
+		return buildITermLaunchCommand(scriptPath), nil
 	}
-	return terminalAppScript(scriptPath), nil
+	return buildTerminalAppLaunchCommand(scriptPath), nil
 }
-
-const launchScriptTemplate = `#!/bin/zsh
-rm -- "$0"
-%s
-exec /bin/zsh -l
-`
 
 func writeLaunchScriptTo(w io.Writer, command string) error {
 	_, err := fmt.Fprintf(w, launchScriptTemplate, command)
@@ -71,16 +81,10 @@ func hasITerm() bool {
 	return false
 }
 
-func terminalAppScript(scriptPath string) string {
-	return fmt.Sprintf(
-		`osascript -e 'tell application "Terminal" to do script "/bin/zsh %s"' -e 'tell application "Terminal" to activate'`,
-		scriptPath,
-	)
+func buildTerminalAppLaunchCommand(scriptPath string) string {
+	return fmt.Sprintf(terminalAppLaunchTemplate, terminalAppName, binZsh, scriptPath, terminalAppName)
 }
 
-func iTermScript(scriptPath string) string {
-	return fmt.Sprintf(
-		`osascript -e 'tell application "iTerm" to create window with default profile command "/bin/zsh %s"' -e 'tell application "iTerm" to activate'`,
-		scriptPath,
-	)
+func buildITermLaunchCommand(scriptPath string) string {
+	return fmt.Sprintf(iTermLaunchTemplate, iTermAppName, binZsh, scriptPath, iTermAppName)
 }
