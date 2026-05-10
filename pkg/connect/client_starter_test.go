@@ -280,7 +280,7 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
 		t.Fatalf("mkdir cache: %v", err)
 	}
-	rawPwd := `p@ss w&rd!`
+	rawPwd := passwordWithSpecials
 	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(rawPwd))), 0o600); err != nil {
 		t.Fatalf("write cache: %v", err)
 	}

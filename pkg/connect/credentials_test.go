@@ -7,8 +7,10 @@ import (
 	"testing"
 )
 
+const passwordWithSpecials = `p@ss w&rd!`
+
 func TestEncodePassword_url_escapesSpecialChars(t *testing.T) {
-	got := encodePassword(`p@ss w&rd!`, passwordEncodingURL)
+	got := encodePassword(passwordWithSpecials, passwordEncodingURL)
 	want := `p%40ss+w%26rd%21`
 	if got != want {
 		t.Errorf("encodePassword url = %q, want %q", got, want)
@@ -16,7 +18,7 @@ func TestEncodePassword_url_escapesSpecialChars(t *testing.T) {
 }
 
 func TestEncodePassword_raw_passthrough(t *testing.T) {
-	in := `p@ss w&rd!`
+	in := passwordWithSpecials
 	if got := encodePassword(in, ""); got != in {
 		t.Errorf("encodePassword empty-encoding = %q, want unchanged %q", got, in)
 	}
@@ -40,7 +42,7 @@ func TestReadCachedPassword_returnsDecodedContent(t *testing.T) {
 		t.Fatalf("mkdir cache: %v", err)
 	}
 	sessionID := "session-123"
-	want := `p@ss w&rd!`
+	want := passwordWithSpecials
 	if err := os.WriteFile(filepath.Join(cacheDir, sessionID), []byte(base64.StdEncoding.EncodeToString([]byte(want))), 0o600); err != nil {
 		t.Fatalf("write cache: %v", err)
 	}
