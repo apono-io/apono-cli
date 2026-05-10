@@ -27,7 +27,7 @@ func readCachedPassword(sessionID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("decode cache content: %w", err)
 	}
-	return string(decoded), nil
+	return strings.TrimRight(string(decoded), "\n\r"), nil
 }
 
 func encodePassword(raw, encoding string) string {
