@@ -16,6 +16,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 const (
@@ -35,15 +36,6 @@ type VaultCredentials struct {
 
 type VaultClient struct {
 	api *vclient.Client
-}
-
-func defaultCacheDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return filepath.Join(".apono", "cache")
-	}
-
-	return filepath.Join(home, ".apono", "cache")
 }
 
 func saveVaultCredentials(cacheDir string, integrationID string, creds *VaultCredentials) error {
@@ -117,7 +109,7 @@ func FindVaultSession(ctx context.Context, client *aponoapi.AponoClient, integra
 }
 
 func ResolveVaultCredentials(ctx context.Context, client *aponoapi.AponoClient, integrationID string, session *clientapi.AccessSessionClientModel) (*VaultCredentials, error) {
-	cacheDir := defaultCacheDir()
+	cacheDir := utils.DefaultCacheDir()
 	resetMsg := fmt.Sprintf("reset them by running: apono access reset-credentials %s", session.Id)
 
 	if isSessionCredentialsNew(session) {

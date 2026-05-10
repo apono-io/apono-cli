@@ -60,6 +60,14 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 
 	combinedCommand := combineSetupAndInvocationCommands(utils.FromNullableString(client.AuthCommand), client.InvocationCommand)
 
+	if strings.Contains(combinedCommand, passwordPlaceholder) {
+		pwd, err := readCachedPassword(sessionID)
+		if err != nil {
+			return fmt.Errorf("resolve credentials: %w", err)
+		}
+		combinedCommand = strings.ReplaceAll(combinedCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
+	}
+
 	switch client.LauncherType {
 	case ClientKindGUI:
 		return s.executeCommand(cobraCmd, combinedCommand)
