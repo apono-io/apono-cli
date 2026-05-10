@@ -20,9 +20,10 @@ var _ MappedNullable = &AccessSessionsGroupClientModel{}
 
 // AccessSessionsGroupClientModel struct for AccessSessionsGroupClientModel
 type AccessSessionsGroupClientModel struct {
-	Integration NullableAccessSessionsGroupClientModelIntegration `json:"integration,omitempty"`
-	Total       int32                                             `json:"total"`
-	Sessions    []AccessSessionClientModel                        `json:"sessions"`
+	Integration         NullableAccessSessionsGroupClientModelIntegration `json:"integration,omitempty"`
+	Total               int32                                             `json:"total"`
+	Sessions            []AccessSessionClientModel                        `json:"sessions"`
+	CustomAccessDetails NullableString                                    `json:"custom_access_details,omitempty"`
 }
 
 type _AccessSessionsGroupClientModel AccessSessionsGroupClientModel
@@ -137,6 +138,49 @@ func (o *AccessSessionsGroupClientModel) SetSessions(v []AccessSessionClientMode
 	o.Sessions = v
 }
 
+// GetCustomAccessDetails returns the CustomAccessDetails field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionsGroupClientModel) GetCustomAccessDetails() string {
+	if o == nil || IsNil(o.CustomAccessDetails.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.CustomAccessDetails.Get()
+}
+
+// GetCustomAccessDetailsOk returns a tuple with the CustomAccessDetails field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessSessionsGroupClientModel) GetCustomAccessDetailsOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.CustomAccessDetails.Get(), o.CustomAccessDetails.IsSet()
+}
+
+// HasCustomAccessDetails returns a boolean if a field has been set.
+func (o *AccessSessionsGroupClientModel) HasCustomAccessDetails() bool {
+	if o != nil && o.CustomAccessDetails.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetCustomAccessDetails gets a reference to the given NullableString and assigns it to the CustomAccessDetails field.
+func (o *AccessSessionsGroupClientModel) SetCustomAccessDetails(v string) {
+	o.CustomAccessDetails.Set(&v)
+}
+
+// SetCustomAccessDetailsNil sets the value for CustomAccessDetails to be an explicit nil
+func (o *AccessSessionsGroupClientModel) SetCustomAccessDetailsNil() {
+	o.CustomAccessDetails.Set(nil)
+}
+
+// UnsetCustomAccessDetails ensures that no value is present for CustomAccessDetails, not even an explicit nil
+func (o *AccessSessionsGroupClientModel) UnsetCustomAccessDetails() {
+	o.CustomAccessDetails.Unset()
+}
+
 func (o AccessSessionsGroupClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -152,6 +196,9 @@ func (o AccessSessionsGroupClientModel) ToMap() (map[string]interface{}, error) 
 	}
 	toSerialize["total"] = o.Total
 	toSerialize["sessions"] = o.Sessions
+	if o.CustomAccessDetails.IsSet() {
+		toSerialize["custom_access_details"] = o.CustomAccessDetails.Get()
+	}
 	return toSerialize, nil
 }
 

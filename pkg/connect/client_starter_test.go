@@ -3,6 +3,9 @@ package connect
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -267,5 +270,79 @@ func TestAvailableIDs_sorted(t *testing.T) {
 	want := "cli, dbeaver, tableplus"
 	if got != want {
 		t.Errorf("availableIDs() = %q, want %q", got, want)
+	}
+}
+
+func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	rawPwd := passwordWithSpecials
+	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(rawPwd))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+
+	tableplus := clientapi.LauncherClientModel{
+		Id:                "tableplus",
+		LauncherType:      ClientKindGUI,
+		InvocationCommand: `open -a TablePlus "postgres://user:__APONO_PASSWORD__@host:5432/db"`,
+		PasswordEncoding:  "url",
+	}
+	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, nil)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus"); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if len(*runs) != 1 {
+		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+	}
+	if strings.Contains((*runs)[0].combined, "__APONO_PASSWORD__") {
+		t.Errorf("placeholder not substituted, got %q", (*runs)[0].combined)
+	}
+	wantEncoded := `p%40ss+w%26rd%21`
+	if !strings.Contains((*runs)[0].combined, wantEncoded) {
+		t.Errorf("expected url-encoded password %q in command, got %q", wantEncoded, (*runs)[0].combined)
+	}
+}
+
+func TestStart_noPlaceholder_skipsCacheRead(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "echo setup", `dbeaver -con "host=h|password=$(base64 -d -i ~/.apono/cache/sess-1)"`),
+	}
+	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if len(*runs) != 1 {
+		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+	}
+}
+
+func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	tableplus := clientapi.LauncherClientModel{
+		Id:                "tableplus",
+		LauncherType:      ClientKindGUI,
+		InvocationCommand: `open -a TablePlus "postgres://user:__APONO_PASSWORD__@host/db"`,
+		PasswordEncoding:  "url",
+	}
+	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, nil)
+
+	err := s.Start(newCobraCmd(), nil, "sess-missing", "tableplus")
+	if err == nil {
+		t.Fatal("expected error when cache file missing, got nil")
+	}
+	if len(*runs) != 0 {
+		t.Errorf("expected no runShell calls when cache missing, got %d", len(*runs))
+	}
+	if !strings.Contains(err.Error(), "resolve credentials") {
+		t.Errorf("expected error to mention credential resolution, got %q", err.Error())
 	}
 }

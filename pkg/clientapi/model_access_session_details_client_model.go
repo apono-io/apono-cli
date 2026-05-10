@@ -20,13 +20,14 @@ var _ MappedNullable = &AccessSessionDetailsClientModel{}
 
 // AccessSessionDetailsClientModel struct for AccessSessionDetailsClientModel
 type AccessSessionDetailsClientModel struct {
-	Credentials  NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
-	Instructions InstructionClientModel                      `json:"instructions"`
-	Json         map[string]interface{}                      `json:"json,omitempty"`
-	Cli          NullableString                              `json:"cli,omitempty"`
-	Link         NullableAccessSessionDetailsClientModelLink `json:"link,omitempty"`
-	ConsumedBy   NullableString                              `json:"consumed_by,omitempty"`
-	Launchers    []LauncherClientModel                       `json:"launchers"`
+	Credentials        NullableAccessSessionClientModelCredentials `json:"credentials,omitempty"`
+	Instructions       InstructionClientModel                      `json:"instructions"`
+	Json               map[string]interface{}                      `json:"json,omitempty"`
+	Cli                NullableString                              `json:"cli,omitempty"`
+	Link               NullableAccessSessionDetailsClientModelLink `json:"link,omitempty"`
+	CredentialsRotated bool                                        `json:"credentials_rotated"`
+	ConsumedBy         NullableString                              `json:"consumed_by,omitempty"`
+	Launchers          []LauncherClientModel                       `json:"launchers"`
 }
 
 type _AccessSessionDetailsClientModel AccessSessionDetailsClientModel
@@ -35,9 +36,10 @@ type _AccessSessionDetailsClientModel AccessSessionDetailsClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessSessionDetailsClientModel(instructions InstructionClientModel, launchers []LauncherClientModel) *AccessSessionDetailsClientModel {
+func NewAccessSessionDetailsClientModel(instructions InstructionClientModel, credentialsRotated bool, launchers []LauncherClientModel) *AccessSessionDetailsClientModel {
 	this := AccessSessionDetailsClientModel{}
 	this.Instructions = instructions
+	this.CredentialsRotated = credentialsRotated
 	this.Launchers = launchers
 	return &this
 }
@@ -236,6 +238,30 @@ func (o *AccessSessionDetailsClientModel) UnsetLink() {
 	o.Link.Unset()
 }
 
+// GetCredentialsRotated returns the CredentialsRotated field value
+func (o *AccessSessionDetailsClientModel) GetCredentialsRotated() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.CredentialsRotated
+}
+
+// GetCredentialsRotatedOk returns a tuple with the CredentialsRotated field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionDetailsClientModel) GetCredentialsRotatedOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.CredentialsRotated, true
+}
+
+// SetCredentialsRotated sets field value
+func (o *AccessSessionDetailsClientModel) SetCredentialsRotated(v bool) {
+	o.CredentialsRotated = v
+}
+
 // GetConsumedBy returns the ConsumedBy field value if set, zero value otherwise (both if not set or set to explicit null).
 func (o *AccessSessionDetailsClientModel) GetConsumedBy() string {
 	if o == nil || IsNil(o.ConsumedBy.Get()) {
@@ -326,6 +352,7 @@ func (o AccessSessionDetailsClientModel) ToMap() (map[string]interface{}, error)
 	if o.Link.IsSet() {
 		toSerialize["link"] = o.Link.Get()
 	}
+	toSerialize["credentials_rotated"] = o.CredentialsRotated
 	if o.ConsumedBy.IsSet() {
 		toSerialize["consumed_by"] = o.ConsumedBy.Get()
 	}
@@ -339,6 +366,7 @@ func (o *AccessSessionDetailsClientModel) UnmarshalJSON(bytes []byte) (err error
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"instructions",
+		"credentials_rotated",
 		"launchers",
 	}
 

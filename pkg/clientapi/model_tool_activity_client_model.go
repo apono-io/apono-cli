@@ -20,13 +20,10 @@ var _ MappedNullable = &ToolActivityClientModel{}
 
 // ToolActivityClientModel struct for ToolActivityClientModel
 type ToolActivityClientModel struct {
-	EventGroupId        string         `json:"event_group_id"`
-	ToolExecutionCount  int32          `json:"tool_execution_count"`
 	ToolName            string         `json:"tool_name"`
 	IntentAction        NullableString `json:"intent_action,omitempty"`
 	EnforcementDecision NullableString `json:"enforcement_decision,omitempty"`
 	McpServerName       NullableString `json:"mcp_server_name,omitempty"`
-	ResourceId          NullableString `json:"resource_id,omitempty"`
 }
 
 type _ToolActivityClientModel ToolActivityClientModel
@@ -35,10 +32,8 @@ type _ToolActivityClientModel ToolActivityClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewToolActivityClientModel(eventGroupId string, toolExecutionCount int32, toolName string) *ToolActivityClientModel {
+func NewToolActivityClientModel(toolName string) *ToolActivityClientModel {
 	this := ToolActivityClientModel{}
-	this.EventGroupId = eventGroupId
-	this.ToolExecutionCount = toolExecutionCount
 	this.ToolName = toolName
 	return &this
 }
@@ -49,54 +44,6 @@ func NewToolActivityClientModel(eventGroupId string, toolExecutionCount int32, t
 func NewToolActivityClientModelWithDefaults() *ToolActivityClientModel {
 	this := ToolActivityClientModel{}
 	return &this
-}
-
-// GetEventGroupId returns the EventGroupId field value
-func (o *ToolActivityClientModel) GetEventGroupId() string {
-	if o == nil {
-		var ret string
-		return ret
-	}
-
-	return o.EventGroupId
-}
-
-// GetEventGroupIdOk returns a tuple with the EventGroupId field value
-// and a boolean to check if the value has been set.
-func (o *ToolActivityClientModel) GetEventGroupIdOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.EventGroupId, true
-}
-
-// SetEventGroupId sets field value
-func (o *ToolActivityClientModel) SetEventGroupId(v string) {
-	o.EventGroupId = v
-}
-
-// GetToolExecutionCount returns the ToolExecutionCount field value
-func (o *ToolActivityClientModel) GetToolExecutionCount() int32 {
-	if o == nil {
-		var ret int32
-		return ret
-	}
-
-	return o.ToolExecutionCount
-}
-
-// GetToolExecutionCountOk returns a tuple with the ToolExecutionCount field value
-// and a boolean to check if the value has been set.
-func (o *ToolActivityClientModel) GetToolExecutionCountOk() (*int32, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.ToolExecutionCount, true
-}
-
-// SetToolExecutionCount sets field value
-func (o *ToolActivityClientModel) SetToolExecutionCount(v int32) {
-	o.ToolExecutionCount = v
 }
 
 // GetToolName returns the ToolName field value
@@ -252,49 +199,6 @@ func (o *ToolActivityClientModel) UnsetMcpServerName() {
 	o.McpServerName.Unset()
 }
 
-// GetResourceId returns the ResourceId field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *ToolActivityClientModel) GetResourceId() string {
-	if o == nil || IsNil(o.ResourceId.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.ResourceId.Get()
-}
-
-// GetResourceIdOk returns a tuple with the ResourceId field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *ToolActivityClientModel) GetResourceIdOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.ResourceId.Get(), o.ResourceId.IsSet()
-}
-
-// HasResourceId returns a boolean if a field has been set.
-func (o *ToolActivityClientModel) HasResourceId() bool {
-	if o != nil && o.ResourceId.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetResourceId gets a reference to the given NullableString and assigns it to the ResourceId field.
-func (o *ToolActivityClientModel) SetResourceId(v string) {
-	o.ResourceId.Set(&v)
-}
-
-// SetResourceIdNil sets the value for ResourceId to be an explicit nil
-func (o *ToolActivityClientModel) SetResourceIdNil() {
-	o.ResourceId.Set(nil)
-}
-
-// UnsetResourceId ensures that no value is present for ResourceId, not even an explicit nil
-func (o *ToolActivityClientModel) UnsetResourceId() {
-	o.ResourceId.Unset()
-}
-
 func (o ToolActivityClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -305,8 +209,6 @@ func (o ToolActivityClientModel) MarshalJSON() ([]byte, error) {
 
 func (o ToolActivityClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["event_group_id"] = o.EventGroupId
-	toSerialize["tool_execution_count"] = o.ToolExecutionCount
 	toSerialize["tool_name"] = o.ToolName
 	if o.IntentAction.IsSet() {
 		toSerialize["intent_action"] = o.IntentAction.Get()
@@ -317,9 +219,6 @@ func (o ToolActivityClientModel) ToMap() (map[string]interface{}, error) {
 	if o.McpServerName.IsSet() {
 		toSerialize["mcp_server_name"] = o.McpServerName.Get()
 	}
-	if o.ResourceId.IsSet() {
-		toSerialize["resource_id"] = o.ResourceId.Get()
-	}
 	return toSerialize, nil
 }
 
@@ -328,8 +227,6 @@ func (o *ToolActivityClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"event_group_id",
-		"tool_execution_count",
 		"tool_name",
 	}
 

@@ -193,6 +193,9 @@ func (a *AccessSessionsAPIService) GetAccessSessionAccessDetailsExecute(r ApiGet
 
 	if r.consumedBy != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "consumed_by", r.consumedBy, "")
+	} else {
+		var defaultValue string = "access_dialog"
+		r.consumedBy = &defaultValue
 	}
 	if r.formatType != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "format_type", r.formatType, "")
