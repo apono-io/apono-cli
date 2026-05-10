@@ -7,6 +7,24 @@ import (
 	"testing"
 )
 
+func TestIsRunning_devNull_returnsFalse(t *testing.T) {
+	f, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatalf("open /dev/null: %v", err)
+	}
+	t.Cleanup(func() { _ = f.Close() })
+
+	if IsRunning(f) {
+		t.Errorf("IsRunning(/dev/null) = true, want false (regression: char-device check used to misclassify /dev/null as TTY)")
+	}
+}
+
+func TestIsRunning_nonFile_returnsFalse(t *testing.T) {
+	if IsRunning(&bytes.Buffer{}) {
+		t.Error("IsRunning(*bytes.Buffer) = true, want false")
+	}
+}
+
 func TestWriteLaunchScriptTo_includesShebangSelfDeleteAndKeepAlive(t *testing.T) {
 	var buf bytes.Buffer
 	if err := writeLaunchScriptTo(&buf, `echo hi`); err != nil {

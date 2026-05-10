@@ -14,6 +14,7 @@ require (
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/int128/oauth2cli v1.14.0
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
+	github.com/mattn/go-isatty v0.0.22
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -43,7 +44,6 @@ require (
 	github.com/int128/listener v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

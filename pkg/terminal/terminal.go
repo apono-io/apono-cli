@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mattn/go-isatty"
 )
 
 const (
@@ -29,11 +31,7 @@ func IsRunning(in io.Reader) bool {
 	if !ok {
 		return false
 	}
-	fi, err := f.Stat()
-	if err != nil {
-		return false
-	}
-	return (fi.Mode() & os.ModeCharDevice) != 0
+	return isatty.IsTerminal(f.Fd())
 }
 
 func BuildLaunchCommand(command string) (string, error) {
