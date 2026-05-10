@@ -129,7 +129,7 @@ func (r ApiIsMfaEnrolledRequest) Execute() (*UserMfaEnrolledResponse, *http.Resp
 }
 
 /*
-IsMfaEnrolled Check if user already enrolled MFA (added authenticator app) in Frontegg
+IsMfaEnrolled Check if user already enrolled MFA (added authenticator app)
 
 	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
 	@return ApiIsMfaEnrolledRequest

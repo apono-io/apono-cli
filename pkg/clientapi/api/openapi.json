@@ -1238,6 +1238,7 @@
             "name": "consumed_by",
             "in": "query",
             "schema": {
+              "default": "access_dialog",
               "type": "string",
               "nullable": true
             }
@@ -2343,7 +2344,7 @@
         "tags": [
           "User Session"
         ],
-        "summary": "Check if user already enrolled MFA (added authenticator app) in Frontegg",
+        "summary": "Check if user already enrolled MFA (added authenticator app)",
         "operationId": "isMfaEnrolled",
         "responses": {
           "200": {
@@ -3144,7 +3145,10 @@
           "integration",
           "connection_methods",
           "status",
-          "has_more_access_units"
+          "has_more_access_units",
+          "has_launchers",
+          "launchers",
+          "credentials_rotated"
         ],
         "type": "object",
         "properties": {
@@ -3184,12 +3188,29 @@
           "has_link_access_details": {
             "type": "boolean",
             "nullable": true
+          },
+          "has_launchers": {
+            "type": "boolean"
+          },
+          "launchers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LauncherSummaryClientModel"
+            }
+          },
+          "consumed_by": {
+            "type": "string",
+            "nullable": true
+          },
+          "credentials_rotated": {
+            "type": "boolean"
           }
         }
       },
       "AccessSessionDetailsClientModel": {
         "required": [
           "instructions",
+          "credentials_rotated",
           "launchers"
         ],
         "type": "object",
@@ -3222,6 +3243,9 @@
               }
             ],
             "nullable": true
+          },
+          "credentials_rotated": {
+            "type": "boolean"
           },
           "consumed_by": {
             "type": "string",
@@ -3295,6 +3319,10 @@
             "items": {
               "$ref": "#/components/schemas/AccessSessionClientModel"
             }
+          },
+          "custom_access_details": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -3985,7 +4013,8 @@
           "id",
           "display_name",
           "launcher_type",
-          "invocation_command"
+          "invocation_command",
+          "password_encoding"
         ],
         "type": "object",
         "properties": {
@@ -4003,6 +4032,28 @@
             "nullable": true
           },
           "invocation_command": {
+            "type": "string"
+          },
+          "password_encoding": {
+            "type": "string"
+          }
+        }
+      },
+      "LauncherSummaryClientModel": {
+        "required": [
+          "id",
+          "display_name",
+          "launcher_type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "launcher_type": {
             "type": "string"
           }
         }
@@ -5436,24 +5487,15 @@
       "SessionEventClientModel": {
         "required": [
           "type",
-          "event_start_time"
+          "event_time"
         ],
         "type": "object",
         "properties": {
           "type": {
             "type": "string"
           },
-          "event_start_time": {
+          "event_time": {
             "$ref": "#/components/schemas/Instant"
-          },
-          "event_end_time": {
-            "type": "number",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Instant"
-              }
-            ],
-            "nullable": true
           },
           "tool_activity": {
             "type": "object",
@@ -5477,19 +5519,10 @@
       },
       "ToolActivityClientModel": {
         "required": [
-          "event_group_id",
-          "tool_execution_count",
           "tool_name"
         ],
         "type": "object",
         "properties": {
-          "event_group_id": {
-            "type": "string"
-          },
-          "tool_execution_count": {
-            "format": "int32",
-            "type": "integer"
-          },
           "tool_name": {
             "type": "string"
           },
@@ -5502,10 +5535,6 @@
             "nullable": true
           },
           "mcp_server_name": {
-            "type": "string",
-            "nullable": true
-          },
-          "resource_id": {
             "type": "string",
             "nullable": true
           }

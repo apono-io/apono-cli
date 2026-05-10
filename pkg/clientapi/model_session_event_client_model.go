@@ -21,8 +21,7 @@ var _ MappedNullable = &SessionEventClientModel{}
 // SessionEventClientModel struct for SessionEventClientModel
 type SessionEventClientModel struct {
 	Type           string                                        `json:"type"`
-	EventStartTime float64                                       `json:"event_start_time"`
-	EventEndTime   NullableFloat64                               `json:"event_end_time,omitempty"`
+	EventTime      float64                                       `json:"event_time"`
 	ToolActivity   NullableSessionEventClientModelToolActivity   `json:"tool_activity,omitempty"`
 	AccessElevated NullableSessionEventClientModelAccessElevated `json:"access_elevated,omitempty"`
 }
@@ -33,10 +32,10 @@ type _SessionEventClientModel SessionEventClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewSessionEventClientModel(type_ string, eventStartTime float64) *SessionEventClientModel {
+func NewSessionEventClientModel(type_ string, eventTime float64) *SessionEventClientModel {
 	this := SessionEventClientModel{}
 	this.Type = type_
-	this.EventStartTime = eventStartTime
+	this.EventTime = eventTime
 	return &this
 }
 
@@ -72,71 +71,28 @@ func (o *SessionEventClientModel) SetType(v string) {
 	o.Type = v
 }
 
-// GetEventStartTime returns the EventStartTime field value
-func (o *SessionEventClientModel) GetEventStartTime() float64 {
+// GetEventTime returns the EventTime field value
+func (o *SessionEventClientModel) GetEventTime() float64 {
 	if o == nil {
 		var ret float64
 		return ret
 	}
 
-	return o.EventStartTime
+	return o.EventTime
 }
 
-// GetEventStartTimeOk returns a tuple with the EventStartTime field value
+// GetEventTimeOk returns a tuple with the EventTime field value
 // and a boolean to check if the value has been set.
-func (o *SessionEventClientModel) GetEventStartTimeOk() (*float64, bool) {
+func (o *SessionEventClientModel) GetEventTimeOk() (*float64, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.EventStartTime, true
+	return &o.EventTime, true
 }
 
-// SetEventStartTime sets field value
-func (o *SessionEventClientModel) SetEventStartTime(v float64) {
-	o.EventStartTime = v
-}
-
-// GetEventEndTime returns the EventEndTime field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *SessionEventClientModel) GetEventEndTime() float64 {
-	if o == nil || IsNil(o.EventEndTime.Get()) {
-		var ret float64
-		return ret
-	}
-	return *o.EventEndTime.Get()
-}
-
-// GetEventEndTimeOk returns a tuple with the EventEndTime field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *SessionEventClientModel) GetEventEndTimeOk() (*float64, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.EventEndTime.Get(), o.EventEndTime.IsSet()
-}
-
-// HasEventEndTime returns a boolean if a field has been set.
-func (o *SessionEventClientModel) HasEventEndTime() bool {
-	if o != nil && o.EventEndTime.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetEventEndTime gets a reference to the given NullableFloat64 and assigns it to the EventEndTime field.
-func (o *SessionEventClientModel) SetEventEndTime(v float64) {
-	o.EventEndTime.Set(&v)
-}
-
-// SetEventEndTimeNil sets the value for EventEndTime to be an explicit nil
-func (o *SessionEventClientModel) SetEventEndTimeNil() {
-	o.EventEndTime.Set(nil)
-}
-
-// UnsetEventEndTime ensures that no value is present for EventEndTime, not even an explicit nil
-func (o *SessionEventClientModel) UnsetEventEndTime() {
-	o.EventEndTime.Unset()
+// SetEventTime sets field value
+func (o *SessionEventClientModel) SetEventTime(v float64) {
+	o.EventTime = v
 }
 
 // GetToolActivity returns the ToolActivity field value if set, zero value otherwise (both if not set or set to explicit null).
@@ -236,10 +192,7 @@ func (o SessionEventClientModel) MarshalJSON() ([]byte, error) {
 func (o SessionEventClientModel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["type"] = o.Type
-	toSerialize["event_start_time"] = o.EventStartTime
-	if o.EventEndTime.IsSet() {
-		toSerialize["event_end_time"] = o.EventEndTime.Get()
-	}
+	toSerialize["event_time"] = o.EventTime
 	if o.ToolActivity.IsSet() {
 		toSerialize["tool_activity"] = o.ToolActivity.Get()
 	}
@@ -255,7 +208,7 @@ func (o *SessionEventClientModel) UnmarshalJSON(bytes []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"type",
-		"event_start_time",
+		"event_time",
 	}
 
 	allProperties := make(map[string]interface{})

@@ -29,6 +29,10 @@ type AccessSessionClientModel struct {
 	Status               string                                      `json:"status"`
 	HasMoreAccessUnits   bool                                        `json:"has_more_access_units"`
 	HasLinkAccessDetails NullableBool                                `json:"has_link_access_details,omitempty"`
+	HasLaunchers         bool                                        `json:"has_launchers"`
+	Launchers            []LauncherSummaryClientModel                `json:"launchers"`
+	ConsumedBy           NullableString                              `json:"consumed_by,omitempty"`
+	CredentialsRotated   bool                                        `json:"credentials_rotated"`
 }
 
 type _AccessSessionClientModel AccessSessionClientModel
@@ -37,7 +41,7 @@ type _AccessSessionClientModel AccessSessionClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAccessSessionClientModel(id string, name string, type_ SessionTypeClientModel, integration IntegrationClientModel, connectionMethods []string, status string, hasMoreAccessUnits bool) *AccessSessionClientModel {
+func NewAccessSessionClientModel(id string, name string, type_ SessionTypeClientModel, integration IntegrationClientModel, connectionMethods []string, status string, hasMoreAccessUnits bool, hasLaunchers bool, launchers []LauncherSummaryClientModel, credentialsRotated bool) *AccessSessionClientModel {
 	this := AccessSessionClientModel{}
 	this.Id = id
 	this.Name = name
@@ -46,6 +50,9 @@ func NewAccessSessionClientModel(id string, name string, type_ SessionTypeClient
 	this.ConnectionMethods = connectionMethods
 	this.Status = status
 	this.HasMoreAccessUnits = hasMoreAccessUnits
+	this.HasLaunchers = hasLaunchers
+	this.Launchers = launchers
+	this.CredentialsRotated = credentialsRotated
 	return &this
 }
 
@@ -311,6 +318,121 @@ func (o *AccessSessionClientModel) UnsetHasLinkAccessDetails() {
 	o.HasLinkAccessDetails.Unset()
 }
 
+// GetHasLaunchers returns the HasLaunchers field value
+func (o *AccessSessionClientModel) GetHasLaunchers() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.HasLaunchers
+}
+
+// GetHasLaunchersOk returns a tuple with the HasLaunchers field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionClientModel) GetHasLaunchersOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.HasLaunchers, true
+}
+
+// SetHasLaunchers sets field value
+func (o *AccessSessionClientModel) SetHasLaunchers(v bool) {
+	o.HasLaunchers = v
+}
+
+// GetLaunchers returns the Launchers field value
+func (o *AccessSessionClientModel) GetLaunchers() []LauncherSummaryClientModel {
+	if o == nil {
+		var ret []LauncherSummaryClientModel
+		return ret
+	}
+
+	return o.Launchers
+}
+
+// GetLaunchersOk returns a tuple with the Launchers field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionClientModel) GetLaunchersOk() ([]LauncherSummaryClientModel, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Launchers, true
+}
+
+// SetLaunchers sets field value
+func (o *AccessSessionClientModel) SetLaunchers(v []LauncherSummaryClientModel) {
+	o.Launchers = v
+}
+
+// GetConsumedBy returns the ConsumedBy field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *AccessSessionClientModel) GetConsumedBy() string {
+	if o == nil || IsNil(o.ConsumedBy.Get()) {
+		var ret string
+		return ret
+	}
+	return *o.ConsumedBy.Get()
+}
+
+// GetConsumedByOk returns a tuple with the ConsumedBy field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *AccessSessionClientModel) GetConsumedByOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ConsumedBy.Get(), o.ConsumedBy.IsSet()
+}
+
+// HasConsumedBy returns a boolean if a field has been set.
+func (o *AccessSessionClientModel) HasConsumedBy() bool {
+	if o != nil && o.ConsumedBy.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetConsumedBy gets a reference to the given NullableString and assigns it to the ConsumedBy field.
+func (o *AccessSessionClientModel) SetConsumedBy(v string) {
+	o.ConsumedBy.Set(&v)
+}
+
+// SetConsumedByNil sets the value for ConsumedBy to be an explicit nil
+func (o *AccessSessionClientModel) SetConsumedByNil() {
+	o.ConsumedBy.Set(nil)
+}
+
+// UnsetConsumedBy ensures that no value is present for ConsumedBy, not even an explicit nil
+func (o *AccessSessionClientModel) UnsetConsumedBy() {
+	o.ConsumedBy.Unset()
+}
+
+// GetCredentialsRotated returns the CredentialsRotated field value
+func (o *AccessSessionClientModel) GetCredentialsRotated() bool {
+	if o == nil {
+		var ret bool
+		return ret
+	}
+
+	return o.CredentialsRotated
+}
+
+// GetCredentialsRotatedOk returns a tuple with the CredentialsRotated field value
+// and a boolean to check if the value has been set.
+func (o *AccessSessionClientModel) GetCredentialsRotatedOk() (*bool, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.CredentialsRotated, true
+}
+
+// SetCredentialsRotated sets field value
+func (o *AccessSessionClientModel) SetCredentialsRotated(v bool) {
+	o.CredentialsRotated = v
+}
+
 func (o AccessSessionClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -334,6 +456,12 @@ func (o AccessSessionClientModel) ToMap() (map[string]interface{}, error) {
 	if o.HasLinkAccessDetails.IsSet() {
 		toSerialize["has_link_access_details"] = o.HasLinkAccessDetails.Get()
 	}
+	toSerialize["has_launchers"] = o.HasLaunchers
+	toSerialize["launchers"] = o.Launchers
+	if o.ConsumedBy.IsSet() {
+		toSerialize["consumed_by"] = o.ConsumedBy.Get()
+	}
+	toSerialize["credentials_rotated"] = o.CredentialsRotated
 	return toSerialize, nil
 }
 
@@ -349,6 +477,9 @@ func (o *AccessSessionClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		"connection_methods",
 		"status",
 		"has_more_access_units",
+		"has_launchers",
+		"launchers",
+		"credentials_rotated",
 	}
 
 	allProperties := make(map[string]interface{})

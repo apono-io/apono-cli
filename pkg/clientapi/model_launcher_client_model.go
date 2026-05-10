@@ -25,6 +25,7 @@ type LauncherClientModel struct {
 	LauncherType      string         `json:"launcher_type"`
 	AuthCommand       NullableString `json:"auth_command,omitempty"`
 	InvocationCommand string         `json:"invocation_command"`
+	PasswordEncoding  string         `json:"password_encoding"`
 }
 
 type _LauncherClientModel LauncherClientModel
@@ -33,12 +34,13 @@ type _LauncherClientModel LauncherClientModel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewLauncherClientModel(id string, displayName string, launcherType string, invocationCommand string) *LauncherClientModel {
+func NewLauncherClientModel(id string, displayName string, launcherType string, invocationCommand string, passwordEncoding string) *LauncherClientModel {
 	this := LauncherClientModel{}
 	this.Id = id
 	this.DisplayName = displayName
 	this.LauncherType = launcherType
 	this.InvocationCommand = invocationCommand
+	this.PasswordEncoding = passwordEncoding
 	return &this
 }
 
@@ -189,6 +191,30 @@ func (o *LauncherClientModel) SetInvocationCommand(v string) {
 	o.InvocationCommand = v
 }
 
+// GetPasswordEncoding returns the PasswordEncoding field value
+func (o *LauncherClientModel) GetPasswordEncoding() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.PasswordEncoding
+}
+
+// GetPasswordEncodingOk returns a tuple with the PasswordEncoding field value
+// and a boolean to check if the value has been set.
+func (o *LauncherClientModel) GetPasswordEncodingOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.PasswordEncoding, true
+}
+
+// SetPasswordEncoding sets field value
+func (o *LauncherClientModel) SetPasswordEncoding(v string) {
+	o.PasswordEncoding = v
+}
+
 func (o LauncherClientModel) MarshalJSON() ([]byte, error) {
 	toSerialize, err := o.ToMap()
 	if err != nil {
@@ -206,6 +232,7 @@ func (o LauncherClientModel) ToMap() (map[string]interface{}, error) {
 		toSerialize["auth_command"] = o.AuthCommand.Get()
 	}
 	toSerialize["invocation_command"] = o.InvocationCommand
+	toSerialize["password_encoding"] = o.PasswordEncoding
 	return toSerialize, nil
 }
 
@@ -218,6 +245,7 @@ func (o *LauncherClientModel) UnmarshalJSON(bytes []byte) (err error) {
 		"display_name",
 		"launcher_type",
 		"invocation_command",
+		"password_encoding",
 	}
 
 	allProperties := make(map[string]interface{})
