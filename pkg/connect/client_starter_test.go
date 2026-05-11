@@ -104,44 +104,52 @@ func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 }
 
 func TestStart_TUI_TTY_runsInline(t *testing.T) {
-	clients := []clientapi.LauncherClientModel{
-		newClientModel("k9s", ClientKindTUI, "setup", "k9s"),
-	}
-	s, runs, wraps := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
+		t.Run(kind, func(t *testing.T) {
+			clients := []clientapi.LauncherClientModel{
+				newClientModel("k9s", kind, "setup", "k9s"),
+			}
+			s, runs, wraps := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
-		t.Fatalf("Start returned error: %v", err)
-	}
+			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+				t.Fatalf("Start returned error: %v", err)
+			}
 
-	if len(*runs) != 1 {
-		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
-	}
-	if len(*wraps) != 0 {
-		t.Errorf("TUI with TTY should not wrap, got %d wrap calls", len(*wraps))
-	}
-	if strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
-		t.Errorf("TUI with TTY should run inline, got wrapped command %q", (*runs)[0].combined)
+			if len(*runs) != 1 {
+				t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+			}
+			if len(*wraps) != 0 {
+				t.Errorf("%s with TTY should not wrap, got %d wrap calls", kind, len(*wraps))
+			}
+			if strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
+				t.Errorf("%s with TTY should run inline, got wrapped command %q", kind, (*runs)[0].combined)
+			}
+		})
 	}
 }
 
 func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
-	clients := []clientapi.LauncherClientModel{
-		newClientModel("k9s", ClientKindTUI, "setup", "k9s"),
-	}
-	s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
+	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
+		t.Run(kind, func(t *testing.T) {
+			clients := []clientapi.LauncherClientModel{
+				newClientModel("k9s", kind, "setup", "k9s"),
+			}
+			s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
-		t.Fatalf("Start returned error: %v", err)
-	}
+			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+				t.Fatalf("Start returned error: %v", err)
+			}
 
-	if len(*wraps) != 1 {
-		t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
-	}
-	if len(*runs) != 1 {
-		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
-	}
-	if !strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
-		t.Errorf("TUI without TTY should run wrapped command, got %q", (*runs)[0].combined)
+			if len(*wraps) != 1 {
+				t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
+			}
+			if len(*runs) != 1 {
+				t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+			}
+			if !strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
+				t.Errorf("%s without TTY should run wrapped command, got %q", kind, (*runs)[0].combined)
+			}
+		})
 	}
 }
 

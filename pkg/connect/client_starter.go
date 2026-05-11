@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	ClientKindGUI = "GUI"
-	ClientKindTUI = "TERMINAL"
-	ClientKindCLI = "CLI"
+	ClientKindGUI      = "GUI"
+	ClientKindTUI      = "TUI"
+	ClientKindTERMINAL = "TERMINAL"
+	ClientKindCLI      = "CLI"
 )
 
 type ClientStarter struct {
@@ -72,7 +73,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	case ClientKindGUI:
 		return s.executeCommand(cobraCmd, combinedCommand)
 
-	case ClientKindTUI, ClientKindCLI:
+	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
 		if s.IsRunningInTerminal() {
 			return s.executeCommand(cobraCmd, combinedCommand)
 		}

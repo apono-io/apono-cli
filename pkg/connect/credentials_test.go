@@ -64,6 +64,31 @@ func TestReadCachedPassword_missingFile_errorWrapped(t *testing.T) {
 	}
 }
 
+func TestReadCachedPassword_stripsTrailingNewlineFromPayload(t *testing.T) {
+	// auth_command typically does `echo PASSWORD | base64 > cache`, which adds a
+	// trailing newline before base64-encoding. Shell `$(base64 -d -i ...)` strips
+	// it; our Go reader has to do the same or URL-encoding glues a `%0A` onto
+	// the password.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	rawWithNewline := passwordWithSpecials + "\n"
+	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(rawWithNewline))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+
+	got, err := readCachedPassword("sess-1")
+	if err != nil {
+		t.Fatalf("readCachedPassword: %v", err)
+	}
+	if got != passwordWithSpecials {
+		t.Errorf("readCachedPassword = %q, want %q (no trailing newline)", got, passwordWithSpecials)
+	}
+}
+
 func TestReadCachedPassword_invalidBase64_errorWrapped(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
