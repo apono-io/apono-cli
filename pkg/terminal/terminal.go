@@ -65,7 +65,7 @@ func writeLaunchScript(command string) (string, error) {
 		_ = os.Remove(f.Name())
 		return "", err
 	}
-	if err := os.Chmod(f.Name(), 0o755); err != nil {
+	if err := os.Chmod(f.Name(), 0o500); err != nil {
 		_ = os.Remove(f.Name())
 		return "", err
 	}
