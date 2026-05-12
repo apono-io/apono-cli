@@ -409,4 +409,3 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 		t.Errorf("expected invocation to have substituted password from cache populated by auth, got %q", (*runs)[1].combined)
 	}
 }
-
