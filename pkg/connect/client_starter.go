@@ -59,27 +59,34 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		return fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
 	}
 
-	combinedCommand := combineSetupAndInvocationCommands(utils.FromNullableString(client.AuthCommand), client.InvocationCommand)
+	authCommand := utils.FromNullableString(client.AuthCommand)
+	invocationCommand := client.InvocationCommand
 
-	if strings.Contains(combinedCommand, passwordPlaceholder) {
+	if strings.TrimSpace(authCommand) != "" {
+		if err := s.executeCommand(cobraCmd, authCommand); err != nil {
+			return err
+		}
+	}
+
+	if strings.Contains(invocationCommand, passwordPlaceholder) {
 		pwd, err := readCachedPassword(sessionID)
 		if err != nil {
 			return fmt.Errorf("resolve credentials: %w", err)
 		}
-		combinedCommand = strings.ReplaceAll(combinedCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
+		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
 	}
 
 	switch client.LauncherType {
 	case ClientKindGUI:
-		return s.executeCommand(cobraCmd, combinedCommand)
+		return s.executeCommand(cobraCmd, invocationCommand)
 
 	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
 		if s.IsRunningInTerminal() {
-			return s.executeCommand(cobraCmd, combinedCommand)
+			return s.executeCommand(cobraCmd, invocationCommand)
 		}
 		// Headless context (URI handler chain): no stdin terminal, so wrap the
 		// command in Terminal.app so the user sees a real terminal window.
-		wrapped, err := s.BuildTerminalLaunchCommand(combinedCommand)
+		wrapped, err := s.BuildTerminalLaunchCommand(invocationCommand)
 		if err != nil {
 			return fmt.Errorf("build terminal launch command: %w", err)
 		}
@@ -90,8 +97,8 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	}
 }
 
-func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, combined string) error {
-	exitCode, stderr, err := s.RunShellCommand(cobraCmd, combined)
+func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) error {
+	exitCode, stderr, err := s.RunShellCommand(cobraCmd, command)
 	if err != nil {
 		return fmt.Errorf("failed to start client: %w\n%s", err, stderr)
 	}
@@ -120,21 +127,6 @@ func availableIDs(clients []clientapi.LauncherClientModel) string {
 		return "(none)"
 	}
 	return strings.Join(ids, ", ")
-}
-
-func combineSetupAndInvocationCommands(setup, invocation string) string {
-	setup = strings.TrimSpace(setup)
-	invocation = strings.TrimSpace(invocation)
-	switch {
-	case setup == "" && invocation == "":
-		return ""
-	case setup == "":
-		return invocation
-	case invocation == "":
-		return setup
-	default:
-		return setup + " && " + invocation
-	}
 }
 
 func runShellCommand(cobraCmd *cobra.Command, command string) (exitCode int, stderrTail string, err error) {

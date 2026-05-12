@@ -87,14 +87,14 @@ func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
-			if len(*runs) != 1 {
-				t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+			if len(*runs) != 2 {
+				t.Fatalf("expected 2 runShell calls (auth + invocation), got %d", len(*runs))
 			}
-			if !strings.Contains((*runs)[0].combined, "echo setup") || !strings.Contains((*runs)[0].combined, "echo invoke") {
-				t.Errorf("expected combined string to include setup and invocation, got %q", (*runs)[0].combined)
+			if (*runs)[0].combined != "echo setup" {
+				t.Errorf("expected first call to be auth_command, got %q", (*runs)[0].combined)
 			}
-			if !strings.Contains((*runs)[0].combined, "&&") {
-				t.Errorf("expected setup and invocation joined with &&, got %q", (*runs)[0].combined)
+			if (*runs)[1].combined != "echo invoke" {
+				t.Errorf("expected second call to be invocation_command, got %q", (*runs)[1].combined)
 			}
 			if len(*wraps) != 0 {
 				t.Errorf("GUI should never wrap in Terminal, got %d wrap calls", len(*wraps))
@@ -115,14 +115,16 @@ func TestStart_TUI_TTY_runsInline(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
-			if len(*runs) != 1 {
-				t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+			if len(*runs) != 2 {
+				t.Fatalf("expected 2 runShell calls (auth + invocation), got %d", len(*runs))
 			}
 			if len(*wraps) != 0 {
 				t.Errorf("%s with TTY should not wrap, got %d wrap calls", kind, len(*wraps))
 			}
-			if strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
-				t.Errorf("%s with TTY should run inline, got wrapped command %q", kind, (*runs)[0].combined)
+			for i, call := range *runs {
+				if strings.HasPrefix(call.combined, "WRAPPED(") {
+					t.Errorf("%s with TTY should run inline, got wrapped command at index %d: %q", kind, i, call.combined)
+				}
 			}
 		})
 	}
@@ -140,14 +142,18 @@ func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
+			// Auth runs inline (no wrap), invocation gets wrapped.
 			if len(*wraps) != 1 {
 				t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
 			}
-			if len(*runs) != 1 {
-				t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+			if len(*runs) != 2 {
+				t.Fatalf("expected 2 runShell calls (auth inline + wrapped invocation), got %d", len(*runs))
 			}
-			if !strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
-				t.Errorf("%s without TTY should run wrapped command, got %q", kind, (*runs)[0].combined)
+			if (*runs)[0].combined != "setup" {
+				t.Errorf("expected first call to be plain auth_command, got %q", (*runs)[0].combined)
+			}
+			if !strings.HasPrefix((*runs)[1].combined, "WRAPPED(") {
+				t.Errorf("%s without TTY should wrap invocation, got %q", kind, (*runs)[1].combined)
 			}
 		})
 	}
@@ -219,7 +225,7 @@ func TestStart_TTY_consumedByOther_blocks(t *testing.T) {
 func TestStart_NoTTY_consumedByOther_proceeds(t *testing.T) {
 	// Headless context: Portal/Slack already gated upstream, CLI trusts and proceeds.
 	clients := []clientapi.LauncherClientModel{
-		newClientModel("dbeaver", ClientKindGUI, "s", "i"),
+		newClientModel("dbeaver", ClientKindGUI, "", "i"),
 	}
 	s, runs, _ := testClientStarter(false, clients, "someone-else", nil)
 
@@ -233,7 +239,7 @@ func TestStart_NoTTY_consumedByOther_proceeds(t *testing.T) {
 
 func TestStart_TTY_consumedByEmpty_proceeds(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
-		newClientModel("dbeaver", ClientKindGUI, "s", "i"),
+		newClientModel("dbeaver", ClientKindGUI, "", "i"),
 	}
 	s, runs, _ := testClientStarter(true, clients, "", nil)
 
@@ -242,24 +248,6 @@ func TestStart_TTY_consumedByEmpty_proceeds(t *testing.T) {
 	}
 	if len(*runs) != 1 {
 		t.Errorf("expected 1 runShell call, got %d", len(*runs))
-	}
-}
-
-func TestJoinSetupAndInvocation(t *testing.T) {
-	cases := []struct {
-		setup, invocation, want string
-	}{
-		{"a", "b", "a && b"},
-		{"  a  ", "  b  ", "a && b"},
-		{"", "b", "b"},
-		{"a", "", "a"},
-		{"", "", ""},
-	}
-	for _, tc := range cases {
-		got := combineSetupAndInvocationCommands(tc.setup, tc.invocation)
-		if got != tc.want {
-			t.Errorf("combineSetupAndInvocationCommands(%q, %q) = %q, want %q", tc.setup, tc.invocation, got, tc.want)
-		}
 	}
 }
 
@@ -317,6 +305,9 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 }
 
 func TestStart_noPlaceholder_skipsCacheRead(t *testing.T) {
+	// HOME points at an empty temp dir — if the substitution path were hit,
+	// readCachedPassword would error. dbeaver's invocation has no placeholder,
+	// so the cache must not be read.
 	t.Setenv("HOME", t.TempDir())
 
 	clients := []clientapi.LauncherClientModel{
@@ -327,8 +318,8 @@ func TestStart_noPlaceholder_skipsCacheRead(t *testing.T) {
 	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
-	if len(*runs) != 1 {
-		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
+	if len(*runs) != 2 {
+		t.Fatalf("expected 2 runShell calls (auth + invocation), got %d", len(*runs))
 	}
 }
 
@@ -352,5 +343,69 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "resolve credentials") {
 		t.Errorf("expected error to mention credential resolution, got %q", err.Error())
+	}
+}
+
+func TestStart_authFails_invocationSkipped(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "auth-cmd", "invocation-cmd"),
+	}
+	calls := 0
+	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		calls++
+		if calls == 1 {
+			return 1, "auth boom", nil
+		}
+		return 0, "", nil
+	})
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
+	if err == nil {
+		t.Fatal("expected error when auth_command fails, got nil")
+	}
+	if len(*runs) != 1 {
+		t.Fatalf("expected only the auth runShell call before bailing, got %d", len(*runs))
+	}
+	if (*runs)[0].combined != "auth-cmd" {
+		t.Errorf("expected first call to be auth_command, got %q", (*runs)[0].combined)
+	}
+}
+
+func TestStart_authFirstThenSubstitution(t *testing.T) {
+	// Auth runs first, then placeholder substitution reads the cache file.
+	// This test wires a runShellResult that creates the cache file as a side
+	// effect of the auth call — proving the ordering: substitution sees the
+	// fresh cache populated by auth, not a stale or missing one.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+
+	tableplus := newClientModel("tableplus", ClientKindGUI, "populate-cache", `open "postgres://u:__APONO_PASSWORD__@h/d"`)
+	tableplus.PasswordEncoding = "url"
+
+	calls := 0
+	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		calls++
+		if calls == 1 {
+			// Simulate auth populating the cache.
+			_ = os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte("hello"))), 0o600)
+		}
+		return 0, "", nil
+	})
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus"); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if len(*runs) != 2 {
+		t.Fatalf("expected 2 runShell calls (auth then invocation), got %d", len(*runs))
+	}
+	if (*runs)[0].combined != "populate-cache" {
+		t.Errorf("expected first call to be auth_command, got %q", (*runs)[0].combined)
+	}
+	if !strings.Contains((*runs)[1].combined, "hello") {
+		t.Errorf("expected invocation to have substituted password from cache populated by auth, got %q", (*runs)[1].combined)
 	}
 }
