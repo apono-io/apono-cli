@@ -17,7 +17,7 @@ const (
 
 	binZsh = "/bin/zsh"
 
-	terminalAppLaunchTemplate = `osascript -e 'tell application "%s" to do script "%s %s"' -e 'tell application "%s" to activate'`
+	terminalAppLaunchTemplate = `osascript -e 'do shell script "open -a " & quoted form of "%s" & " " & quoted form of "%s"'`
 	iTermLaunchTemplate       = `osascript -e 'tell application "%s" to create window with default profile command "%s %s"' -e 'tell application "%s" to activate'`
 
 	launchCommandPlaceholder = "__APONO_COMMAND__"
@@ -52,7 +52,7 @@ func writeLaunchScriptTo(w io.Writer, command string) error {
 }
 
 func writeLaunchScript(command string) (string, error) {
-	f, err := os.CreateTemp("", "apono-launch-*.sh")
+	f, err := os.CreateTemp("", "apono-launch-*.command")
 	if err != nil {
 		return "", err
 	}
@@ -62,6 +62,10 @@ func writeLaunchScript(command string) (string, error) {
 		return "", err
 	}
 	if err := f.Close(); err != nil {
+		_ = os.Remove(f.Name())
+		return "", err
+	}
+	if err := os.Chmod(f.Name(), 0o755); err != nil {
 		_ = os.Remove(f.Name())
 		return "", err
 	}
@@ -82,7 +86,7 @@ func hasITerm() bool {
 }
 
 func buildTerminalAppLaunchCommand(scriptPath string) string {
-	return fmt.Sprintf(terminalAppLaunchTemplate, terminalAppName, binZsh, scriptPath, terminalAppName)
+	return fmt.Sprintf(terminalAppLaunchTemplate, terminalAppName, scriptPath)
 }
 
 func buildITermLaunchCommand(scriptPath string) string {

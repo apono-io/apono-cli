@@ -32,7 +32,7 @@ func TestWriteLaunchScriptTo_includesShebangSelfDeleteAndKeepAlive(t *testing.T)
 	}
 	got := buf.String()
 	for _, want := range []string{
-		"#!/bin/zsh",
+		"#!/bin/zsh -l",
 		`rm -- "$0"`,
 		"echo hi",
 		"exec /bin/zsh -l",
@@ -66,9 +66,25 @@ func TestWriteLaunchScript_returnsExistingPath(t *testing.T) {
 	}
 }
 
+func TestWriteLaunchScript_setsExecutableBit(t *testing.T) {
+	path, err := writeLaunchScript(`true`)
+	if err != nil {
+		t.Fatalf("writeLaunchScript: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if info.Mode().Perm()&0o111 == 0 {
+		t.Errorf("expected executable bit on %q, got mode %v", path, info.Mode())
+	}
+}
+
 func TestBuildTerminalAppLaunchCommand_format(t *testing.T) {
-	got := buildTerminalAppLaunchCommand("/tmp/foo.sh")
-	for _, want := range []string{`osascript`, `Terminal`, `do script`, `/bin/zsh /tmp/foo.sh`, `activate`} {
+	got := buildTerminalAppLaunchCommand("/tmp/foo.command")
+	for _, want := range []string{`osascript`, `Terminal`, `open -a`, `/tmp/foo.command`, `quoted form of`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected %q in script, got %q", want, got)
 		}
