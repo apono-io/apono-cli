@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
 	"runtime"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/utils"
+	"github.com/apono-io/apono-cli/pkg/utils/shell"
 
 	"github.com/gookit/color"
 	"github.com/gosuri/uitable"
@@ -107,7 +107,7 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 	}
 
 	var stderr bytes.Buffer
-	cmd := exec.CommandContext(cobraCmd.Context(), "sh", "-c", command)
+	cmd := shell.Command(cobraCmd.Context(), command)
 	cmd.Stdout = cobraCmd.OutOrStdout()
 	cmd.Stdin = cobraCmd.InOrStdin()
 	cmd.Stderr = &stderr
