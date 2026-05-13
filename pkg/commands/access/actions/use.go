@@ -116,7 +116,7 @@ func AccessDetails() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
-	flags.StringVar(&cmdFlags.clientID, clientFlagName, "", "Launch the session in a supported local `client`. Supported on macOS only.\nSupported clients: dbeaver, tableplus, k9s, lens")
+	flags.StringVarP(&cmdFlags.clientID, clientFlagName, "c", "", "Launch the session in a supported local `client`. Supported on macOS only.\nSupported clients: dbeaver, tableplus, k9s")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
