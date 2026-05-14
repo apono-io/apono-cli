@@ -103,7 +103,7 @@ func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 	}
 }
 
-func TestStart_TUI_TTY_runsInline(t *testing.T) {
+func TestStart_TUI_TTY_runsCombinedInline(t *testing.T) {
 	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
 		t.Run(kind, func(t *testing.T) {
 			clients := []clientapi.LauncherClientModel{
@@ -115,22 +115,45 @@ func TestStart_TUI_TTY_runsInline(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
-			if len(*runs) != 2 {
-				t.Fatalf("expected 2 runShell calls (auth + invocation), got %d", len(*runs))
+			if len(*runs) != 1 {
+				t.Fatalf("expected 1 runShell call (combined auth && invocation), got %d", len(*runs))
+			}
+			if (*runs)[0].combined != "setup && k9s" {
+				t.Errorf("expected combined `auth && invocation`, got %q", (*runs)[0].combined)
 			}
 			if len(*wraps) != 0 {
 				t.Errorf("%s with TTY should not wrap, got %d wrap calls", kind, len(*wraps))
-			}
-			for i, call := range *runs {
-				if strings.HasPrefix(call.combined, "WRAPPED(") {
-					t.Errorf("%s with TTY should run inline, got wrapped command at index %d: %q", kind, i, call.combined)
-				}
 			}
 		})
 	}
 }
 
-func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
+func TestStart_TUI_placeholderInInvocation_errors(t *testing.T) {
+	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
+		t.Run(kind, func(t *testing.T) {
+			clients := []clientapi.LauncherClientModel{
+				newClientModel("psql", kind, "setup", "psql password=__APONO_PASSWORD__"),
+			}
+			s, runs, wraps := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+
+			err := s.Start(newCobraCmd(), nil, "sess-1", "psql")
+			if err == nil {
+				t.Fatal("expected error for __APONO_PASSWORD__ in TUI invocation, got nil")
+			}
+			if !strings.Contains(err.Error(), "does not support this authentication type") {
+				t.Errorf("expected unsupported-auth-type error, got %q", err.Error())
+			}
+			if !strings.Contains(err.Error(), "Contact your admin") {
+				t.Errorf("expected error to direct user to their admin, got %q", err.Error())
+			}
+			if len(*runs) != 0 || len(*wraps) != 0 {
+				t.Errorf("expected no shell or wrap calls when guarded, got runs=%d wraps=%d", len(*runs), len(*wraps))
+			}
+		})
+	}
+}
+
+func TestStart_TUI_NoTTY_wrapsAuthAndInvocationTogether(t *testing.T) {
 	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
 		t.Run(kind, func(t *testing.T) {
 			clients := []clientapi.LauncherClientModel{
@@ -142,18 +165,42 @@ func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
-			// Auth runs inline (no wrap), invocation gets wrapped.
 			if len(*wraps) != 1 {
 				t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
 			}
-			if len(*runs) != 2 {
-				t.Fatalf("expected 2 runShell calls (auth inline + wrapped invocation), got %d", len(*runs))
+			if (*wraps)[0] != "setup && k9s" {
+				t.Errorf("expected wrap of combined `auth && invocation`, got %q", (*wraps)[0])
 			}
-			if (*runs)[0].combined != "setup" {
-				t.Errorf("expected first call to be plain auth_command, got %q", (*runs)[0].combined)
+			if len(*runs) != 1 {
+				t.Fatalf("expected 1 runShell call (the wrapped command), got %d", len(*runs))
 			}
-			if !strings.HasPrefix((*runs)[1].combined, "WRAPPED(") {
-				t.Errorf("%s without TTY should wrap invocation, got %q", kind, (*runs)[1].combined)
+			if (*runs)[0].combined != "WRAPPED(setup && k9s)" {
+				t.Errorf("expected wrapped combined command, got %q", (*runs)[0].combined)
+			}
+		})
+	}
+}
+
+func TestStart_TUI_NoTTY_noAuth_wrapsInvocationOnly(t *testing.T) {
+	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
+		t.Run(kind, func(t *testing.T) {
+			clients := []clientapi.LauncherClientModel{
+				newClientModel("k9s", kind, "", "k9s"),
+			}
+			s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
+
+			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+				t.Fatalf("Start returned error: %v", err)
+			}
+
+			if len(*wraps) != 1 {
+				t.Fatalf("expected 1 wrap call, got %d", len(*wraps))
+			}
+			if (*wraps)[0] != "k9s" {
+				t.Errorf("expected wrap of just invocation, got %q", (*wraps)[0])
+			}
+			if len(*runs) != 1 || (*runs)[0].combined != "WRAPPED(k9s)" {
+				t.Errorf("expected single wrapped invocation run, got %+v", *runs)
 			}
 		})
 	}

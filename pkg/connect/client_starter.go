@@ -59,34 +59,34 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		return fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
 	}
 
-	authCommand := utils.FromNullableString(client.AuthCommand)
+	authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand))
 	invocationCommand := client.InvocationCommand
-
-	if strings.TrimSpace(authCommand) != "" {
-		if err := s.executeCommand(cobraCmd, authCommand); err != nil {
-			return err
-		}
-	}
-
-	if strings.Contains(invocationCommand, passwordPlaceholder) {
-		pwd, err := readCachedPassword(sessionID)
-		if err != nil {
-			return fmt.Errorf("resolve credentials: %w", err)
-		}
-		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
-	}
 
 	switch client.LauncherType {
 	case ClientKindGUI:
-		return s.executeCommand(cobraCmd, invocationCommand)
+		if authCommand != "" {
+			if err := s.executeCommand(cobraCmd, authCommand); err != nil {
+				return err
+			}
+		}
+		inv, err := substitutePasswordPlaceholder(sessionID, invocationCommand, client.PasswordEncoding)
+		if err != nil {
+			return err
+		}
+		return s.executeCommand(cobraCmd, inv)
 
 	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
-		if s.IsRunningInTerminal() {
-			return s.executeCommand(cobraCmd, invocationCommand)
+		if strings.Contains(invocationCommand, passwordPlaceholder) {
+			return fmt.Errorf("%q does not support this authentication type. Contact your admin", clientID)
 		}
-		// Headless context (URI handler chain): no stdin terminal, so wrap the
-		// command in Terminal.app so the user sees a real terminal window.
-		wrapped, err := s.BuildTerminalLaunchCommand(invocationCommand)
+		combined := invocationCommand
+		if authCommand != "" {
+			combined = authCommand + " && " + invocationCommand
+		}
+		if s.IsRunningInTerminal() {
+			return s.executeCommand(cobraCmd, combined)
+		}
+		wrapped, err := s.BuildTerminalLaunchCommand(combined)
 		if err != nil {
 			return fmt.Errorf("build terminal launch command: %w", err)
 		}
@@ -95,6 +95,17 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	default:
 		return fmt.Errorf("unknown client kind %q for %q", client.LauncherType, clientID)
 	}
+}
+
+func substitutePasswordPlaceholder(sessionID, invocation, encoding string) (string, error) {
+	if !strings.Contains(invocation, passwordPlaceholder) {
+		return invocation, nil
+	}
+	pwd, err := readCachedPassword(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("resolve credentials: %w", err)
+	}
+	return strings.ReplaceAll(invocation, passwordPlaceholder, encodePassword(pwd, encoding)), nil
 }
 
 func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) error {
