@@ -68,8 +68,10 @@ func Register(out io.Writer) error {
 		return err
 	}
 
-	if err = buildAppBundle(bundleDir, aponoBinary); err != nil {
-		return fmt.Errorf("build app bundle: %w", err)
+	if _, err := os.Stat(bundleDir); err != nil {
+		if err = buildAppBundle(bundleDir, aponoBinary); err != nil {
+			return fmt.Errorf("build app bundle: %w", err)
+		}
 	}
 
 	unregisterLegacyBundle()
