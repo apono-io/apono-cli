@@ -68,7 +68,7 @@ func Register(out io.Writer) error {
 		return err
 	}
 
-	if _, err := os.Stat(bundleDir); err != nil {
+	if _, statErr := os.Stat(bundleDir); statErr != nil {
 		if err = buildAppBundle(bundleDir, aponoBinary); err != nil {
 			return fmt.Errorf("build app bundle: %w", err)
 		}
