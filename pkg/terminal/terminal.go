@@ -17,8 +17,8 @@ const (
 
 	binZsh = "/bin/zsh"
 
-	terminalAppLaunchTemplate = `osascript -e 'tell application "%s" to do script "%s %s"' -e 'tell application "%s" to activate'`
-	iTermLaunchTemplate       = `osascript -e 'tell application "%s" to create window with default profile command "%s %s"' -e 'tell application "%s" to activate'`
+	terminalAppLaunchTemplate = `osascript -e 'tell application "%s" to do script "%s -l %s"' -e 'tell application "%s" to activate'`
+	iTermLaunchTemplate       = `osascript -e 'tell application "%s" to create window with default profile command "%s -l %s"' -e 'tell application "%s" to activate'`
 
 	launchCommandPlaceholder = "__APONO_COMMAND__"
 )

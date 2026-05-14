@@ -68,7 +68,7 @@ func TestWriteLaunchScript_returnsExistingPath(t *testing.T) {
 
 func TestBuildTerminalAppLaunchCommand_format(t *testing.T) {
 	got := buildTerminalAppLaunchCommand("/tmp/foo.sh")
-	for _, want := range []string{`osascript`, `Terminal`, `do script`, `/bin/zsh /tmp/foo.sh`, `activate`} {
+	for _, want := range []string{`osascript`, `Terminal`, `do script`, `/bin/zsh -l /tmp/foo.sh`, `activate`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected %q in script, got %q", want, got)
 		}
@@ -77,7 +77,7 @@ func TestBuildTerminalAppLaunchCommand_format(t *testing.T) {
 
 func TestBuildITermLaunchCommand_format(t *testing.T) {
 	got := buildITermLaunchCommand("/tmp/foo.sh")
-	for _, want := range []string{`osascript`, `iTerm`, `create window with default profile command`, `/bin/zsh /tmp/foo.sh`, `activate`} {
+	for _, want := range []string{`osascript`, `iTerm`, `create window with default profile command`, `/bin/zsh -l /tmp/foo.sh`, `activate`} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected %q in script, got %q", want, got)
 		}
