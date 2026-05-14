@@ -19,6 +19,8 @@ func Unregister(out io.Writer) error {
 		return err
 	}
 
+	unregisterLegacyBundle()
+
 	if _, statErr := os.Stat(bundleDir); os.IsNotExist(statErr) {
 		_, err = fmt.Fprintln(out, "Protocol handler is not registered")
 		return err

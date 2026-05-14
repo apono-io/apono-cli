@@ -27,8 +27,9 @@ const (
 	urlSchemeName     = "Apono Connect"
 	urlScheme         = "apono"
 
-	applicationsDirName             = "Applications"
-	applicationsDirPerm os.FileMode = 0o700
+	bundleParentDir                 = "Library/Application Support/apono-cli"
+	legacyBundleDir                 = "Applications"
+	bundleParentDirPerm os.FileMode = 0o700
 	handlerScriptPerm   os.FileMode = 0o600
 )
 
@@ -71,6 +72,8 @@ func Register(out io.Writer) error {
 		return fmt.Errorf("build app bundle: %w", err)
 	}
 
+	unregisterLegacyBundle()
+
 	if err = registerWithLaunchServices(bundleDir); err != nil {
 		return fmt.Errorf("register with LaunchServices: %w", err)
 	}
@@ -92,11 +95,23 @@ func bundlePath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("home dir: %w", err)
 	}
-	apps := filepath.Join(home, applicationsDirName)
-	if err = os.MkdirAll(apps, applicationsDirPerm); err != nil {
-		return "", fmt.Errorf("mkdir %s: %w", apps, err)
+	parent := filepath.Join(home, bundleParentDir)
+	if err = os.MkdirAll(parent, bundleParentDirPerm); err != nil {
+		return "", fmt.Errorf("mkdir %s: %w", parent, err)
 	}
-	return filepath.Join(apps, bundleDirName), nil
+	return filepath.Join(parent, bundleDirName), nil
+}
+
+func unregisterLegacyBundle() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	legacyPath := filepath.Join(home, legacyBundleDir, bundleDirName)
+	if _, err := os.Stat(legacyPath); err != nil {
+		return
+	}
+	_, _ = unregisterFromLaunchServices(legacyPath)
 }
 
 func buildAppBundle(bundleDir, aponoBinary string) error {
