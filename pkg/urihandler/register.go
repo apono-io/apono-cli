@@ -100,9 +100,15 @@ func bundlePath() (string, error) {
 }
 
 func buildAppBundle(bundleDir, aponoBinary string) error {
-	// Wipe any prior bundle for clean state — register is idempotent.
-	if err := os.RemoveAll(bundleDir); err != nil {
-		return fmt.Errorf("clean previous bundle: %w", err)
+	if _, err := os.Stat(bundleDir); err == nil {
+		// Bundle exists. The apono binary path baked into handler.sh is the only
+		// thing that varies between registers, so update just that and re-sign.
+		// Avoids wiping a codesigned bundle, which fails in restricted contexts
+		// (brew post_install, anywhere lacking App Management TCC permission).
+		if err := writeHandlerScript(bundleDir, aponoBinary); err != nil {
+			return err
+		}
+		return codesignAdHoc(bundleDir)
 	}
 
 	if err := compileAppleScript(bundleDir); err != nil {
