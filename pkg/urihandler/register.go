@@ -32,8 +32,7 @@ const (
 	// bundles inside Applications folders from any process whose responsible
 	// chain hasn't been granted the permission (brew post_install, launchd-spawned
 	// upgrades, etc.). Library/Application Support is outside that restriction.
-	bundleParentDir     = "Library/Application Support/apono-cli"
-	legacyBundleDir     = "Applications"
+	bundleParentDir                 = "Library/Application Support/apono-cli"
 	bundleParentDirPerm os.FileMode = 0o700
 	handlerScriptPerm   os.FileMode = 0o600
 )
@@ -77,8 +76,6 @@ func Register(out io.Writer) error {
 		return fmt.Errorf("build app bundle: %w", err)
 	}
 
-	cleanupLegacyBundle()
-
 	if err = registerWithLaunchServices(bundleDir); err != nil {
 		return fmt.Errorf("register with LaunchServices: %w", err)
 	}
@@ -105,25 +102,6 @@ func bundlePath() (string, error) {
 		return "", fmt.Errorf("mkdir %s: %w", parent, err)
 	}
 	return filepath.Join(parent, bundleDirName), nil
-}
-
-// cleanupLegacyBundle removes any leftover ~/Applications/Apono Connect.app
-// from earlier apono-cli versions. Unregisters it from LaunchServices so it
-// no longer claims apono:// and tries to delete the on-disk bundle. Both
-// operations are best-effort: the delete fails in restricted contexts (App
-// Management TCC), in which case the bundle persists on disk as harmless
-// orphaned junk that the user can drag to Trash from Finder.
-func cleanupLegacyBundle() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-	legacyPath := filepath.Join(home, legacyBundleDir, bundleDirName)
-	if _, err := os.Stat(legacyPath); err != nil {
-		return
-	}
-	_ = exec.CommandContext(context.Background(), lsregisterPath, "-u", legacyPath).Run()
-	_ = os.RemoveAll(legacyPath)
 }
 
 func buildAppBundle(bundleDir, aponoBinary string) error {
