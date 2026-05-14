@@ -111,7 +111,7 @@ func unregisterLegacyBundle() {
 	if _, err := os.Stat(legacyPath); err != nil {
 		return
 	}
-	_ = exec.CommandContext(context.Background(), lsregisterPath, "-u", legacyPath).Run()
+	_, _ = unregisterFromLaunchServices(legacyPath)
 }
 
 func buildAppBundle(bundleDir, aponoBinary string) error {
