@@ -27,11 +27,6 @@ const (
 	urlSchemeName     = "Apono Connect"
 	urlScheme         = "apono"
 
-	// Bundle lives under ~/Library/Application Support/apono-cli/ rather than
-	// ~/Applications. macOS's App Management TCC restriction blocks writes to
-	// bundles inside Applications folders from any process whose responsible
-	// chain hasn't been granted the permission (brew post_install, launchd-spawned
-	// upgrades, etc.). Library/Application Support is outside that restriction.
 	bundleParentDir                 = "Library/Application Support/apono-cli"
 	bundleParentDirPerm os.FileMode = 0o700
 	handlerScriptPerm   os.FileMode = 0o600
