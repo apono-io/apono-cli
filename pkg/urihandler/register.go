@@ -80,11 +80,7 @@ func Register(out io.Writer) error {
 }
 
 func resolveAponoBinary() (string, error) {
-	exe, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.EvalSymlinks(exe)
+	return os.Executable()
 }
 
 func bundlePath() (string, error) {
