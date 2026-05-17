@@ -13,7 +13,7 @@ jobs:
     # macOS runner so the apono:// handler bundle pre-build step (osacompile +
     # codesign) works during goreleaser. PR CI stays on ubuntu — it doesn't
     # produce real release artifacts.
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v3.3.0
         with:
