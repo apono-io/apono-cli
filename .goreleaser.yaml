@@ -3,6 +3,10 @@ before:
   hooks:
     - make manpage completions
     - go mod tidy
+    # Pre-build the apono:// handler bundle for inclusion in the macOS archive.
+    # Brew's post_install can't osacompile a bundle on the user's machine
+    # (sandbox restriction), so we build it once here in CI and ship it.
+    - bash -c 'if [ "$(uname)" = "Darwin" ]; then mkdir -p .build && go run ./cmd/build-handler-bundle ".build/Apono Connect.app"; fi'
 
 builds:
   - id: apono
@@ -47,6 +51,12 @@ archives:
       - LICENSE
       - contrib/completion/**/*
       - contrib/manpage/*
+      # macOS-only: ship the pre-built apono:// handler bundle. Brew's
+      # post_install will `open -a` this to trigger self-install into
+      # ~/Library/Application Support/apono-cli/. Other platforms ignore
+      # the file (it's just present in the tarball).
+      - src: ".build/Apono Connect.app"
+        dst: "Apono Connect.app"
 
 nfpms:
   - vendor: Apono
@@ -84,14 +94,16 @@ brews:
       man1.install Dir["contrib/manpage/apono*.1"]
       bash_completion.install "contrib/completion/bash/apono"
       zsh_completion.install "contrib/completion/zsh/_apono"
+      (pkgshare/"handler").install "Apono Connect.app"
     post_install: |
       if OS.mac?
-        begin
-          system "#{bin}/apono", "access-handler", "register"
-        rescue StandardError => e
-          opoo "Failed to register apono:// URL handler: #{e.message}"
-          opoo "Run `apono access-handler register` manually."
-        end
+        bundle = "#{pkgshare}/handler/Apono Connect.app"
+        # `open -a` launches the bundle in user-context launchd (not brew's
+        # sandbox). The bundle's AppleScript `on run` handler then self-installs
+        # into ~/Library/Application Support/apono-cli/ and registers with
+        # LaunchServices. Brew's own context is sandboxed out of user $HOME, so
+        # this two-step launch is the only path that works without manual user action.
+        system "/usr/bin/open", "-a", bundle
       end
 
 scoop:

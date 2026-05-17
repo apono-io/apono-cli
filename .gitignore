@@ -214,3 +214,4 @@ contrib
 # Local files
 apono
 docs/plans/
+/.build/
