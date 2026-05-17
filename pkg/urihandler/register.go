@@ -54,7 +54,7 @@ var infoPlistEntries = []struct {
 // EnsureRegistered builds and registers the apono:// handler bundle when missing.
 // No-op on non-macOS, in non-interactive contexts, or when a bundle is already on disk.
 func EnsureRegistered(in io.Reader, out io.Writer) error {
-	if runtime.GOOS != darwinOS {
+	if !urlHandlerSupported() {
 		return nil
 	}
 	if !terminal.IsRunning(in) {
@@ -67,16 +67,17 @@ func EnsureRegistered(in io.Reader, out io.Writer) error {
 	if _, statErr := os.Stat(bundleDir); statErr == nil {
 		return nil
 	}
-	if _, err := fmt.Fprintln(out, "\nInstalling the apono:// URL handler. Required to open sessions launched from the Apono portal and Slack."); err != nil {
-		return err
-	}
 	return Register(out)
 }
 
 // Register builds the apono:// handler bundle and registers it with LaunchServices.
 func Register(out io.Writer) error {
-	if runtime.GOOS != darwinOS {
+	if !urlHandlerSupported() {
 		return fmt.Errorf("access-handler is only supported on macOS")
+	}
+
+	if _, err := fmt.Fprintln(out, "\nInstalling the apono:// URL handler. Required to open sessions launched from the Apono portal and Slack."); err != nil {
+		return err
 	}
 
 	bundleDir, err := bundlePath()
@@ -211,4 +212,8 @@ func registerWithLaunchServices(bundleDir string) error {
 		return fmt.Errorf("lsregister: %w: %s", err, string(out))
 	}
 	return nil
+}
+
+func urlHandlerSupported() bool {
+	return runtime.GOOS == darwinOS
 }
