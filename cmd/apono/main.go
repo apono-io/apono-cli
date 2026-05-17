@@ -26,8 +26,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := urihandler.EnsureRegistered(os.Stdin, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: apono:// URL handler not installed: %v\n", err)
+	if regErr := urihandler.EnsureRegistered(os.Stdin, os.Stdout); regErr != nil {
+		fmt.Fprintf(os.Stderr, "warning: apono:// URL handler not installed: %v\n", regErr)
 	}
 
 	err = execute(runner)
