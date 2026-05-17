@@ -27,4 +27,4 @@ if [[ "$session$account$client" == *%* ]]; then
   exit 64
 fi
 export _APONO_ACCOUNT_ID_="$account"
-exec "__APONO_BINARY__" access use "$session" --client "$client" >/dev/null
+exec apono access use "$session" --client "$client" >/dev/null

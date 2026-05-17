@@ -6,11 +6,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 )
 
 func Unregister(out io.Writer) error {
-	if runtime.GOOS != darwinOS {
+	if !urlHandlerSupported() {
 		return fmt.Errorf("access-handler is only supported on macOS")
 	}
 

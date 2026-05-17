@@ -10,6 +10,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/commands/apono"
+	"github.com/apono-io/apono-cli/pkg/urihandler"
 )
 
 func main() {
@@ -23,6 +24,10 @@ func main() {
 	if err != nil {
 		fmt.Println("Failed to start CLI: %w", err)
 		os.Exit(1)
+	}
+
+	if regErr := urihandler.EnsureRegistered(os.Stdin, os.Stdout); regErr != nil {
+		fmt.Fprintf(os.Stderr, "warning: apono:// URL handler not installed: %v\n", regErr)
 	}
 
 	err = execute(runner)
