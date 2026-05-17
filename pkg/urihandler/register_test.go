@@ -24,6 +24,20 @@ func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 	}
 }
 
+func TestHandlerShellTemplate_appendsBrewKegBinDirs(t *testing.T) {
+	wantSubstrings := []string{
+		`/opt/homebrew/opt/*/bin(N/)`,
+		`/usr/local/opt/*/bin(N/)`,
+		`PATH="$PATH:$opt_dir"`,
+		`export PATH`,
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(handlerShellTemplate, want) {
+			t.Errorf("expected handler.sh to augment PATH with brew keg dirs (missing %q), got:\n%s", want, handlerShellTemplate)
+		}
+	}
+}
+
 func TestRegister_rejectsNonDarwin(t *testing.T) {
 	if runtime.GOOS == darwinOS {
 		t.Skip("non-darwin guard test")
