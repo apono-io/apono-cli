@@ -5,10 +5,15 @@ import (
 	"os/exec"
 )
 
-func Command(ctx context.Context, command string) *exec.Cmd {
-	shell := "sh"
-	if path, err := exec.LookPath("bash"); err == nil && path != "" {
-		shell = "bash"
+var defaultShell = resolveShell()
+
+func resolveShell() string {
+	if _, err := exec.LookPath("bash"); err == nil {
+		return "bash"
 	}
-	return exec.CommandContext(ctx, shell, "-c", command)
+	return "sh"
+}
+
+func Command(ctx context.Context, command string) *exec.Cmd {
+	return exec.CommandContext(ctx, defaultShell, "-c", command)
 }
