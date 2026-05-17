@@ -6,7 +6,10 @@ before:
     # Pre-build the apono:// handler bundle for inclusion in the macOS archive.
     # Brew's post_install can't osacompile a bundle on the user's machine
     # (sandbox restriction), so we build it once here in CI and ship it.
-    - bash -c 'if [ "$(uname)" = "Darwin" ]; then mkdir -p .build && go run ./cmd/build-handler-bundle ".build/Apono Connect.app"; fi'
+    # On non-macOS hosts (e.g. PR CI on Linux) we create an empty placeholder
+    # so the archive globbing still finds something — the bundle ships in every
+    # archive but only matters on macOS where post_install actually opens it.
+    - bash -c 'mkdir -p ".build/Apono Connect.app"; if [ "$(uname)" = "Darwin" ]; then go run ./cmd/build-handler-bundle ".build/Apono Connect.app"; fi'
 
 builds:
   - id: apono
