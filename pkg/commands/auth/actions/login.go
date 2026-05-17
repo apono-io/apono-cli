@@ -118,7 +118,7 @@ func Login() *cobra.Command {
 					return err
 				}
 			}
-			return setupAccessHandler(cmd.InOrStdin(), cmd.OutOrStdout())
+			return nil
 		},
 	}
 

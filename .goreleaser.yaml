@@ -84,15 +84,6 @@ brews:
       man1.install Dir["contrib/manpage/apono*.1"]
       bash_completion.install "contrib/completion/bash/apono"
       zsh_completion.install "contrib/completion/zsh/_apono"
-    post_install: |
-      if OS.mac?
-        begin
-          system "#{bin}/apono", "access-handler", "register"
-        rescue StandardError => e
-          opoo "Failed to register apono:// URL handler: #{e.message}"
-          opoo "Run `apono access-handler register` manually."
-        end
-      end
 
 scoop:
   bucket:

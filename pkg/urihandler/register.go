@@ -9,7 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
+
+	"github.com/apono-io/apono-cli/pkg/terminal"
 )
 
 //go:embed scripts/handler.applescript
@@ -50,17 +51,32 @@ var infoPlistEntries = []struct {
 	{"CFBundleURLTypes", "-array", urlTypesValue},
 }
 
-// Register currently builds the bundle on user invocation. Long-term this
-// becomes a package-install hook (Homebrew post-install, deb/rpm postinst,
-// Scoop) - manual for now.
+// EnsureRegistered builds and registers the apono:// handler bundle when missing.
+// No-op on non-macOS, in non-interactive contexts, or when a bundle is already on disk.
+func EnsureRegistered(in io.Reader, out io.Writer) error {
+	if runtime.GOOS != darwinOS {
+		return nil
+	}
+	if !terminal.IsRunning(in) {
+		return nil
+	}
+	bundleDir, err := bundlePath()
+	if err != nil {
+		return err
+	}
+	if _, statErr := os.Stat(bundleDir); statErr == nil {
+		return nil
+	}
+	if _, err := fmt.Fprintln(out, "\nInstalling the apono:// URL handler. Required to open sessions launched from the Apono portal and Slack."); err != nil {
+		return err
+	}
+	return Register(out)
+}
+
+// Register builds the apono:// handler bundle and registers it with LaunchServices.
 func Register(out io.Writer) error {
 	if runtime.GOOS != darwinOS {
 		return fmt.Errorf("access-handler is only supported on macOS")
-	}
-
-	aponoBinary, err := resolveAponoBinary()
-	if err != nil {
-		return fmt.Errorf("resolve apono binary: %w", err)
 	}
 
 	bundleDir, err := bundlePath()
@@ -68,7 +84,7 @@ func Register(out io.Writer) error {
 		return err
 	}
 
-	if err = buildAppBundle(bundleDir, aponoBinary); err != nil {
+	if err = buildAppBundle(bundleDir); err != nil {
 		return fmt.Errorf("build app bundle: %w", err)
 	}
 
@@ -80,14 +96,6 @@ func Register(out io.Writer) error {
 
 	_, err = fmt.Fprintf(out, "Registered apono:// handler at %s\n", bundleDir)
 	return err
-}
-
-func resolveAponoBinary() (string, error) {
-	exe, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.EvalSymlinks(exe)
 }
 
 func bundlePath() (string, error) {
@@ -114,7 +122,7 @@ func unregisterLegacyBundle() {
 	_, _ = unregisterFromLaunchServices(legacyPath)
 }
 
-func buildAppBundle(bundleDir, aponoBinary string) error {
+func buildAppBundle(bundleDir string) error {
 	// Wipe any prior bundle for clean state — register is idempotent.
 	if err := os.RemoveAll(bundleDir); err != nil {
 		return fmt.Errorf("clean previous bundle: %w", err)
@@ -126,7 +134,7 @@ func buildAppBundle(bundleDir, aponoBinary string) error {
 	if err := patchInfoPlist(bundleDir); err != nil {
 		return err
 	}
-	if err := writeHandlerScript(bundleDir, aponoBinary); err != nil {
+	if err := writeHandlerScript(bundleDir); err != nil {
 		return err
 	}
 	// codesign breaks after Info.plist edits; re-sign ad-hoc so LaunchServices
@@ -179,17 +187,11 @@ func writePlistEntry(plist, key, valueType, value string) error {
 	return nil
 }
 
-// handlerScriptBody returns the handler.sh contents with the apono binary path
-// substituted. Pure, side-effect-free — used by writeHandlerScript and tests.
-func handlerScriptBody(aponoBinary string) string {
-	return strings.ReplaceAll(handlerShellTemplate, "__APONO_BINARY__", aponoBinary)
-}
-
-func writeHandlerScript(bundleDir, aponoBinary string) error {
+func writeHandlerScript(bundleDir string) error {
 	target := filepath.Join(bundleDir, "Contents", "Resources", "handler.sh")
 	// AppleScript invokes this via `zsh -l handler.sh ...`, so the file is
 	// read by zsh as a script — no executable bit required.
-	if err := os.WriteFile(target, []byte(handlerScriptBody(aponoBinary)), handlerScriptPerm); err != nil {
+	if err := os.WriteFile(target, []byte(handlerShellTemplate), handlerScriptPerm); err != nil {
 		return fmt.Errorf("write handler.sh: %w", err)
 	}
 	return nil

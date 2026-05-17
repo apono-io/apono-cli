@@ -7,6 +7,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/urihandler"
 	"github.com/apono-io/apono-cli/pkg/version"
 
 	"github.com/apono-io/apono-cli/pkg/commands/access"
@@ -139,6 +140,10 @@ func createRootCommand(versionInfo version.VersionInfo) *cobra.Command {
 		cmd.SetContext(analytics.CreateStartTimeContext(cmd.Context(), &commandStartTime))
 		cmd.SetContext(analytics.CreateCommandIDContext(cmd.Context(), commandID))
 		cmd.SetContext(config.CreateProfileContext(cmd.Context(), profileName))
+
+		if err := urihandler.EnsureRegistered(cmd.InOrStdin(), cmd.OutOrStdout()); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: apono:// URL handler not installed: %v\n", err)
+		}
 
 		return nil
 	}
