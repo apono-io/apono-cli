@@ -60,11 +60,7 @@ func EnsureRegistered(in io.Reader, out io.Writer) error {
 	if !terminal.IsRunning(in) {
 		return nil
 	}
-	bundleDir, err := bundlePath()
-	if err != nil {
-		return err
-	}
-	if _, statErr := os.Stat(bundleDir); statErr == nil {
+	if bundleExists() {
 		return nil
 	}
 	return Register(out)
@@ -216,4 +212,13 @@ func registerWithLaunchServices(bundleDir string) error {
 
 func urlHandlerSupported() bool {
 	return runtime.GOOS == darwinOS
+}
+
+func bundleExists() bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(home, bundleParentDir, bundleDirName))
+	return err == nil
 }
