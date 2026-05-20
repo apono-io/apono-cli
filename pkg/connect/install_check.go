@@ -22,7 +22,7 @@ func IsInstalled(client clientapi.LauncherClientModel) bool {
 }
 
 func guiBundleExists(id string) bool {
-	home := os.Getenv("HOME")
+	home, _ := os.UserHomeDir()
 	candidates := []string{
 		"/Applications/" + id + ".app",
 		filepath.Join(home, "Applications", id+".app"),
