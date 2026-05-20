@@ -84,12 +84,12 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		return s.executeCommand(cobraCmd, invocationCommand)
 
 	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
-		if s.IsRunningInTerminal() {
+		if !headlessTerminalLauncher {
 			return s.executeCommand(cobraCmd, invocationCommand)
 		}
 		combined := invocationCommand
 		if authCommand != "" {
-			combined = authCommand + "\n" + invocationCommand
+			combined = authCommand + " && " + invocationCommand
 		}
 		wrapped, err := s.BuildTerminalLaunchCommand(combined)
 		if err != nil {
