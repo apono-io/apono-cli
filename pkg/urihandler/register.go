@@ -116,6 +116,7 @@ func removeLegacyBundle(out io.Writer) {
 	if _, err := os.Stat(legacyPath); err != nil {
 		return
 	}
+	// Unregister before delete: lsregister -u reads the bundle on disk.
 	_, _ = unregisterFromLaunchServices(legacyPath)
 	if err := os.RemoveAll(legacyPath); err != nil {
 		_, _ = fmt.Fprintf(out, "WARNING: could not remove legacy bundle at %s: %v\n", legacyPath, err)
