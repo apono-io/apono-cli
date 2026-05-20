@@ -116,7 +116,9 @@ func removeLegacyBundle(out io.Writer) {
 	if _, err := os.Stat(legacyPath); err != nil {
 		return
 	}
-	// Unregister before delete: lsregister -u reads the bundle on disk.
+	// Unregister before delete: lsregister -u reads the bundle on disk. If
+	// RemoveAll fails, LSDB is already unregistered; macOS rescan re-adds it
+	// and the next register call retries both steps.
 	_, _ = unregisterFromLaunchServices(legacyPath)
 	if err := os.RemoveAll(legacyPath); err != nil {
 		_, _ = fmt.Fprintf(out, "WARNING: could not remove legacy bundle at %s: %v\n", legacyPath, err)
