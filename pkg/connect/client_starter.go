@@ -59,10 +59,13 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		return fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
 	}
 
-	authCommand := utils.FromNullableString(client.AuthCommand)
+	authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand))
 	invocationCommand := client.InvocationCommand
 
-	if strings.TrimSpace(authCommand) != "" {
+	headlessTerminalLauncher := !s.IsRunningInTerminal() &&
+		(client.LauncherType == ClientKindTUI || client.LauncherType == ClientKindTERMINAL || client.LauncherType == ClientKindCLI)
+
+	if authCommand != "" && !headlessTerminalLauncher {
 		if err := s.executeCommand(cobraCmd, authCommand); err != nil {
 			return err
 		}
@@ -84,9 +87,11 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		if s.IsRunningInTerminal() {
 			return s.executeCommand(cobraCmd, invocationCommand)
 		}
-		// Headless context (URI handler chain): no stdin terminal, so wrap the
-		// command in Terminal.app so the user sees a real terminal window.
-		wrapped, err := s.BuildTerminalLaunchCommand(invocationCommand)
+		combined := invocationCommand
+		if authCommand != "" {
+			combined = authCommand + "\n" + invocationCommand
+		}
+		wrapped, err := s.BuildTerminalLaunchCommand(combined)
 		if err != nil {
 			return fmt.Errorf("build terminal launch command: %w", err)
 		}
