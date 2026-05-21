@@ -2,6 +2,7 @@ package connect
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -16,6 +17,9 @@ func IsInstalled(client clientapi.LauncherClientModel) bool {
 		return true
 	case ClientKindGUI:
 		return guiBundleExists(client.Id)
+	case ClientKindTUI, ClientKindCLI:
+		_, err := exec.LookPath(client.Id)
+		return err == nil
 	default:
 		return false
 	}

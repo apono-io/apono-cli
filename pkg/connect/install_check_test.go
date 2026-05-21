@@ -57,3 +57,49 @@ func TestIsInstalled_GUI_notInstalled(t *testing.T) {
 		t.Errorf("IsInstalled(GUI not on disk) = true, want false")
 	}
 }
+
+func TestIsInstalled_TUI_onPATH(t *testing.T) {
+	dir := t.TempDir()
+	binPath := filepath.Join(dir, "k9s")
+	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write fake binary: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	got := IsInstalled(clientapi.LauncherClientModel{
+		Id:           "k9s",
+		LauncherType: ClientKindTUI,
+	})
+	if !got {
+		t.Errorf("IsInstalled(TUI on PATH) = false, want true")
+	}
+}
+
+func TestIsInstalled_TUI_notOnPATH(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	got := IsInstalled(clientapi.LauncherClientModel{
+		Id:           "k9s",
+		LauncherType: ClientKindTUI,
+	})
+	if got {
+		t.Errorf("IsInstalled(TUI not on PATH) = true, want false")
+	}
+}
+
+func TestIsInstalled_CLI_onPATH(t *testing.T) {
+	dir := t.TempDir()
+	binPath := filepath.Join(dir, "mybin")
+	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write fake binary: %v", err)
+	}
+	t.Setenv("PATH", dir)
+
+	got := IsInstalled(clientapi.LauncherClientModel{
+		Id:           "mybin",
+		LauncherType: ClientKindCLI,
+	})
+	if !got {
+		t.Errorf("IsInstalled(CLI on PATH) = false, want true")
+	}
+}
