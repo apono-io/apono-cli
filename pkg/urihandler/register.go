@@ -84,7 +84,7 @@ func Register(out io.Writer) error {
 		return fmt.Errorf("build app bundle: %w", err)
 	}
 
-	unregisterLegacyBundle()
+	removeLegacyBundle(out)
 
 	if err = registerWithLaunchServices(bundleDir); err != nil {
 		return fmt.Errorf("register with LaunchServices: %w", err)
@@ -106,7 +106,7 @@ func bundlePath() (string, error) {
 	return filepath.Join(parent, bundleDirName), nil
 }
 
-func unregisterLegacyBundle() {
+func removeLegacyBundle(out io.Writer) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return
@@ -115,7 +115,16 @@ func unregisterLegacyBundle() {
 	if _, err := os.Stat(legacyPath); err != nil {
 		return
 	}
+	// Unregister before delete: lsregister -u reads the bundle on disk. If
+	// RemoveAll fails, LSDB is already unregistered; macOS rescan re-adds it
+	// and the next register call retries both steps.
 	_, _ = unregisterFromLaunchServices(legacyPath)
+	if err := os.RemoveAll(legacyPath); err != nil {
+		_, _ = fmt.Fprintf(out, "WARNING: could not remove legacy bundle at %s: %v\n", legacyPath, err)
+		_, _ = fmt.Fprintln(out, "macOS may keep routing apono:// links to it. Move it to Trash from Finder (allow App Management when prompted), then re-run this command.")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "Removed legacy bundle at %s\n", legacyPath)
 }
 
 func buildAppBundle(bundleDir string) error {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -130,7 +131,7 @@ func TestStart_TUI_TTY_runsInline(t *testing.T) {
 	}
 }
 
-func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
+func TestStart_TUI_NoTTY_wrapsAuthAndInvocationTogether(t *testing.T) {
 	for _, kind := range []string{ClientKindTUI, ClientKindTERMINAL, ClientKindCLI} {
 		t.Run(kind, func(t *testing.T) {
 			clients := []clientapi.LauncherClientModel{
@@ -142,20 +143,64 @@ func TestStart_TUI_NoTTY_wrapsInTerminal(t *testing.T) {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
-			// Auth runs inline (no wrap), invocation gets wrapped.
 			if len(*wraps) != 1 {
 				t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
 			}
-			if len(*runs) != 2 {
-				t.Fatalf("expected 2 runShell calls (auth inline + wrapped invocation), got %d", len(*runs))
+			if (*wraps)[0] != "setup && k9s" {
+				t.Errorf("expected wrap input to be auth && invocation, got %q", (*wraps)[0])
 			}
-			if (*runs)[0].combined != "setup" {
-				t.Errorf("expected first call to be plain auth_command, got %q", (*runs)[0].combined)
+			if len(*runs) != 1 {
+				t.Fatalf("expected 1 runShell call (only the wrapped command, auth not run inline), got %d", len(*runs))
 			}
-			if !strings.HasPrefix((*runs)[1].combined, "WRAPPED(") {
-				t.Errorf("%s without TTY should wrap invocation, got %q", kind, (*runs)[1].combined)
+			if !strings.HasPrefix((*runs)[0].combined, "WRAPPED(") {
+				t.Errorf("%s without TTY should run wrapped command, got %q", kind, (*runs)[0].combined)
 			}
 		})
+	}
+}
+
+func TestStart_TUI_NoTTY_wrapBuilderFails_returnsWrappedError(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("k9s", ClientKindTERMINAL, "setup", "k9s"),
+	}
+	s, runs, _ := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
+	s.BuildTerminalLaunchCommand = func(string) (string, error) {
+		return "", errors.New("osascript path missing")
+	}
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "k9s")
+	if err == nil {
+		t.Fatal("expected error when BuildTerminalLaunchCommand fails, got nil")
+	}
+	if !strings.Contains(err.Error(), "build terminal launch command") {
+		t.Errorf("expected wrapped error mentioning the failed step, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "osascript path missing") {
+		t.Errorf("expected wrapped error to include the underlying cause, got %q", err.Error())
+	}
+	if len(*runs) != 0 {
+		t.Errorf("expected no runShell calls when wrap builder fails, got %d", len(*runs))
+	}
+}
+
+func TestStart_TUI_NoTTY_emptyAuth_wrapsInvocationOnly(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("k9s", ClientKindTERMINAL, "", "k9s"),
+	}
+	s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+
+	if len(*wraps) != 1 {
+		t.Fatalf("expected 1 buildTerminalLaunchCommand call, got %d", len(*wraps))
+	}
+	if (*wraps)[0] != "k9s" {
+		t.Errorf("expected wrap input to be invocation only when auth is empty, got %q", (*wraps)[0])
+	}
+	if len(*runs) != 1 {
+		t.Fatalf("expected 1 runShell call, got %d", len(*runs))
 	}
 }
 
