@@ -20,6 +20,7 @@ const (
 	outputFlagName  = "output"
 	runFlagName     = "run"
 	clientFlagName  = "client"
+	launchFlagName  = "launch"
 	profileFlagName = "profile"
 
 	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
@@ -29,6 +30,7 @@ type accessUseCommandFlags struct {
 	outputFormat               string
 	shouldExecuteAccessCommand bool
 	clientID                   string
+	shouldLaunchInteractive    bool
 }
 
 func AccessDetails() *cobra.Command {
@@ -117,8 +119,9 @@ func AccessDetails() *cobra.Command {
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 	flags.StringVarP(&cmdFlags.clientID, clientFlagName, "c", "", "Launch the session in a supported local `client`. Supported on macOS only.\nSupported clients: dbeaver, tableplus, k9s")
+	flags.BoolVar(&cmdFlags.shouldLaunchInteractive, launchFlagName, false, "Pick a local client interactively from those installed. Supported on macOS only.")
 
-	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
+	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName, launchFlagName)
 
 	return cmd
 }
