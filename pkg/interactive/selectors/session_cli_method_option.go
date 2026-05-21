@@ -5,11 +5,12 @@ import (
 )
 
 const (
-	ExecuteOption = "execute"
-	PrintOption   = "print"
+	ExecuteOption        = "execute"
+	PrintOption          = "print"
+	ExectueWithAppOption = "executeWithApp"
 )
 
-func RunSessionCliMethodOptionSelector() (string, error) {
+func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, error) {
 	options := []listselect.SelectOption{
 		{
 			ID:    ExecuteOption,
@@ -19,6 +20,12 @@ func RunSessionCliMethodOptionSelector() (string, error) {
 			ID:    PrintOption,
 			Label: "Instructions",
 		},
+	}
+	if executeWithAppAvailable {
+		options = append(options, listselect.SelectOption{
+			ID:    ExectueWithAppOption,
+			Label: "Connect with app",
+		})
 	}
 
 	requestTypeInput := listselect.SelectInput{
