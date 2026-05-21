@@ -50,7 +50,7 @@ func AccessDetails() *cobra.Command {
 				if cmdFlags.clientID == "" {
 					return fmt.Errorf("--client requires a client name (e.g. --client dbeaver)")
 				}
-				if runtime.GOOS != "darwin" {
+				if runtime.GOOS != utils.DarwinOS {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
 				}
 			}
@@ -74,7 +74,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmdFlags.shouldLaunchInteractive {
-				if runtime.GOOS != "darwin" {
+				if runtime.GOOS != utils.DarwinOS {
 					return fmt.Errorf("--launch is only supported on macOS")
 				}
 				result, err := connect.FetchClients(cmd.Context(), client, session.Id)
@@ -91,7 +91,7 @@ func AccessDetails() *cobra.Command {
 					}
 				}
 				if len(installed) == 0 {
-					return fmt.Errorf("no installed clients found for this session")
+					return noInstalledClientsError(result.Clients)
 				}
 				selectedID, err := selectors.RunLauncherClientSelector(installed)
 				if err != nil {
@@ -148,7 +148,7 @@ func AccessDetails() *cobra.Command {
 	flags.StringVarP(&cmdFlags.outputFormat, outputFlagName, "o", "instructions", fmt.Sprintf("output format: %s | %s | %s | %s", services.CliOutputFormat, services.LinkOutputFormat, services.InstructionsOutputFormat, services.JSONOutputFormat))
 	flags.BoolVarP(&cmdFlags.shouldExecuteAccessCommand, runFlagName, "r", false, "execute the cli command")
 	flags.StringVarP(&cmdFlags.clientID, clientFlagName, "c", "", "Launch the session in a supported local `client`. Supported on macOS only.\nSupported clients: dbeaver, tableplus, k9s")
-	flags.BoolVar(&cmdFlags.shouldLaunchInteractive, launchFlagName, false, "Pick a local client interactively from those installed. Supported on macOS only.")
+	flags.BoolVarP(&cmdFlags.shouldLaunchInteractive, launchFlagName, "l", false, "Pick a local client interactively from those installed. Supported on macOS only.")
 
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName, launchFlagName)
 
@@ -177,4 +177,17 @@ func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {
 	}
 
 	return cmdFlags.outputFormat
+}
+
+func noInstalledClientsError(clients []clientapi.LauncherClientModel) error {
+	var guiClientNames []string
+	for _, c := range clients {
+		if c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI {
+			guiClientNames = append(guiClientNames, c.DisplayName)
+		}
+	}
+	if len(guiClientNames) == 0 {
+		return fmt.Errorf("no GUI or TUI launchers are configured for this session. Use --run to execute the inline command in your terminal")
+	}
+	return fmt.Errorf("no installed clients found. Install a CLI tool the session uses, or one of: %s", strings.Join(guiClientNames, ", "))
 }

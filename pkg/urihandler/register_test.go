@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
@@ -25,7 +27,7 @@ func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 }
 
 func TestRegister_rejectsNonDarwin(t *testing.T) {
-	if runtime.GOOS == darwinOS {
+	if runtime.GOOS == utils.DarwinOS {
 		t.Skip("non-darwin guard test")
 	}
 
@@ -35,7 +37,7 @@ func TestRegister_rejectsNonDarwin(t *testing.T) {
 }
 
 func TestUnregister_rejectsNonDarwin(t *testing.T) {
-	if runtime.GOOS == darwinOS {
+	if runtime.GOOS == utils.DarwinOS {
 		t.Skip("non-darwin guard test")
 	}
 
