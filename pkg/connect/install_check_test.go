@@ -33,7 +33,7 @@ func TestIsInstalled_GUI_installedInHomeApplications(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	appDir := filepath.Join(home, "Applications", "Apono-Test-Launcher-That-Does-Not-Exist.app")
-	if err := os.MkdirAll(appDir, 0o755); err != nil {
+	if err := os.MkdirAll(appDir, 0o700); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
@@ -61,8 +61,11 @@ func TestIsInstalled_GUI_notInstalled(t *testing.T) {
 func TestIsInstalled_TUI_onPATH(t *testing.T) {
 	dir := t.TempDir()
 	binPath := filepath.Join(dir, "k9s")
-	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o600); err != nil {
 		t.Fatalf("write fake binary: %v", err)
+	}
+	if err := os.Chmod(binPath, 0o700); err != nil {
+		t.Fatalf("chmod fake binary: %v", err)
 	}
 	t.Setenv("PATH", dir)
 
@@ -90,8 +93,11 @@ func TestIsInstalled_TUI_notOnPATH(t *testing.T) {
 func TestIsInstalled_CLI_onPATH(t *testing.T) {
 	dir := t.TempDir()
 	binPath := filepath.Join(dir, "mybin")
-	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	if err := os.WriteFile(binPath, []byte("#!/bin/sh\nexit 0\n"), 0o600); err != nil {
 		t.Fatalf("write fake binary: %v", err)
+	}
+	if err := os.Chmod(binPath, 0o700); err != nil {
+		t.Fatalf("chmod fake binary: %v", err)
 	}
 	t.Setenv("PATH", dir)
 

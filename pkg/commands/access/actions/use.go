@@ -74,30 +74,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmdFlags.shouldLaunchInteractive {
-				if runtime.GOOS != utils.DarwinOS {
-					return fmt.Errorf("--launch is only supported on macOS")
-				}
-				result, err := connect.FetchClients(cmd.Context(), client, session.Id)
-				if err != nil {
-					return fmt.Errorf("could not fetch session details: %w", err)
-				}
-				if len(result.Clients) == 0 {
-					return fmt.Errorf("no supported launchers for this session")
-				}
-				var installed []clientapi.LauncherClientModel
-				for _, c := range result.Clients {
-					if connect.IsInstalled(c) {
-						installed = append(installed, c)
-					}
-				}
-				if len(installed) == 0 {
-					return noInstalledClientsError(result.Clients)
-				}
-				selectedID, err := selectors.RunLauncherClientSelector(installed)
-				if err != nil {
-					return err
-				}
-				return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
+				return runLaunchInteractive(cmd, client, session)
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
@@ -177,6 +154,33 @@ func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {
 	}
 
 	return cmdFlags.outputFormat
+}
+
+func runLaunchInteractive(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
+	if runtime.GOOS != utils.DarwinOS {
+		return fmt.Errorf("--launch is only supported on macOS")
+	}
+	result, err := connect.FetchClients(cmd.Context(), client, session.Id)
+	if err != nil {
+		return fmt.Errorf("could not fetch session details: %w", err)
+	}
+	if len(result.Clients) == 0 {
+		return fmt.Errorf("no supported launchers for this session")
+	}
+	var installed []clientapi.LauncherClientModel
+	for _, c := range result.Clients {
+		if connect.IsInstalled(c) {
+			installed = append(installed, c)
+		}
+	}
+	if len(installed) == 0 {
+		return noInstalledClientsError(result.Clients)
+	}
+	selectedID, err := selectors.RunLauncherClientSelector(installed)
+	if err != nil {
+		return err
+	}
+	return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
 }
 
 func noInstalledClientsError(clients []clientapi.LauncherClientModel) error {

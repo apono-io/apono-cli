@@ -43,7 +43,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	var guiTuiInstalled []clientapi.LauncherClientModel
 	if runtime.GOOS == utils.DarwinOS {
 
-		if result, err := connect.FetchClients(cmd.Context(), client, session.Id); err == nil {
+		if result, fetchErr := connect.FetchClients(cmd.Context(), client, session.Id); fetchErr == nil {
 			for _, c := range result.Clients {
 				if (c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI) && connect.IsInstalled(c) {
 					guiTuiInstalled = append(guiTuiInstalled, c)
