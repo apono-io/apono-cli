@@ -9,9 +9,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
+	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -69,6 +71,33 @@ func AccessDetails() *cobra.Command {
 			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
 			if err != nil {
 				return fmt.Errorf("access session with id %s not found", args[0])
+			}
+
+			if cmdFlags.shouldLaunchInteractive {
+				if runtime.GOOS != "darwin" {
+					return fmt.Errorf("--launch is only supported on macOS")
+				}
+				result, err := connect.FetchClients(cmd.Context(), client, session.Id)
+				if err != nil {
+					return fmt.Errorf("could not fetch session details: %w", err)
+				}
+				if len(result.Clients) == 0 {
+					return fmt.Errorf("no supported launchers for this session")
+				}
+				var installed []clientapi.LauncherClientModel
+				for _, c := range result.Clients {
+					if connect.IsInstalled(c) {
+						installed = append(installed, c)
+					}
+				}
+				if len(installed) == 0 {
+					return fmt.Errorf("no installed clients found for this session")
+				}
+				selectedID, err := selectors.RunLauncherClientSelector(installed)
+				if err != nil {
+					return err
+				}
+				return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
