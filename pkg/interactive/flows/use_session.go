@@ -42,7 +42,6 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	connectWithAppAvailable := false
 	var guiTuiInstalled []clientapi.LauncherClientModel
 	if runtime.GOOS == utils.DarwinOS {
-
 		if result, fetchErr := connect.FetchClients(cmd.Context(), client, session.Id); fetchErr == nil {
 			for _, c := range result.Clients {
 				if (c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI) && connect.IsInstalled(c) {
