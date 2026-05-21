@@ -73,11 +73,11 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		return err
 
 	case selectors.ExectueWithAppOption:
-		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
-			return err
-		}
 		selectedID, err := selectors.RunLauncherClientSelector(guiTuiInstalled)
 		if err != nil {
+			return err
+		}
+		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
 			return err
 		}
 		return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)

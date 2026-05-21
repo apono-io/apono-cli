@@ -176,11 +176,11 @@ func runLaunchInteractive(cmd *cobra.Command, client *aponoapi.AponoClient, sess
 	if len(installed) == 0 {
 		return noInstalledClientsError(result.Clients)
 	}
-	if err := flows.PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
-		return err
-	}
 	selectedID, err := selectors.RunLauncherClientSelector(installed)
 	if err != nil {
+		return err
+	}
+	if err := flows.PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
 		return err
 	}
 	return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
