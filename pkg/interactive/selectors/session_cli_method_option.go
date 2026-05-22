@@ -7,7 +7,7 @@ import (
 const (
 	ExecuteOption        = "execute"
 	PrintOption          = "print"
-	ExectueWithAppOption = "executeWithApp"
+	ExecuteWithAppOption = "executeWithApp"
 )
 
 func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, error) {
@@ -23,7 +23,7 @@ func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, er
 	}
 	if executeWithAppAvailable {
 		options = append(options, listselect.SelectOption{
-			ID:    ExectueWithAppOption,
+			ID:    ExecuteWithAppOption,
 			Label: "Connect with app",
 		})
 	}

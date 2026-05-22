@@ -71,7 +71,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		err = printSessionInstructions(cmd, client, session)
 		return err
 
-	case selectors.ExectueWithAppOption:
+	case selectors.ExecuteWithAppOption:
 		selectedID, err := selectors.RunLauncherClientSelector(guiTuiInstalled)
 		if err != nil {
 			return err

@@ -187,14 +187,14 @@ func runLaunchInteractive(cmd *cobra.Command, client *aponoapi.AponoClient, sess
 }
 
 func noInstalledClientsError(clients []clientapi.LauncherClientModel) error {
-	var guiClientNames []string
+	var uiClientNames []string
 	for _, c := range clients {
 		if c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI {
-			guiClientNames = append(guiClientNames, c.DisplayName)
+			uiClientNames = append(uiClientNames, c.DisplayName)
 		}
 	}
-	if len(guiClientNames) == 0 {
+	if len(uiClientNames) == 0 {
 		return fmt.Errorf("no GUI or TUI launchers are configured for this session. Use --run to execute the inline command in your terminal")
 	}
-	return fmt.Errorf("no installed clients found. Install a CLI tool the session uses, or one of: %s", strings.Join(guiClientNames, ", "))
+	return fmt.Errorf("no installed clients found. Install a CLI tool the session uses, or one of: %s", strings.Join(uiClientNames, ", "))
 }
