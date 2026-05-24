@@ -46,7 +46,7 @@ func AccessDetails() *cobra.Command {
 				if cmdFlags.clientID == "" {
 					return fmt.Errorf("--client requires a client name (e.g. --client dbeaver)")
 				}
-				if runtime.GOOS != utils.DarwinOS {
+				if runtime.GOOS != "darwin" {
 					return fmt.Errorf("--client is only supported on macOS; use --run to launch in your current terminal")
 				}
 			}
