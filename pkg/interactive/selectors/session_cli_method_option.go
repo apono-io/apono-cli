@@ -16,10 +16,6 @@ func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, er
 			ID:    ExecuteOption,
 			Label: "Connect",
 		},
-		{
-			ID:    PrintOption,
-			Label: "Instructions",
-		},
 	}
 	if executeWithAppAvailable {
 		options = append(options, listselect.SelectOption{
@@ -27,6 +23,10 @@ func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, er
 			Label: "Connect with app",
 		})
 	}
+	options = append(options, listselect.SelectOption{
+		ID:    PrintOption,
+		Label: "Instructions",
+	})
 
 	requestTypeInput := listselect.SelectInput{
 		Title:     "Select how to use access",
