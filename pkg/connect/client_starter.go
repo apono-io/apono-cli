@@ -16,7 +16,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/terminal"
 	"github.com/apono-io/apono-cli/pkg/utils"
-	"github.com/apono-io/apono-cli/pkg/utils/shell"
 )
 
 const (
@@ -144,7 +143,7 @@ func runShellCommand(cobraCmd *cobra.Command, command string) (exitCode int, std
 	}
 
 	var stderr bytes.Buffer
-	cmd := shell.Command(cobraCmd.Context(), command)
+	cmd := exec.CommandContext(cobraCmd.Context(), "sh", "-c", command)
 	cmd.Stdout = cobraCmd.OutOrStdout()
 	cmd.Stdin = cobraCmd.InOrStdin()
 	cmd.Stderr = &stderr
