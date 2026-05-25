@@ -34,7 +34,7 @@ type ClientStarter struct {
 
 func NewClientStarter() *ClientStarter {
 	return &ClientStarter{
-		FetchClients:               fetchClients,
+		FetchClients:               FetchClients,
 		RunShellCommand:            runShellCommand,
 		BuildTerminalLaunchCommand: terminal.BuildLaunchCommand,
 		IsRunningInTerminal:        isRunningInTerminal,

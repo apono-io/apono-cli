@@ -2,12 +2,15 @@ package flows
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/styles"
+	"github.com/apono-io/apono-cli/pkg/utils"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -36,7 +39,20 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		return nil
 	}
 
-	accessMethod, err := selectors.RunSessionCliMethodOptionSelector()
+	connectWithAppAvailable := false
+	var guiTuiInstalled []clientapi.LauncherClientModel
+	if runtime.GOOS == utils.DarwinOS {
+		if result, fetchErr := connect.FetchClients(cmd.Context(), client, session.Id); fetchErr == nil {
+			for _, c := range result.Clients {
+				if (c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI) && connect.IsInstalled(c) {
+					guiTuiInstalled = append(guiTuiInstalled, c)
+				}
+			}
+		}
+		connectWithAppAvailable = len(guiTuiInstalled) > 0
+	}
+
+	accessMethod, err := selectors.RunSessionCliMethodOptionSelector(connectWithAppAvailable)
 	if err != nil {
 		return err
 	}
@@ -54,6 +70,16 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	case selectors.PrintOption:
 		err = printSessionInstructions(cmd, client, session)
 		return err
+
+	case selectors.ExecuteWithAppOption:
+		selectedID, err := selectors.RunLauncherClientSelector(guiTuiInstalled)
+		if err != nil {
+			return err
+		}
+		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
+			return err
+		}
+		return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
 
 	default:
 		return fmt.Errorf("unknown access method %s", accessMethod)

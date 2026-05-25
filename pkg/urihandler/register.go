@@ -11,6 +11,7 @@ import (
 	"runtime"
 
 	"github.com/apono-io/apono-cli/pkg/terminal"
+	"github.com/apono-io/apono-cli/pkg/utils"
 )
 
 //go:embed scripts/handler.applescript
@@ -18,8 +19,6 @@ var appleScriptTemplate string
 
 //go:embed scripts/handler.sh
 var handlerShellTemplate string
-
-const darwinOS = "darwin"
 
 const (
 	bundleDirName     = "Apono Connect.app"
@@ -220,7 +219,7 @@ func registerWithLaunchServices(bundleDir string) error {
 }
 
 func urlHandlerSupported() bool {
-	return runtime.GOOS == darwinOS
+	return runtime.GOOS == utils.DarwinOS
 }
 
 func bundleExists() bool {

@@ -15,7 +15,7 @@ type ClientFetchResult struct {
 	ConsumedBy string
 }
 
-func fetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
+func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
 	details, _, err := apiClient.ClientAPI.AccessSessionsAPI.
 		GetAccessSessionAccessDetails(ctx, sessionID).
 		ConsumedBy(aponoapi.ConsumedByAponoCli).

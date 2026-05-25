@@ -5,21 +5,28 @@ import (
 )
 
 const (
-	ExecuteOption = "execute"
-	PrintOption   = "print"
+	ExecuteOption        = "execute"
+	PrintOption          = "print"
+	ExecuteWithAppOption = "executeWithApp"
 )
 
-func RunSessionCliMethodOptionSelector() (string, error) {
+func RunSessionCliMethodOptionSelector(executeWithAppAvailable bool) (string, error) {
 	options := []listselect.SelectOption{
 		{
 			ID:    ExecuteOption,
 			Label: "Connect",
 		},
-		{
-			ID:    PrintOption,
-			Label: "Instructions",
-		},
 	}
+	if executeWithAppAvailable {
+		options = append(options, listselect.SelectOption{
+			ID:    ExecuteWithAppOption,
+			Label: "Connect with app",
+		})
+	}
+	options = append(options, listselect.SelectOption{
+		ID:    PrintOption,
+		Label: "Instructions",
+	})
 
 	requestTypeInput := listselect.SelectInput{
 		Title:     "Select how to use access",
