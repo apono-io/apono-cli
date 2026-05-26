@@ -71,6 +71,8 @@ type APIClient struct {
 
 	InventoryAPI *InventoryAPIService
 
+	LogsAPI *LogsAPIService
+
 	MCPServerAPI *MCPServerAPIService
 
 	UserSessionAPI *UserSessionAPIService
@@ -103,6 +105,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.DefaultAPI = (*DefaultAPIService)(&c.common)
 	c.FiltersAPI = (*FiltersAPIService)(&c.common)
 	c.InventoryAPI = (*InventoryAPIService)(&c.common)
+	c.LogsAPI = (*LogsAPIService)(&c.common)
 	c.MCPServerAPI = (*MCPServerAPIService)(&c.common)
 	c.UserSessionAPI = (*UserSessionAPIService)(&c.common)
 

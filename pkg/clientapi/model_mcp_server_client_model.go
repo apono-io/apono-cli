@@ -20,14 +20,15 @@ var _ MappedNullable = &McpServerClientModel{}
 
 // McpServerClientModel struct for McpServerClientModel
 type McpServerClientModel struct {
-	Id            string                              `json:"id"`
-	Type          string                              `json:"type"`
-	Name          string                              `json:"name"`
-	CatalogType   NullableString                      `json:"catalog_type,omitempty"`
-	ServerConfig  McpServerConfigAppModel             `json:"server_config"`
-	ResourceTypes []string                            `json:"resource_types"`
-	BlockedTools  []string                            `json:"blocked_tools"`
-	ToolIntents   map[string]McpToolIntentClientModel `json:"tool_intents,omitempty"`
+	Id             string                                     `json:"id"`
+	Type           string                                     `json:"type"`
+	Name           string                                     `json:"name"`
+	CatalogType    NullableString                             `json:"catalog_type,omitempty"`
+	ServerConfig   McpServerConfigAppModel                    `json:"server_config"`
+	ServerConfigV2 NullableMcpServerClientModelServerConfigV2 `json:"server_config_v2,omitempty"`
+	ResourceTypes  []string                                   `json:"resource_types"`
+	BlockedTools   []string                                   `json:"blocked_tools"`
+	ToolIntents    map[string]McpToolIntentClientModel        `json:"tool_intents,omitempty"`
 }
 
 type _McpServerClientModel McpServerClientModel
@@ -194,6 +195,49 @@ func (o *McpServerClientModel) SetServerConfig(v McpServerConfigAppModel) {
 	o.ServerConfig = v
 }
 
+// GetServerConfigV2 returns the ServerConfigV2 field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *McpServerClientModel) GetServerConfigV2() McpServerClientModelServerConfigV2 {
+	if o == nil || IsNil(o.ServerConfigV2.Get()) {
+		var ret McpServerClientModelServerConfigV2
+		return ret
+	}
+	return *o.ServerConfigV2.Get()
+}
+
+// GetServerConfigV2Ok returns a tuple with the ServerConfigV2 field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *McpServerClientModel) GetServerConfigV2Ok() (*McpServerClientModelServerConfigV2, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.ServerConfigV2.Get(), o.ServerConfigV2.IsSet()
+}
+
+// HasServerConfigV2 returns a boolean if a field has been set.
+func (o *McpServerClientModel) HasServerConfigV2() bool {
+	if o != nil && o.ServerConfigV2.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetServerConfigV2 gets a reference to the given NullableMcpServerClientModelServerConfigV2 and assigns it to the ServerConfigV2 field.
+func (o *McpServerClientModel) SetServerConfigV2(v McpServerClientModelServerConfigV2) {
+	o.ServerConfigV2.Set(&v)
+}
+
+// SetServerConfigV2Nil sets the value for ServerConfigV2 to be an explicit nil
+func (o *McpServerClientModel) SetServerConfigV2Nil() {
+	o.ServerConfigV2.Set(nil)
+}
+
+// UnsetServerConfigV2 ensures that no value is present for ServerConfigV2, not even an explicit nil
+func (o *McpServerClientModel) UnsetServerConfigV2() {
+	o.ServerConfigV2.Unset()
+}
+
 // GetResourceTypes returns the ResourceTypes field value
 func (o *McpServerClientModel) GetResourceTypes() []string {
 	if o == nil {
@@ -292,6 +336,9 @@ func (o McpServerClientModel) ToMap() (map[string]interface{}, error) {
 		toSerialize["catalog_type"] = o.CatalogType.Get()
 	}
 	toSerialize["server_config"] = o.ServerConfig
+	if o.ServerConfigV2.IsSet() {
+		toSerialize["server_config_v2"] = o.ServerConfigV2.Get()
+	}
 	toSerialize["resource_types"] = o.ResourceTypes
 	toSerialize["blocked_tools"] = o.BlockedTools
 	if o.ToolIntents != nil {

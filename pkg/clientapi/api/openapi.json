@@ -47,6 +47,9 @@
       "name": "Inventory"
     },
     {
+      "name": "Logs"
+    },
+    {
       "name": "MCP Server"
     },
     {
@@ -2170,6 +2173,37 @@
         }
       }
     },
+    "/api/client/v1/logs": {
+      "post": {
+        "tags": [
+          "Logs"
+        ],
+        "summary": "Submit one structured log entry from the CLI",
+        "operationId": "submitLogEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogEntryClientModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogEntrySubmissionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/client/v1/personal-tokens": {
       "get": {
         "tags": [
@@ -2621,6 +2655,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/v1/assistant/intent-analyzer/chat": {
+      "post": {
+        "tags": [
+          "Access Assistant"
+        ],
+        "summary": "Send Message to intent analyzer",
+        "operationId": "sendMessageToIntentAnalyzer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantMessageRequestModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantMessageResponseClientModel"
                 }
               }
             }
@@ -3204,6 +3269,10 @@
           },
           "credentials_rotated": {
             "type": "boolean"
+          },
+          "custom_access_details": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -4070,6 +4139,56 @@
           "title": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "LogEntryClientModel": {
+        "required": [
+          "session_id",
+          "level",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "number",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              }
+            ],
+            "nullable": true
+          },
+          "caller": {
+            "type": "string",
+            "nullable": true
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "LogEntrySubmissionResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
           }
         }
       },
@@ -5299,6 +5418,24 @@
           }
         }
       },
+      "HttpServerConfigAppModel": {
+        "required": [
+          "endpoint",
+          "headers"
+        ],
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "McpServerClientModel": {
         "required": [
           "id",
@@ -5325,6 +5462,15 @@
           },
           "server_config": {
             "$ref": "#/components/schemas/McpServerConfigAppModel"
+          },
+          "server_config_v2": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/McpServerConfigAppModelV2"
+              }
+            ],
+            "nullable": true
           },
           "resource_types": {
             "type": "array",
@@ -5371,6 +5517,42 @@
             }
           }
         }
+      },
+      "McpServerConfigAppModelV2": {
+        "required": [
+          "transport"
+        ],
+        "type": "object",
+        "properties": {
+          "transport": {
+            "$ref": "#/components/schemas/McpServerTransportAppModel"
+          },
+          "stdio": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StdioServerConfigAppModel"
+              }
+            ],
+            "nullable": true
+          },
+          "http": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HttpServerConfigAppModel"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "McpServerTransportAppModel": {
+        "enum": [
+          "STDIO",
+          "HTTP"
+        ],
+        "type": "string"
       },
       "McpToolIntentClientModel": {
         "required": [
@@ -5514,6 +5696,31 @@
               }
             ],
             "nullable": true
+          }
+        }
+      },
+      "StdioServerConfigAppModel": {
+        "required": [
+          "command",
+          "args",
+          "env"
+        ],
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
