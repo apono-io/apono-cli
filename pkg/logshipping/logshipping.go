@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
@@ -21,16 +19,12 @@ const (
 	submitTimeout = 2 * time.Second
 )
 
-// sessionID groups all log entries emitted by a single CLI invocation. Stamped
-// once at process start so support can find all events from one run.
-var sessionID = uuid.NewString()
-
 // Report sends one structured log event to the Apono backend.
 //
 // No-op when the context lacks an authenticated client (pre-login state).
 // Failures of the underlying API call are silently dropped — telemetry must
 // never affect the user-facing flow.
-func Report(ctx context.Context, level, message string, fields map[string]string) {
+func Report(ctx context.Context, sessionID, level, message string, fields map[string]string) {
 	client, _ := aponoapi.GetClient(ctx)
 	if client == nil {
 		return
