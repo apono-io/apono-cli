@@ -1,10 +1,18 @@
+// Package logshipping forwards CLI-side error context to the Apono backend.
+//
+// Callers invoke Report at error sites. Each call fires a single synchronous
+// API request with a short timeout. Network errors are swallowed — diagnostic
+// telemetry must not affect the user-facing flow.
 package logshipping
 
 import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 )
 
@@ -15,16 +23,19 @@ const (
 	LevelWarn  = "WARN"
 	LevelError = "ERROR"
 
-	callerCLI     = "cli"
-	submitTimeout = 2 * time.Second
+	callerCLI       = "cli"
+	fieldCLIVersion = "cli_version"
+	submitTimeout   = 2 * time.Second
 )
+
+var sessionID = uuid.NewString()
 
 // Report sends one structured log event to the Apono backend.
 //
 // No-op when the context lacks an authenticated client (pre-login state).
 // Failures of the underlying API call are silently dropped — telemetry must
 // never affect the user-facing flow.
-func Report(ctx context.Context, sessionID, level, message string, fields map[string]string) {
+func Report(ctx context.Context, level, message string, fields map[string]string) {
 	client, _ := aponoapi.GetClient(ctx)
 	if client == nil {
 		return
@@ -39,9 +50,20 @@ func Report(ctx context.Context, sessionID, level, message string, fields map[st
 		Message:   message,
 		Caller:    getCaller(),
 		Timestamp: getTimestamp(),
-		Fields:    fields,
+		Fields:    withCLIVersion(fields),
 	}
 	_ = submit(ctx, client, entry)
+}
+
+// withCLIVersion returns a copy of fields with the CLI build version added,
+// without mutating the caller's map.
+func withCLIVersion(fields map[string]string) map[string]string {
+	enriched := make(map[string]string, len(fields)+1)
+	for k, v := range fields {
+		enriched[k] = v
+	}
+	enriched[fieldCLIVersion] = build.Version
+	return enriched
 }
 
 func submit(ctx context.Context, client *aponoapi.AponoClient, entry clientapi.LogEntryClientModel) error {

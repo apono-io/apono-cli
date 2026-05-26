@@ -28,9 +28,10 @@ const (
 )
 
 const (
-	fieldClientID     = "client_id"
-	fieldLauncherType = "launcher_type"
-	fieldIsTerminal   = "is_terminal"
+	fieldAccessSessionID = "access_session_id"
+	fieldClientID        = "client_id"
+	fieldLauncherType    = "launcher_type"
+	fieldIsTerminal      = "is_terminal"
 )
 
 type ClientStarter struct {
@@ -192,9 +193,10 @@ func isRunningInTerminal() bool {
 }
 
 func reportLauncherError(ctx context.Context, message, sessionID, clientID, launcherType string, isTerminal bool) {
-	logshipping.Report(ctx, sessionID, logshipping.LevelError, message, map[string]string{
-		fieldClientID:     clientID,
-		fieldLauncherType: launcherType,
-		fieldIsTerminal:   strconv.FormatBool(isTerminal),
+	logshipping.Report(ctx, logshipping.LevelError, message, map[string]string{
+		fieldAccessSessionID: sessionID,
+		fieldClientID:        clientID,
+		fieldLauncherType:    launcherType,
+		fieldIsTerminal:      strconv.FormatBool(isTerminal),
 	})
 }
