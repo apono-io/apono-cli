@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/logshipping"
 	"github.com/apono-io/apono-cli/pkg/terminal"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -23,6 +25,13 @@ const (
 	ClientKindTUI      = "TUI"
 	ClientKindTERMINAL = "TERMINAL"
 	ClientKindCLI      = "CLI"
+)
+
+const (
+	fieldSessionID    = "session_id"
+	fieldClientID     = "client_id"
+	fieldLauncherType = "launcher_type"
+	fieldIsTerminal   = "is_terminal"
 )
 
 type ClientStarter struct {
@@ -42,31 +51,39 @@ func NewClientStarter() *ClientStarter {
 }
 
 func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID string) error {
-	result, err := s.FetchClients(cobraCmd.Context(), apiClient, sessionID)
+	ctx := cobraCmd.Context()
+	isTerminal := s.IsRunningInTerminal()
+
+	result, err := s.FetchClients(ctx, apiClient, sessionID)
 	if err != nil {
+		reportLauncherError(ctx, "launcher: fetch session details failed", sessionID, clientID, "", isTerminal)
 		return fmt.Errorf("could not fetch session details: %w", err)
 	}
 
 	// Portal and Slack show their own "credentials already in use" prompt before
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
-	if s.IsRunningInTerminal() && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
+	if isTerminal && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
+		reportLauncherError(ctx, "launcher: credentials already used elsewhere", sessionID, clientID, "", isTerminal)
 		return fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
 	}
 
 	client, ok := findClient(result.Clients, clientID)
 	if !ok {
+		reportLauncherError(ctx, "launcher: client not supported", sessionID, clientID, "", isTerminal)
 		return fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
 	}
 
+	launcherType := client.LauncherType
 	authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand))
 	invocationCommand := client.InvocationCommand
 
-	headlessTerminalLauncher := !s.IsRunningInTerminal() &&
-		(client.LauncherType == ClientKindTUI || client.LauncherType == ClientKindTERMINAL || client.LauncherType == ClientKindCLI)
+	headlessTerminalLauncher := !isTerminal &&
+		(launcherType == ClientKindTUI || launcherType == ClientKindTERMINAL || launcherType == ClientKindCLI)
 
 	if authCommand != "" && !headlessTerminalLauncher {
 		if err := s.executeCommand(cobraCmd, authCommand); err != nil {
+			reportLauncherError(ctx, "launcher: auth command failed", sessionID, clientID, launcherType, isTerminal)
 			return err
 		}
 	}
@@ -74,18 +91,27 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	if strings.Contains(invocationCommand, passwordPlaceholder) {
 		pwd, err := readCachedPassword(sessionID)
 		if err != nil {
+			reportLauncherError(ctx, "launcher: resolve credentials failed", sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("resolve credentials: %w", err)
 		}
 		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
 	}
 
-	switch client.LauncherType {
+	switch launcherType {
 	case ClientKindGUI:
-		return s.executeCommand(cobraCmd, invocationCommand)
+		if err := s.executeCommand(cobraCmd, invocationCommand); err != nil {
+			reportLauncherError(ctx, "launcher: GUI launch failed", sessionID, clientID, launcherType, isTerminal)
+			return err
+		}
+		return nil
 
 	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
 		if !headlessTerminalLauncher {
-			return s.executeCommand(cobraCmd, invocationCommand)
+			if err := s.executeCommand(cobraCmd, invocationCommand); err != nil {
+				reportLauncherError(ctx, "launcher: interactive launch failed", sessionID, clientID, launcherType, isTerminal)
+				return err
+			}
+			return nil
 		}
 		combined := invocationCommand
 		if authCommand != "" {
@@ -93,12 +119,18 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 		wrapped, err := s.BuildTerminalLaunchCommand(combined)
 		if err != nil {
+			reportLauncherError(ctx, "launcher: build terminal launch command failed", sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("build terminal launch command: %w", err)
 		}
-		return s.executeCommand(cobraCmd, wrapped)
+		if err := s.executeCommand(cobraCmd, wrapped); err != nil {
+			reportLauncherError(ctx, "launcher: headless launch failed", sessionID, clientID, launcherType, isTerminal)
+			return err
+		}
+		return nil
 
 	default:
-		return fmt.Errorf("unknown client kind %q for %q", client.LauncherType, clientID)
+		reportLauncherError(ctx, "launcher: unknown launcher kind", sessionID, clientID, launcherType, isTerminal)
+		return fmt.Errorf("unknown client kind %q for %q", launcherType, clientID)
 	}
 }
 
@@ -158,4 +190,13 @@ func runShellCommand(cobraCmd *cobra.Command, command string) (exitCode int, std
 
 func isRunningInTerminal() bool {
 	return terminal.IsRunning(os.Stdin)
+}
+
+func reportLauncherError(ctx context.Context, message, sessionID, clientID, launcherType string, isTerminal bool) {
+	logshipping.Report(ctx, logshipping.LevelError, message, map[string]string{
+		fieldSessionID:    sessionID,
+		fieldClientID:     clientID,
+		fieldLauncherType: launcherType,
+		fieldIsTerminal:   strconv.FormatBool(isTerminal),
+	})
 }
