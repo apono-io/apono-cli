@@ -9,6 +9,7 @@ api_analytics.go
 api_default.go
 api_filters.go
 api_inventory.go
+api_logs.go
 api_mcp_server.go
 api_user_session.go
 client.go
@@ -78,6 +79,7 @@ model_extend_options_client_model.go
 model_filter_option_client_model.go
 model_filter_option_client_model_icon.go
 model_grantee_client_model.go
+model_http_server_config_app_model.go
 model_icons_config_client_model.go
 model_instruction_client_model.go
 model_integration_client_model.go
@@ -85,12 +87,19 @@ model_justification_validation_response.go
 model_launcher_client_model.go
 model_launcher_summary_client_model.go
 model_link_client_model.go
+model_log_entry_client_model.go
+model_log_entry_submission_response.go
 model_mcp_error.go
 model_mcp_request.go
 model_mcp_response.go
 model_mcp_response_error.go
 model_mcp_server_client_model.go
+model_mcp_server_client_model_server_config_v2.go
 model_mcp_server_config_app_model.go
+model_mcp_server_config_app_model_v2.go
+model_mcp_server_config_app_model_v2_http.go
+model_mcp_server_config_app_model_v2_stdio.go
+model_mcp_server_transport_app_model.go
 model_mcp_tool_intent_client_model.go
 model_message_data_image_client_model.go
 model_message_data_markdown_client_model.go
@@ -143,6 +152,7 @@ model_session_event_client_model.go
 model_session_event_client_model_access_elevated.go
 model_session_event_client_model_tool_activity.go
 model_session_type_client_model.go
+model_stdio_server_config_app_model.go
 model_tool_activity_client_model.go
 model_trust_policy_matrix_client_model.go
 model_unmasked.go
