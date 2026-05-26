@@ -28,7 +28,6 @@ const (
 )
 
 const (
-	fieldSessionID    = "session_id"
 	fieldClientID     = "client_id"
 	fieldLauncherType = "launcher_type"
 	fieldIsTerminal   = "is_terminal"
@@ -193,8 +192,7 @@ func isRunningInTerminal() bool {
 }
 
 func reportLauncherError(ctx context.Context, message, sessionID, clientID, launcherType string, isTerminal bool) {
-	logshipping.Report(ctx, logshipping.LevelError, message, map[string]string{
-		fieldSessionID:    sessionID,
+	logshipping.Report(ctx, sessionID, logshipping.LevelError, message, map[string]string{
 		fieldClientID:     clientID,
 		fieldLauncherType: launcherType,
 		fieldIsTerminal:   strconv.FormatBool(isTerminal),
