@@ -47,7 +47,12 @@ func Report(ctx context.Context, level, message string, fields map[string]string
 		Timestamp: getTimestamp(),
 		Fields:    fields,
 	}
-	_, _, _ = client.ClientAPI.LogsAPI.SubmitLogEntry(ctx).LogEntryClientModel(entry).Execute()
+	_ = submit(ctx, client, entry)
+}
+
+func submit(ctx context.Context, client *aponoapi.AponoClient, entry clientapi.LogEntryClientModel) error {
+	_, _, err := client.ClientAPI.LogsAPI.SubmitLogEntry(ctx).LogEntryClientModel(entry).Execute()
+	return err
 }
 
 func getCaller() clientapi.NullableString {
