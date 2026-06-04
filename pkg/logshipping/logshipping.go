@@ -7,6 +7,7 @@ package logshipping
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,9 +27,16 @@ const (
 	callerCLI       = "cli"
 	fieldCLIVersion = "cli_version"
 	submitTimeout   = 2 * time.Second
+
+	// maxEventsPerInvocation caps how many events one CLI process ships, so a
+	// runaway error loop can't flood the backend.
+	maxEventsPerInvocation = 10
 )
 
-var sessionID = uuid.NewString()
+var (
+	sessionID  = uuid.NewString()
+	eventCount atomic.Int32
+)
 
 // Report sends one structured log event to the Apono backend.
 //
@@ -38,6 +46,9 @@ var sessionID = uuid.NewString()
 func Report(ctx context.Context, level, message string, fields map[string]string) {
 	client, _ := aponoapi.GetClient(ctx)
 	if client == nil {
+		return
+	}
+	if !withinCap(eventCount.Add(1)) {
 		return
 	}
 
@@ -53,6 +64,12 @@ func Report(ctx context.Context, level, message string, fields map[string]string
 		Fields:    withCLIVersion(fields),
 	}
 	_ = submit(ctx, client, entry)
+}
+
+// withinCap reports whether the nth event (1-based) is within the
+// per-invocation ship cap.
+func withinCap(count int32) bool {
+	return count <= maxEventsPerInvocation
 }
 
 // withCLIVersion returns a copy of fields with the CLI build version added,
