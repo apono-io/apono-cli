@@ -2,6 +2,7 @@ package textinput
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/styles"
 
@@ -44,7 +45,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case submitKey:
-			if !m.optional && m.textInput.Value() == "" {
+			if !m.optional && strings.TrimSpace(m.textInput.Value()) == "" {
 				m.statusMsg = defaultNoInputStyle.Render(noTextInputMsg)
 				return m, nil
 			} else {
@@ -113,7 +114,7 @@ func LaunchTextInput(input TextInput) (string, error) {
 		return "", fmt.Errorf("aborted by user")
 	}
 
-	resultText := resultModel.textInput.Value()
+	resultText := strings.TrimSpace(resultModel.textInput.Value())
 	if resultText == "" && !input.Optional {
 		return "", fmt.Errorf("no input provided")
 	}
