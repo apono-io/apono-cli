@@ -1,11 +1,24 @@
 package aponoapi
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"sync"
 
 	"golang.org/x/oauth2"
 )
+
+// ErrSessionExpired replaces the raw OAuth `invalid_grant` error with guidance
+// the user can act on.
+var ErrSessionExpired = errors.New("session expired, please run 'apono logout' and then 'apono login' to continue")
+
+// IsInvalidGrant reports whether err is an OAuth refresh failure — a dead or
+// revoked refresh token, which happens after inactivity or a version upgrade.
+func IsInvalidGrant(err error) bool {
+	var re *oauth2.RetrieveError
+	return errors.As(err, &re) && bytes.Contains(re.Body, []byte("invalid_grant"))
+}
 
 // TokenUpdateFunc is a function that accepts an oauth2 Token upon refresh, and
 // returns an error if it should not be used.
