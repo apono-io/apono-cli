@@ -60,7 +60,13 @@ type Runner struct {
 
 func (r *Runner) Run(ctx context.Context, args []string) error {
 	r.rootCmd.SetArgs(args)
-	return r.rootCmd.ExecuteContext(ctx)
+	if err := r.rootCmd.ExecuteContext(ctx); err != nil {
+		if aponoapi.IsInvalidGrant(err) {
+			return aponoapi.ErrSessionExpired
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *Runner) init() error {
