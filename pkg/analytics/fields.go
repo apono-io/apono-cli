@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	eventLaunchClientRun = "CLI: Command Launch Client Run"
+	eventLaunchClientRun = "Command Launch Client Run"
 
 	guiClientField       = "guiClient"
 	sessionIDField       = "session_id"
