@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/connect"
@@ -76,10 +77,16 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
+		err = PrintErrorConnectingSuggestion(cmd, session.Id)
+		if err != nil {
 			return err
 		}
-		return connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
+		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
+		if err != nil {
+			return err
+		}
+		analytics.SendLaunchClientEvent(cmd.Context(), selectedID, session.Id, session.Integration.Type, analytics.OriginInteractive)
+		return nil
 
 	default:
 		return fmt.Errorf("unknown access method %s", accessMethod)
