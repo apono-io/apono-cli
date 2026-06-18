@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/connect"
@@ -70,7 +71,17 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				return connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID)
+				if err := connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID); err != nil {
+					return err
+				}
+				// _APONO_ACCOUNT_ID_ is set only by the apono:// handler script as a profile-routing signal;
+				// piggyback on its presence to distinguish a browser-launched run from a terminal-typed --client.
+				origin := analytics.OriginFlagRun
+				if os.Getenv(accountIDEnvVar) != "" {
+					origin = analytics.OriginBrowser
+				}
+				analytics.SendLaunchClientEvent(cmd.Context(), cmdFlags.clientID, session.Id, session.Integration.Type, origin)
+				return nil
 			}
 
 			if len(session.ConnectionMethods) == 0 {

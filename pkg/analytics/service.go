@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -74,6 +75,26 @@ func SendCommandAnalyticsEvent(cmd *cobra.Command, args []string) {
 	}
 
 	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(cmd.Context()).CreateAnalyticEventClientModel(req).Execute()
+}
+
+func SendLaunchClientEvent(ctx context.Context, clientID, sessionID, integrationType, origin string) {
+	client, err := aponoapi.GetClient(ctx)
+	if err != nil {
+		return
+	}
+
+	req := clientapi.CreateAnalyticEventClientModel{
+		EventName:  eventLaunchClientRun,
+		ClientType: "CLI",
+		Properties: map[string]interface{}{
+			guiClientField:       clientID,
+			sessionIDField:       sessionID,
+			integrationTypeField: integrationType,
+			originField:          origin,
+		},
+	}
+
+	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
 }
 
 func GenerateCommandID() string {

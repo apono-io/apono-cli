@@ -12,3 +12,18 @@ const (
 	exitCodeField        = "exit_code"
 	flagFieldPrefix      = "flag_"
 )
+
+const (
+	eventLaunchClientRun = "CLI: Command Launch Client Run"
+
+	guiClientField       = "guiClient"
+	sessionIDField       = "session_id"
+	integrationTypeField = "integrationType"
+	originField          = "origin"
+)
+
+const (
+	OriginInteractive = "interactive mode"
+	OriginBrowser     = "browser"
+	OriginFlagRun     = "flag run"
+)
