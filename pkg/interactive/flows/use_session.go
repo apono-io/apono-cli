@@ -77,7 +77,8 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
+		err = PrintErrorConnectingSuggestion(cmd, session.Id)
+		if err != nil {
 			return err
 		}
 		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
