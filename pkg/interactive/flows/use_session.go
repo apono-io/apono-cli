@@ -80,7 +80,8 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err := PrintErrorConnectingSuggestion(cmd, session.Id); err != nil {
 			return err
 		}
-		if err := connect.NewClientStarter().Start(cmd, client, session.Id, selectedID); err != nil {
+		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
+		if err != nil {
 			return err
 		}
 		analytics.SendLaunchClientEvent(cmd.Context(), selectedID, session.Id, session.Integration.Type, analytics.OriginInteractive)

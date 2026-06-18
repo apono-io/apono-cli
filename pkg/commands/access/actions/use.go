@@ -71,7 +71,8 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				if err := connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID); err != nil {
+				err = connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID)
+				if err != nil {
 					return err
 				}
 				// _APONO_ACCOUNT_ID_ is set only by the apono:// handler script as a profile-routing signal;
