@@ -75,10 +75,9 @@ func AccessDetails() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				// _APONO_ACCOUNT_ID_ is set only by the apono:// handler script as a profile-routing signal;
-				// piggyback on its presence to distinguish a browser-launched run from a terminal-typed --client.
+				launchedFromBrowser := os.Getenv(accountIDEnvVar) != ""
 				origin := analytics.OriginFlagRun
-				if os.Getenv(accountIDEnvVar) != "" {
+				if launchedFromBrowser {
 					origin = analytics.OriginBrowser
 				}
 				analytics.SendLaunchClientEvent(cmd.Context(), cmdFlags.clientID, session.Id, session.Integration.Type, origin)
