@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -12,6 +13,9 @@ const (
 	APIDefaultURL    = "https://api.apono.io"
 	AppDefaultURL    = "https://app.apono.io"
 	PortalDefaultURL = "https://portal.apono.io"
+
+	PersonalTokenEnvVar = "APONO_PERSONAL_TOKEN"
+	APIURLEnvVar        = "APONO_API_URL"
 )
 
 var (
@@ -102,6 +106,31 @@ func GetProfileByName(profileName ProfileName) (*SessionConfig, error) {
 	}
 
 	return &sessionCfg, nil
+}
+
+// GetSessionConfigFromEnv returns a session authenticated by the personal
+// token in the APONO_PERSONAL_TOKEN environment variable, or nil if the
+// variable is not set. The session is not persisted, so secret managers can
+// authenticate the CLI without a prior `apono login` and without the token
+// ever being written to disk. APONO_API_URL overrides the API endpoint for
+// non-production tenants.
+func GetSessionConfigFromEnv() *SessionConfig {
+	personalToken := os.Getenv(PersonalTokenEnvVar)
+	if personalToken == "" {
+		return nil
+	}
+
+	apiURL := os.Getenv(APIURLEnvVar)
+	if apiURL == "" {
+		apiURL = APIDefaultURL
+	}
+
+	return &SessionConfig{
+		ApiURL:        apiURL,
+		AppURL:        AppDefaultURL,
+		PortalURL:     PortalDefaultURL,
+		PersonalToken: personalToken,
+	}
 }
 
 func IsAccessHandlerAnnounced() bool {
