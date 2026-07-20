@@ -19,6 +19,7 @@ import (
 
 const (
 	resetCredentialsCommand = "apono access reset-credentials "
+	launcherAliasCommand    = "apono access use %s --client %s"
 )
 
 func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestIDFilter string) error {
@@ -77,6 +78,10 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
+		err = printLauncherAliasSuggestion(cmd, session.Id, selectedID)
+		if err != nil {
+			return err
+		}
 		err = PrintErrorConnectingSuggestion(cmd, session.Id)
 		if err != nil {
 			return err
@@ -124,6 +129,12 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error {
 	resetCommand := resetCredentialsCommand + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	return err
+}
+
+func printLauncherAliasSuggestion(cmd *cobra.Command, sessionID, clientID string) error {
+	command := fmt.Sprintf(launcherAliasCommand, sessionID, clientID)
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Launch this session directly in your client next time: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(command))
 	return err
 }
 
