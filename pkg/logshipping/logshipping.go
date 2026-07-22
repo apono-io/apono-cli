@@ -23,7 +23,9 @@ const (
 	LevelWarn  = "WARN"
 	LevelError = "ERROR"
 
-	callerCLI       = "cli"
+	CallerCLI     = "cli"
+	CallerHandler = "handler"
+
 	fieldCLIVersion = "cli_version"
 	submitTimeout   = 2 * time.Second
 )
@@ -35,7 +37,7 @@ var sessionID = uuid.NewString()
 // No-op when the context lacks an authenticated client (pre-login state).
 // Failures of the underlying API call are silently dropped — telemetry must
 // never affect the user-facing flow.
-func Report(ctx context.Context, level, message string, fields map[string]string) {
+func Report(ctx context.Context, caller, level, message string, fields map[string]string) {
 	client, _ := aponoapi.GetClient(ctx)
 	if client == nil {
 		return
@@ -44,15 +46,18 @@ func Report(ctx context.Context, level, message string, fields map[string]string
 	ctx, cancel := context.WithTimeout(ctx, submitTimeout)
 	defer cancel()
 
-	entry := clientapi.LogEntryClientModel{
+	_ = submit(ctx, client, buildLogEntry(caller, level, message, fields))
+}
+
+func buildLogEntry(caller, level, message string, fields map[string]string) clientapi.LogEntryClientModel {
+	return clientapi.LogEntryClientModel{
 		SessionId: sessionID,
 		Level:     level,
 		Message:   message,
-		Caller:    getCaller(),
+		Caller:    newCaller(caller),
 		Timestamp: getTimestamp(),
 		Fields:    withCLIVersion(fields),
 	}
-	_ = submit(ctx, client, entry)
 }
 
 // withCLIVersion returns a copy of fields with the CLI build version added,
@@ -71,9 +76,8 @@ func submit(ctx context.Context, client *aponoapi.AponoClient, entry clientapi.L
 	return err
 }
 
-func getCaller() clientapi.NullableString {
-	c := callerCLI
-	return *clientapi.NewNullableString(&c)
+func newCaller(caller string) clientapi.NullableString {
+	return *clientapi.NewNullableString(&caller)
 }
 
 func getTimestamp() clientapi.NullableFloat64 {

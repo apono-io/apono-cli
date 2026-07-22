@@ -193,7 +193,7 @@ func isRunningInTerminal() bool {
 }
 
 func reportLauncherError(ctx context.Context, message, sessionID, clientID, launcherType string, isTerminal bool) {
-	logshipping.Report(ctx, logshipping.LevelError, message, map[string]string{
+	logshipping.Report(ctx, logshipping.CallerCLI, logshipping.LevelError, message, map[string]string{
 		fieldAccessSessionID: sessionID,
 		fieldClientID:        clientID,
 		fieldLauncherType:    launcherType,
