@@ -1,6 +1,23 @@
 #!/bin/zsh
 set -e
+
+logfile="${HOME}/Library/Application Support/apono-cli/handler.log"
+log() { print -r -- "$1"$'\t'"$2" >> "$logfile" 2>/dev/null || true }
+
+trap '
+  code=$?
+  if [[ $code -ne 0 ]]; then
+    case $code in
+      64)  reason="invalid launch URL" ;;
+      127) reason="apono CLI not found on PATH" ;;
+      *)   reason="handler failed" ;;
+    esac
+    log ERROR "$reason code=$code apono=$(command -v apono 2>/dev/null || echo MISSING) PATH=$PATH"
+  fi
+' EXIT
+
 uri="$1"
+log INFO "received launch request"
 if [[ -z "$uri" ]]; then
   echo "missing URI argument" >&2
   exit 64
@@ -26,5 +43,11 @@ if [[ "$session$account$client" == *%* ]]; then
   echo "URL-encoded characters not supported in launch params" >&2
   exit 64
 fi
+log INFO "parsed launch params session=$session account=$account client=$client"
+if ! command -v apono >/dev/null 2>&1; then
+  echo "apono CLI not found on PATH" >&2
+  exit 127
+fi
+log INFO "apono resolved at $(command -v apono); handing off to access use"
 export _APONO_ACCOUNT_ID_="$account"
 exec apono access use "$session" --client "$client" >/dev/null
