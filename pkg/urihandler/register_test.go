@@ -32,11 +32,11 @@ func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 	wantSubstrings := []string{
 		filepath.Join(bundleParentDir, handlerLogFileName), // log path agrees with HandlerLogPath
-		"log INFO",                                         // step logging
-		"command -v apono",                                 // explicit resolve check before exec
-		"trap",                                             // failure backstop
-		"PATH=$PATH",                                       // PATH captured on failure
-		"exec apono access use",                            // still hands off to the CLI
+		"log INFO",              // step logging
+		"command -v apono",      // explicit resolve check before exec
+		"trap",                  // failure backstop
+		"PATH=$PATH",            // PATH captured on failure
+		"exec apono access use", // still hands off to the CLI
 	}
 	for _, want := range wantSubstrings {
 		if !strings.Contains(handlerShellTemplate, want) {
