@@ -65,6 +65,8 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
+			shipHandlerLog(cmd.Context())
+
 			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
 			if err != nil {
 				return fmt.Errorf("access session with id %s not found", args[0])
