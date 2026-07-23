@@ -2,6 +2,7 @@ package urihandler
 
 import (
 	"bytes"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -23,6 +24,22 @@ func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 	}
 	if strings.Contains(handlerShellTemplate, "__APONO_BINARY__") {
 		t.Errorf("handler.sh should not contain __APONO_BINARY__ placeholder (uses PATH-resolved apono now), got:\n%s", handlerShellTemplate)
+	}
+}
+
+func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
+	wantSubstrings := []string{
+		filepath.Join(bundleParentDir, handlerLogFileName), // log path agrees with HandlerLogPath
+		"log INFO",              // step logging
+		"command -v apono",      // explicit resolve check before exec
+		"trap",                  // failure backstop
+		"PATH=$PATH",            // PATH captured on failure
+		"exec apono access use", // still hands off to the CLI
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(handlerShellTemplate, want) {
+			t.Errorf("expected handler.sh to contain %q, got:\n%s", want, handlerShellTemplate)
+		}
 	}
 }
 

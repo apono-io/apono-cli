@@ -14,6 +14,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/logshipping"
 )
 
 type runShellCall struct {
@@ -64,6 +65,83 @@ func testClientStarter(tty bool, clients []clientapi.LauncherClientModel, consum
 	}
 
 	return s, &runCalls, &wrapCalls
+}
+
+type shippedEntry struct {
+	level   string
+	message string
+	fields  map[string]string
+}
+
+func captureReports(s *ClientStarter) *[]shippedEntry {
+	var entries []shippedEntry
+	s.Report = func(_ context.Context, level, message string, fields map[string]string) {
+		entries = append(entries, shippedEntry{level: level, message: message, fields: fields})
+	}
+	return &entries
+}
+
+func hasEntry(entries []shippedEntry, level, message string) bool {
+	for _, e := range entries {
+		if e.level == level && e.message == message {
+			return true
+		}
+	}
+	return false
+}
+
+func TestStart_failure_shipsRealErrorNotCannedMessage(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "", "false"),
+	}
+	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		return 1, "boom on stderr", nil
+	})
+	entries := captureReports(s)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var errEntry *shippedEntry
+	for i := range *entries {
+		if (*entries)[i].level == logshipping.LevelError && (*entries)[i].message == "launcher: GUI launch failed" {
+			errEntry = &(*entries)[i]
+		}
+	}
+	if errEntry == nil {
+		t.Fatalf("expected a shipped GUI-failure error entry, got %+v", *entries)
+	}
+	if !strings.Contains(errEntry.fields[fieldError], "boom on stderr") {
+		t.Errorf("expected shipped error field to carry the real stderr, got %q", errEntry.fields[fieldError])
+	}
+	if errEntry.fields[fieldAccessSessionID] != "sess-1" || errEntry.fields[fieldClientID] != "dbeaver" {
+		t.Errorf("expected session/client fields, got %+v", errEntry.fields)
+	}
+}
+
+func TestStart_happyPath_shipsInfoStepsIncludingLaunched(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "", "echo invoke"),
+	}
+	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+	entries := captureReports(s)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+
+	for _, msg := range []string{
+		"launcher: starting",
+		"launcher: session details fetched",
+		"launcher: client resolved",
+		"launcher: launching client",
+		"launcher: client launched",
+	} {
+		if !hasEntry(*entries, logshipping.LevelInfo, msg) {
+			t.Errorf("expected INFO step %q to be shipped, entries: %+v", msg, *entries)
+		}
+	}
 }
 
 func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
