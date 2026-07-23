@@ -24,7 +24,7 @@ func TestShipHandlerLog_noClient_doesNotDrainFile(t *testing.T) {
 
 	shipHandlerLog(context.Background()) // no client in context
 
-	data, err := os.ReadFile(logPath)
+	data, err := os.ReadFile(filepath.Clean(logPath))
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}

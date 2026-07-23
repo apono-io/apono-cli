@@ -45,16 +45,15 @@ func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 	}
 }
 
-// runHandler runs the embedded script under zsh with a controlled HOME and
-// PATH, and returns the drained log lines. Skips where zsh is absent (keeps
-// non-macOS CI green) — no executable fixture is created, so the gosec file-perm
-// rule is never engaged.
+// zshPath is the macOS system zsh. Kept a constant so gosec (G204) accepts the
+// subprocess launch; callers gate these tests on macOS, where /bin/zsh always exists.
+const zshPath = "/bin/zsh"
+
+// runHandler runs the embedded script under /bin/zsh with a controlled HOME and
+// PATH, and returns the drained log lines. Callers gate on macOS; no executable
+// fixture is created, so the gosec file-perm rule is never engaged.
 func runHandler(t *testing.T, uri, pathEnv string) []LogLine {
 	t.Helper()
-	zsh, err := exec.LookPath("zsh")
-	if err != nil {
-		t.Skip("zsh not available")
-	}
 
 	home := t.TempDir()
 	logDir := filepath.Join(home, bundleParentDir)
@@ -66,7 +65,7 @@ func runHandler(t *testing.T, uri, pathEnv string) []LogLine {
 		t.Fatalf("write script: %v", err)
 	}
 
-	cmd := exec.Command(zsh, scriptPath, uri)
+	cmd := exec.Command(zshPath, scriptPath, uri)
 	cmd.Env = []string{"HOME=" + home, "PATH=" + pathEnv}
 	_ = cmd.Run() // non-zero exit is expected on the failure paths
 

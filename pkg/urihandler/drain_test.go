@@ -56,7 +56,7 @@ func TestDrainLog_parsesLinesAndEmptiesFile(t *testing.T) {
 		t.Errorf("line 1 = %+v", lines[1])
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}
