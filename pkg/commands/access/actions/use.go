@@ -73,7 +73,7 @@ func AccessDetails() *cobra.Command {
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
-				err = connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID)
+				err = connect.NewClientStarter().Start(cmd, client, session.Id, cmdFlags.clientID, nil)
 				if err != nil {
 					return err
 				}

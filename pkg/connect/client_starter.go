@@ -55,18 +55,26 @@ func NewClientStarter() *ClientStarter {
 	}
 }
 
-func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID string) error {
+// Start launches the session in the requested client. When prefetched is
+// non-nil it is reused (the interactive flow passes the result of its single
+// consuming fetch); when nil, Start fetches once itself (the direct
+// `apono access use --client X` path, which has no prior fetch).
+func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID string, prefetched *ClientFetchResult) error {
 	ctx := cobraCmd.Context()
 	isTerminal := s.IsRunningInTerminal()
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: starting", nil, sessionID, clientID, "", isTerminal)
 
-	result, err := s.FetchClients(ctx, apiClient, sessionID)
-	if err != nil {
-		s.reportLauncher(ctx, logshipping.LevelError, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
-		return fmt.Errorf("could not fetch session details: %w", err)
+	result := prefetched
+	var err error
+	if result == nil {
+		result, err = s.FetchClients(ctx, apiClient, sessionID)
+		if err != nil {
+			s.reportLauncher(ctx, logshipping.LevelError, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
+			return fmt.Errorf("could not fetch session details: %w", err)
+		}
+		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
 	}
-	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
 
 	// Portal and Slack show their own "credentials already in use" prompt before
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed

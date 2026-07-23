@@ -90,6 +90,51 @@ func hasEntry(entries []shippedEntry, level, message string) bool {
 	return false
 }
 
+func TestStart_prefetchedResult_doesNotFetchAgain(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "", "echo invoke"),
+	}
+	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+
+	fetchCalls := 0
+	s.FetchClients = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (*ClientFetchResult, error) {
+		fetchCalls++
+		return nil, errors.New("FetchClients must not be called when a prefetched result is supplied")
+	}
+
+	prefetched := &ClientFetchResult{Clients: clients, ConsumedBy: aponoapi.ConsumedByAponoCli}
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", prefetched); err != nil {
+		t.Fatalf("Start with prefetched result returned error: %v", err)
+	}
+
+	if fetchCalls != 0 {
+		t.Errorf("expected no FetchClients calls when prefetched result supplied, got %d", fetchCalls)
+	}
+	if len(*runs) != 1 {
+		t.Errorf("expected 1 runShell call (invocation) from the prefetched launcher, got %d", len(*runs))
+	}
+}
+
+func TestStart_nilPrefetched_fetchesOnce(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "", "echo invoke"),
+	}
+	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
+
+	fetchCalls := 0
+	s.FetchClients = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (*ClientFetchResult, error) {
+		fetchCalls++
+		return &ClientFetchResult{Clients: clients, ConsumedBy: aponoapi.ConsumedByAponoCli}, nil
+	}
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if fetchCalls != 1 {
+		t.Errorf("expected exactly 1 FetchClients call for the direct (nil prefetched) path, got %d", fetchCalls)
+	}
+}
+
 func TestStart_failure_shipsRealErrorNotCannedMessage(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("dbeaver", ClientKindGUI, "", "false"),
@@ -99,7 +144,7 @@ func TestStart_failure_shipsRealErrorNotCannedMessage(t *testing.T) {
 	})
 	entries := captureReports(s)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err == nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err == nil {
 		t.Fatal("expected error, got nil")
 	}
 
@@ -127,7 +172,7 @@ func TestStart_happyPath_shipsInfoStepsIncludingLaunched(t *testing.T) {
 	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 	entries := captureReports(s)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
 
@@ -161,7 +206,7 @@ func TestStart_GUI_runsShellInline_regardlessOfTTY(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			s, runs, wraps := testClientStarter(tc.tty, clients, aponoapi.ConsumedByAponoCli, nil)
 
-			err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
+			err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
 			if err != nil {
 				t.Fatalf("Start returned error: %v", err)
 			}
@@ -190,7 +235,7 @@ func TestStart_TUI_TTY_runsInline(t *testing.T) {
 			}
 			s, runs, wraps := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
-			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s", nil); err != nil {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
@@ -217,7 +262,7 @@ func TestStart_TUI_NoTTY_wrapsAuthAndInvocationTogether(t *testing.T) {
 			}
 			s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
 
-			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+			if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s", nil); err != nil {
 				t.Fatalf("Start returned error: %v", err)
 			}
 
@@ -246,7 +291,7 @@ func TestStart_TUI_NoTTY_wrapBuilderFails_returnsWrappedError(t *testing.T) {
 		return "", errors.New("osascript path missing")
 	}
 
-	err := s.Start(newCobraCmd(), nil, "sess-1", "k9s")
+	err := s.Start(newCobraCmd(), nil, "sess-1", "k9s", nil)
 	if err == nil {
 		t.Fatal("expected error when BuildTerminalLaunchCommand fails, got nil")
 	}
@@ -267,7 +312,7 @@ func TestStart_TUI_NoTTY_emptyAuth_wrapsInvocationOnly(t *testing.T) {
 	}
 	s, runs, wraps := testClientStarter(false, clients, aponoapi.ConsumedByAponoCli, nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "k9s", nil); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
 
@@ -290,7 +335,7 @@ func TestStart_unknownClient_errorsWithAvailableList(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
-	err := s.Start(newCobraCmd(), nil, "sess-1", "nonexistent")
+	err := s.Start(newCobraCmd(), nil, "sess-1", "nonexistent", nil)
 	if err == nil {
 		t.Fatal("expected error for unknown client, got nil")
 	}
@@ -315,7 +360,7 @@ func TestStart_shellNonZeroExit_returnsErrorWithStderr(t *testing.T) {
 		return 1, "boom on stderr", nil
 	})
 
-	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
+	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
 	if err == nil {
 		t.Fatal("expected error on non-zero exit, got nil")
 	}
@@ -333,7 +378,7 @@ func TestStart_TTY_consumedByOther_blocks(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, clients, "someone-else", nil)
 
-	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
+	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
 	if err == nil {
 		t.Fatal("expected error when creds consumed elsewhere in TTY context, got nil")
 	}
@@ -352,7 +397,7 @@ func TestStart_NoTTY_consumedByOther_proceeds(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(false, clients, "someone-else", nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err != nil {
 		t.Fatalf("expected success in headless context regardless of consumedBy, got %v", err)
 	}
 	if len(*runs) != 1 {
@@ -366,7 +411,7 @@ func TestStart_TTY_consumedByEmpty_proceeds(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, clients, "", nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err != nil {
 		t.Fatalf("expected success when consumedBy is empty (fresh session), got %v", err)
 	}
 	if len(*runs) != 1 {
@@ -412,7 +457,7 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus", nil); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
 	if len(*runs) != 1 {
@@ -438,7 +483,7 @@ func TestStart_noPlaceholder_skipsCacheRead(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, nil)
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
 	if len(*runs) != 2 {
@@ -457,7 +502,7 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	}
 	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, nil)
 
-	err := s.Start(newCobraCmd(), nil, "sess-missing", "tableplus")
+	err := s.Start(newCobraCmd(), nil, "sess-missing", "tableplus", nil)
 	if err == nil {
 		t.Fatal("expected error when cache file missing, got nil")
 	}
@@ -482,7 +527,7 @@ func TestStart_authFails_invocationSkipped(t *testing.T) {
 		return 0, "", nil
 	})
 
-	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver")
+	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
 	if err == nil {
 		t.Fatal("expected error when auth_command fails, got nil")
 	}
@@ -519,7 +564,7 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 		return 0, "", nil
 	})
 
-	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus"); err != nil {
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus", nil); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
 	if len(*runs) != 2 {

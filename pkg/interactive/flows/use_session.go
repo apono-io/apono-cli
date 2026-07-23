@@ -33,7 +33,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	}
 
 	if len(session.ConnectionMethods) == 1 {
-		err = printSessionInstructions(cmd, client, session)
+		err = printSessionInstructions(cmd, client, session, nil)
 		if err != nil {
 			return err
 		}
@@ -41,14 +41,21 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		return nil
 	}
 
+	// Single credential-consuming fetch for the whole interactive connect. The
+	// backend deletes the one-time password on this first call, so every branch
+	// below reuses this result instead of fetching (and consuming) again.
+	details, err := connect.FetchAccessDetails(cmd.Context(), client, session.Id)
+	if err != nil {
+		return err
+	}
+	result := connect.BuildClientFetchResult(details)
+
 	connectWithAppAvailable := false
 	var guiTuiInstalled []clientapi.LauncherClientModel
 	if runtime.GOOS == utils.DarwinOS {
-		if result, fetchErr := connect.FetchClients(cmd.Context(), client, session.Id); fetchErr == nil {
-			for _, c := range result.Clients {
-				if (c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI) && connect.IsInstalled(c) {
-					guiTuiInstalled = append(guiTuiInstalled, c)
-				}
+		for _, c := range result.Clients {
+			if (c.LauncherType == connect.ClientKindGUI || c.LauncherType == connect.ClientKindTUI) && connect.IsInstalled(c) {
+				guiTuiInstalled = append(guiTuiInstalled, c)
 			}
 		}
 		connectWithAppAvailable = len(guiTuiInstalled) > 0
@@ -66,12 +73,10 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 			return err
 		}
 
-		err = services.ExecuteAccessDetails(cmd, client, session)
-		return err
+		return services.ExecuteCliCommand(cmd, session, details.GetCli())
 
 	case selectors.PrintOption:
-		err = printSessionInstructions(cmd, client, session)
-		return err
+		return printSessionInstructions(cmd, client, session, details)
 
 	case selectors.ExecuteWithAppOption:
 		selectedID, err := selectors.RunLauncherClientSelector(guiTuiInstalled)
@@ -86,7 +91,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID)
+		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID, result)
 		if err != nil {
 			return err
 		}
@@ -98,8 +103,19 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	}
 }
 
-func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
-	accessDetails, customInstructionMessage, err := services.GetSessionDetails(cmd.Context(), client, session.Id, services.InstructionsOutputFormat)
+// printSessionInstructions renders and prints a session's instructions. When
+// details is non-nil it reuses that already-fetched result (interactive flow's
+// single consuming fetch); when nil it fetches once itself (the single
+// connection-method path, which has no prior fetch).
+func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel, details *clientapi.AccessSessionDetailsClientModel) error {
+	var accessDetails string
+	var customInstructionMessage services.CustomInstructionMessage
+	var err error
+	if details != nil {
+		accessDetails, customInstructionMessage, err = services.RenderAccessDetails(details, services.InstructionsOutputFormat)
+	} else {
+		accessDetails, customInstructionMessage, err = services.GetSessionDetails(cmd.Context(), client, session.Id, services.InstructionsOutputFormat)
+	}
 	if err != nil {
 		return err
 	}
