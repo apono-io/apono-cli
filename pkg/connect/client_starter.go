@@ -55,6 +55,23 @@ func NewClientStarter() *ClientStarter {
 	}
 }
 
+// resolveClients returns the launcher list for the session: the caller's
+// prefetched result when supplied (the interactive flow's single consuming
+// fetch), otherwise a fresh fetch. Kept separate so Start stays within the
+// cyclomatic-complexity limit.
+func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID, clientID string, isTerminal bool, prefetched *ClientFetchResult) (*ClientFetchResult, error) {
+	if prefetched != nil {
+		return prefetched, nil
+	}
+	result, err := s.FetchClients(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelError, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
+		return nil, fmt.Errorf("could not fetch session details: %w", err)
+	}
+	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
+	return result, nil
+}
+
 // Start launches the session in the requested client. When prefetched is
 // non-nil it is reused (the interactive flow passes the result of its single
 // consuming fetch); when nil, Start fetches once itself (the direct
@@ -65,15 +82,9 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: starting", nil, sessionID, clientID, "", isTerminal)
 
-	result := prefetched
-	var err error
-	if result == nil {
-		result, err = s.FetchClients(ctx, apiClient, sessionID)
-		if err != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
-			return fmt.Errorf("could not fetch session details: %w", err)
-		}
-		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
+	result, err := s.resolveClients(ctx, apiClient, sessionID, clientID, isTerminal, prefetched)
+	if err != nil {
+		return err
 	}
 
 	// Portal and Slack show their own "credentials already in use" prompt before
