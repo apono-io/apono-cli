@@ -15,7 +15,7 @@ type ClientFetchResult struct {
 	ConsumedBy string
 }
 
-func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
+func FetchAccessDetails(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*clientapi.AccessSessionDetailsClientModel, error) {
 	details, _, err := apiClient.ClientAPI.AccessSessionsAPI.
 		GetAccessSessionAccessDetails(ctx, sessionID).
 		ConsumedBy(aponoapi.ConsumedByAponoCli).
@@ -23,6 +23,10 @@ func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionI
 	if err != nil {
 		return nil, err
 	}
+	return details, nil
+}
+
+func BuildClientFetchResult(details *clientapi.AccessSessionDetailsClientModel) *ClientFetchResult {
 	clients := details.Launchers
 	if cli := utils.FromNullableString(details.Cli); cli != "" {
 		clients = append(clients, clientapi.LauncherClientModel{
@@ -34,5 +38,13 @@ func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionI
 	return &ClientFetchResult{
 		Clients:    clients,
 		ConsumedBy: utils.FromNullableString(details.ConsumedBy),
-	}, nil
+	}
+}
+
+func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
+	details, err := FetchAccessDetails(ctx, apiClient, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return BuildClientFetchResult(details), nil
 }

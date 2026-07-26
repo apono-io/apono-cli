@@ -78,12 +78,8 @@ func ListAccessSessions(ctx context.Context, client *aponoapi.AponoClient, integ
 }
 
 func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
-	if runtime.GOOS == "windows" {
-		return errors.New("executing cli commands is not supported on windows")
-	}
-
-	if !utils.Contains(session.ConnectionMethods, CliOutputFormat) {
-		return fmt.Errorf("session %s does not support cli access", session.Id)
+	if err := checkCliExecutable(session); err != nil {
+		return err
 	}
 
 	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).
@@ -93,11 +89,23 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
 	}
 
-	err = executeCommand(cobraCmd, accessDetails.GetCli())
-	if err != nil {
+	return executeCommand(cobraCmd, accessDetails.GetCli())
+}
+
+func ExecuteCliCommand(cobraCmd *cobra.Command, session *clientapi.AccessSessionClientModel, command string) error {
+	if err := checkCliExecutable(session); err != nil {
 		return err
 	}
+	return executeCommand(cobraCmd, command)
+}
 
+func checkCliExecutable(session *clientapi.AccessSessionClientModel) error {
+	if runtime.GOOS == "windows" {
+		return errors.New("executing cli commands is not supported on windows")
+	}
+	if !utils.Contains(session.ConnectionMethods, CliOutputFormat) {
+		return fmt.Errorf("session %s does not support cli access", session.Id)
+	}
 	return nil
 }
 
@@ -128,6 +136,10 @@ func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessio
 		return "", "", err
 	}
 
+	return RenderAccessDetails(accessDetails, outputFormat)
+}
+
+func RenderAccessDetails(accessDetails *clientapi.AccessSessionDetailsClientModel, outputFormat string) (string, CustomInstructionMessage, error) {
 	var output string
 	var customInstructionMessage CustomInstructionMessage
 	switch outputFormat {
@@ -142,8 +154,7 @@ func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessio
 			customInstructionMessage = accessDetails.Instructions.GetCustomMessage()
 		}
 	case JSONOutputFormat:
-		var outputBytes []byte
-		outputBytes, err = json.Marshal(accessDetails.Json)
+		outputBytes, err := json.Marshal(accessDetails.Json)
 		if err != nil {
 			return "", "", err
 		}
