@@ -41,9 +41,6 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		return nil
 	}
 
-	// Single credential-consuming fetch for the whole interactive connect. The
-	// backend deletes the one-time password on this first call, so every branch
-	// below reuses this result instead of fetching (and consuming) again.
 	details, err := connect.FetchAccessDetails(cmd.Context(), client, session.Id)
 	if err != nil {
 		return err
@@ -103,10 +100,6 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	}
 }
 
-// printSessionInstructions renders and prints a session's instructions. When
-// details is non-nil it reuses that already-fetched result (interactive flow's
-// single consuming fetch); when nil it fetches once itself (the single
-// connection-method path, which has no prior fetch).
 func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel, details *clientapi.AccessSessionDetailsClientModel) error {
 	var accessDetails string
 	var customInstructionMessage services.CustomInstructionMessage

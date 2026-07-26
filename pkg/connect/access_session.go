@@ -15,10 +15,6 @@ type ClientFetchResult struct {
 	ConsumedBy string
 }
 
-// FetchAccessDetails performs the single credential-consuming access-details
-// fetch for a session. The backend hands out the one-time password on the first
-// call and deletes it, so this must be called exactly once per connect and its
-// result reused for everything that follows.
 func FetchAccessDetails(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*clientapi.AccessSessionDetailsClientModel, error) {
 	details, _, err := apiClient.ClientAPI.AccessSessionsAPI.
 		GetAccessSessionAccessDetails(ctx, sessionID).
@@ -30,10 +26,6 @@ func FetchAccessDetails(ctx context.Context, apiClient *aponoapi.AponoClient, se
 	return details, nil
 }
 
-// BuildClientFetchResult projects already-fetched access details into the
-// launcher list (appending the cli command as a client). It does not fetch —
-// callers that already hold details reuse them here instead of consuming the
-// one-time password a second time.
 func BuildClientFetchResult(details *clientapi.AccessSessionDetailsClientModel) *ClientFetchResult {
 	clients := details.Launchers
 	if cli := utils.FromNullableString(details.Cli); cli != "" {
@@ -49,9 +41,6 @@ func BuildClientFetchResult(details *clientapi.AccessSessionDetailsClientModel) 
 	}
 }
 
-// FetchClients fetches a session's access details and projects them into the
-// launcher list. Callers that already hold details should use
-// FetchAccessDetails + BuildClientFetchResult to avoid a second consuming fetch.
 func FetchClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*ClientFetchResult, error) {
 	details, err := FetchAccessDetails(ctx, apiClient, sessionID)
 	if err != nil {

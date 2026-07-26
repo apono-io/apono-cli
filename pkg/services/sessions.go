@@ -92,10 +92,6 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 	return executeCommand(cobraCmd, accessDetails.GetCli())
 }
 
-// ExecuteCliCommand runs an already-fetched cli command for a session. The
-// interactive flow uses this after its single consuming fetch so it does not
-// fetch (and consume the one-time password) again; the guards match
-// ExecuteAccessDetails.
 func ExecuteCliCommand(cobraCmd *cobra.Command, session *clientapi.AccessSessionClientModel, command string) error {
 	if err := checkCliExecutable(session); err != nil {
 		return err
@@ -143,9 +139,6 @@ func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessio
 	return RenderAccessDetails(accessDetails, outputFormat)
 }
 
-// RenderAccessDetails formats already-fetched access details by output format.
-// The interactive flow uses this to render the result of its single consuming
-// fetch instead of fetching (and consuming the one-time password) again.
 func RenderAccessDetails(accessDetails *clientapi.AccessSessionDetailsClientModel, outputFormat string) (string, CustomInstructionMessage, error) {
 	var output string
 	var customInstructionMessage CustomInstructionMessage

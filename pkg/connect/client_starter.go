@@ -55,10 +55,6 @@ func NewClientStarter() *ClientStarter {
 	}
 }
 
-// resolveClients returns the launcher list for the session: the caller's
-// prefetched result when supplied (the interactive flow's single consuming
-// fetch), otherwise a fresh fetch. Kept separate so Start stays within the
-// cyclomatic-complexity limit.
 func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID, clientID string, isTerminal bool, prefetched *ClientFetchResult) (*ClientFetchResult, error) {
 	if prefetched != nil {
 		return prefetched, nil
@@ -72,10 +68,6 @@ func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.
 	return result, nil
 }
 
-// Start launches the session in the requested client. When prefetched is
-// non-nil it is reused (the interactive flow passes the result of its single
-// consuming fetch); when nil, Start fetches once itself (the direct
-// `apono access use --client X` path, which has no prior fetch).
 func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID string, prefetched *ClientFetchResult) error {
 	ctx := cobraCmd.Context()
 	isTerminal := s.IsRunningInTerminal()
