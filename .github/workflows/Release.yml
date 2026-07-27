@@ -33,12 +33,24 @@ jobs:
 
       - run: make inst
 
+      # Short-lived installation token for pushing the Homebrew formula and
+      # Scoop manifest. Replaces the long-lived PATs, which expired and broke
+      # the v1.3.21 tap publish.
+      - name: Mint tap publisher token
+        id: tap_token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          client-id: ${{ secrets.TAP_PUBLISHER_CLIENT_ID }}
+          private-key: ${{ secrets.TAP_PUBLISHER_PRIVATE_KEY }}
+          owner: apono-io
+          repositories: homebrew-tap,scoop-bucket
+
       - run: goreleaser release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-          SCOOP_TAP_GITHUB_TOKEN: ${{ secrets.SCOOP_TAP_GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.tap_token.outputs.token }}
+          SCOOP_TAP_GITHUB_TOKEN: ${{ steps.tap_token.outputs.token }}
 
       - name: Upload dist
         uses: actions/upload-artifact@v4
