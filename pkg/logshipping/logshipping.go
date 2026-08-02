@@ -62,7 +62,7 @@ func buildLogEntry(caller, level, message string, fields map[string]string) clie
 	return clientapi.LogEntryClientModel{
 		SessionId: sessionID,
 		Level:     level,
-		Message:   redactHomeDir(message),
+		Message:   redactPaths(message),
 		Caller:    newCaller(caller),
 		Timestamp: getTimestamp(),
 		Fields:    withCLIVersion(redactValues(fields)),
