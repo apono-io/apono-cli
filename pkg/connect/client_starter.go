@@ -48,6 +48,8 @@ type ClientStarter struct {
 	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 	Report                     func(ctx context.Context, level, message string, fields map[string]string)
+
+	secrets []string
 }
 
 func NewClientStarter() *ClientStarter {
@@ -118,7 +120,6 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 	}
 
-	var secrets []string
 	if strings.Contains(invocationCommand, passwordPlaceholder) {
 		pwd, readErr := readCachedPassword(sessionID)
 		if readErr != nil {
@@ -127,7 +128,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
 		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodedPwd)
-		secrets = []string{pwd, encodedPwd}
+		s.secrets = []string{pwd, encodedPwd}
 	}
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: launching client", nil, sessionID, clientID, launcherType, isTerminal)
@@ -136,7 +137,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	case ClientKindGUI:
 		exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
 		if launchErr != nil {
-			s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: GUI launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: GUI launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
 			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -146,7 +147,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		if !headlessTerminalLauncher {
 			exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
 			if launchErr != nil {
-				s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: interactive launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+				s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: interactive launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
 				return launchErr
 			}
 			s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -158,12 +159,12 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 		wrapped, wrapErr := s.BuildTerminalLaunchCommand(combined)
 		if wrapErr != nil {
-			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: build terminal launch command failed", withoutSecrets(wrapErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: build terminal launch command failed", wrapErr, sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("build terminal launch command: %w", wrapErr)
 		}
 		exitCode, launchErr := s.executeCommand(cobraCmd, wrapped)
 		if launchErr != nil {
-			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: headless launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: headless launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
 			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -240,7 +241,7 @@ func (s *ClientStarter) reportLauncher(ctx context.Context, level, message strin
 	}
 	fields := launcherFields(sessionID, clientID, launcherType, isTerminal)
 	if cause != nil {
-		fields[fieldError] = cause.Error()
+		fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
 	}
 	s.Report(ctx, level, message, fields)
 }
@@ -252,7 +253,7 @@ func (s *ClientStarter) reportCommandFailure(ctx context.Context, level, message
 	fields := launcherFields(sessionID, clientID, launcherType, isTerminal)
 	fields[fieldExitCode] = strconv.Itoa(exitCode)
 	if cause != nil {
-		fields[fieldError] = cause.Error()
+		fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
 	}
 	s.Report(ctx, level, message, fields)
 }
