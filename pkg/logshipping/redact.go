@@ -2,10 +2,31 @@ package logshipping
 
 import (
 	"os"
+	"path"
+	"regexp"
 	"strings"
 )
 
-const homeDirMarker = "~"
+const (
+	homeDirMarker    = "~"
+	aponoPathMarker  = "apono"
+	elidedPathPrefix = "…/"
+)
+
+var absolutePath = regexp.MustCompile(`/(?:[^/\s:"']+(?: [^/\s:"']+)*/)+[^/\s:"']*`)
+
+func redactPaths(text string) string {
+	return redactHomeDir(redactForeignPaths(text))
+}
+
+func redactForeignPaths(text string) string {
+	return absolutePath.ReplaceAllStringFunc(text, func(match string) string {
+		if strings.Contains(strings.ToLower(match), aponoPathMarker) {
+			return match
+		}
+		return elidedPathPrefix + path.Base(match)
+	})
+}
 
 func redactHomeDir(text string) string {
 	home, err := os.UserHomeDir()
@@ -16,7 +37,7 @@ func redactHomeDir(text string) string {
 }
 
 func sanitize(text string) string {
-	return condense(redactHomeDir(text))
+	return condense(redactPaths(text))
 }
 
 func sanitizeValues(fields map[string]string) map[string]string {
