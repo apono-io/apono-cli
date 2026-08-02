@@ -2,12 +2,80 @@ package connect
 
 import (
 	"encoding/base64"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 const passwordWithSpecials = `p@ss w&rd!`
+
+func TestWithoutSecrets(t *testing.T) {
+	cases := []struct {
+		name    string
+		err     error
+		secrets []string
+		want    string
+	}{
+		{
+			name: "nil error stays nil",
+			err:  nil, secrets: []string{"hunter2"},
+			want: "",
+		},
+		{
+			name:    "every occurrence of every secret is replaced",
+			err:     errors.New("psql://u:hunter2@h rejected hunter2 (encoded hunter%32)"),
+			secrets: []string{"hunter2", "hunter%32"},
+			want:    "psql://u:***@h rejected *** (encoded ***)",
+		},
+		{
+			name:    "blank secret leaves the text intact",
+			err:     errors.New("nothing to hide"),
+			secrets: []string{""},
+			want:    "nothing to hide",
+		},
+		{
+			name:    "repeated secret is applied once",
+			err:     errors.New("hunter2"),
+			secrets: []string{"hunter2", "hunter2"},
+			want:    "***",
+		},
+		{
+			name:    "no secrets leaves the text intact",
+			err:     errors.New("connection refused"),
+			secrets: nil,
+			want:    "connection refused",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := withoutSecrets(tc.err, tc.secrets)
+			if tc.want == "" {
+				if got != nil {
+					t.Errorf("withoutSecrets() = %v, want nil", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("withoutSecrets() = nil, want %q", tc.want)
+			}
+			if got.Error() != tc.want {
+				t.Errorf("withoutSecrets() = %q, want %q", got.Error(), tc.want)
+			}
+		})
+	}
+}
+
+func TestWithoutSecrets_doesNotExposeTheOriginalError(t *testing.T) {
+	original := errors.New("psql failed for hunter2")
+
+	got := withoutSecrets(original, []string{"hunter2"})
+
+	if errors.Is(got, original) {
+		t.Error("the redacted error must not unwrap back to the original")
+	}
+}
 
 func TestEncodePassword_url_escapesSpecialChars(t *testing.T) {
 	got := encodePassword(passwordWithSpecials, passwordEncodingURL)
