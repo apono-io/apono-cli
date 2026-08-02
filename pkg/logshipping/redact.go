@@ -15,13 +15,17 @@ func redactHomeDir(text string) string {
 	return strings.ReplaceAll(text, home, homeDirMarker)
 }
 
-func redactValues(fields map[string]string) map[string]string {
+func sanitize(text string) string {
+	return condense(redactHomeDir(text))
+}
+
+func sanitizeValues(fields map[string]string) map[string]string {
 	if fields == nil {
 		return nil
 	}
-	redacted := make(map[string]string, len(fields))
+	sanitized := make(map[string]string, len(fields))
 	for key, value := range fields {
-		redacted[key] = redactHomeDir(value)
+		sanitized[key] = sanitize(value)
 	}
-	return redacted
+	return sanitized
 }

@@ -70,12 +70,12 @@ func TestBuildLogEntry_redactsHomeDirFromMessageAndFields(t *testing.T) {
 	}
 }
 
-func TestRedactValues_doesNotMutateInput(t *testing.T) {
+func TestSanitizeValues_doesNotMutateInput(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 
 	in := map[string]string{"error": "open " + home + "/x"}
-	redactValues(in)
+	sanitizeValues(in)
 
 	if !strings.Contains(in["error"], home) {
 		t.Errorf("input map was mutated: %q", in["error"])
