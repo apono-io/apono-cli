@@ -150,8 +150,8 @@ func TestDrainLog_overLineCap_keepsNewestAndCountsTheRest(t *testing.T) {
 	if len(lines) != maxDrainLines+1 {
 		t.Fatalf("expected %d lines (cap plus one notice), got %d", maxDrainLines+1, len(lines))
 	}
-	if lines[0].Level != logshipping.LevelWarn || !strings.Contains(lines[0].Message, "17") {
-		t.Errorf("expected a WARN notice counting the 17 dropped lines, got %+v", lines[0])
+	if lines[0].Level != logshipping.LevelInfo || !strings.Contains(lines[0].Message, "17") {
+		t.Errorf("expected an INFO notice counting the 17 dropped lines, got %+v", lines[0])
 	}
 	if lines[1].Message != "line-17" {
 		t.Errorf("expected the oldest surviving line to be line-17, got %q", lines[1].Message)
@@ -195,7 +195,7 @@ func TestDrainLog_overByteCap_countsDroppedLines(t *testing.T) {
 	}
 
 	wantDropped := (len(body) - maxDrainBytes) / len(entry)
-	if lines[0].Level != logshipping.LevelWarn || !strings.Contains(lines[0].Message, strconv.Itoa(wantDropped)) {
-		t.Fatalf("expected a WARN notice counting %d dropped lines, got %+v", wantDropped, lines[0])
+	if lines[0].Level != logshipping.LevelInfo || !strings.Contains(lines[0].Message, strconv.Itoa(wantDropped)) {
+		t.Fatalf("expected an INFO notice counting %d dropped lines, got %+v", wantDropped, lines[0])
 	}
 }

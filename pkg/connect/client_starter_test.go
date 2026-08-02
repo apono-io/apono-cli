@@ -482,6 +482,120 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 	}
 }
 
+func TestLaunchFailureLevel(t *testing.T) {
+	cases := []struct {
+		name  string
+		cause error
+		want  string
+	}{
+		{"no cause", nil, logshipping.LevelError},
+		{
+			name:  "shell could not find the binary",
+			cause: errors.New("client exited with code 127\nsh: psql: command not found"),
+			want:  logshipping.LevelWarn,
+		},
+		{
+			name:  "shell could not reach a path inside the app bundle",
+			cause: errors.New("client exited with code 1\nsh: line 11: cd: /Applications/pgAdmin 4.app/Contents/Resources/web: No such file or directory"),
+			want:  logshipping.LevelWarn,
+		},
+		{
+			name:  "open could not resolve the application",
+			cause: errors.New("client exited with code 1\nUnable to find application named 'TablePlus'"),
+			want:  logshipping.LevelWarn,
+		},
+		{
+			name:  "the client ran and objected",
+			cause: errors.New("client exited with code 1\npsql: error: connection to server at \"h\" failed: FATAL: role \"u\" does not exist"),
+			want:  logshipping.LevelError,
+		},
+		{
+			name:  "a domain-level miss is not an install problem",
+			cause: errors.New("client exited with code 1\nmongosh: collection not found"),
+			want:  logshipping.LevelError,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := launchFailureLevel(tc.cause); got != tc.want {
+				t.Errorf("launchFailureLevel() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestStart_launchFails_levelFollowsTheFailureText(t *testing.T) {
+	cases := []struct {
+		name       string
+		kind       string
+		tty        bool
+		message    string
+		stderr     string
+		wantLevel  string
+		wantClient string
+	}{
+		{
+			name:       "GUI, application missing",
+			kind:       ClientKindGUI,
+			tty:        true,
+			message:    "launcher: GUI launch failed",
+			stderr:     "Unable to find application named 'TablePlus'",
+			wantLevel:  logshipping.LevelWarn,
+			wantClient: "tableplus",
+		},
+		{
+			name:       "GUI, the application itself objected",
+			kind:       ClientKindGUI,
+			tty:        true,
+			message:    "launcher: GUI launch failed",
+			stderr:     "TablePlus: could not read connection profile",
+			wantLevel:  logshipping.LevelError,
+			wantClient: "tableplus",
+		},
+		{
+			name:       "interactive, binary missing",
+			kind:       ClientKindTERMINAL,
+			tty:        true,
+			message:    "launcher: interactive launch failed",
+			stderr:     "sh: psql: command not found",
+			wantLevel:  logshipping.LevelWarn,
+			wantClient: "psql",
+		},
+		{
+			name:       "interactive, the client itself objected",
+			kind:       ClientKindTERMINAL,
+			tty:        true,
+			message:    "launcher: interactive launch failed",
+			stderr:     "psql: error: FATAL: role \"u\" does not exist",
+			wantLevel:  logshipping.LevelError,
+			wantClient: "psql",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clients := []clientapi.LauncherClientModel{newClientModel(tc.wantClient, tc.kind, "", "run-it")}
+			s, _, _ := testClientStarter(tc.tty, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+				return 1, tc.stderr, nil
+			})
+			entries := captureReports(s)
+
+			if err := s.Start(newCobraCmd(), nil, "sess-1", tc.wantClient, nil); err == nil {
+				t.Fatal("expected an error, got nil")
+			}
+
+			entry := findEntry(*entries, tc.message)
+			if entry == nil {
+				t.Fatalf("expected a %q entry, got %+v", tc.message, *entries)
+			}
+			if entry.level != tc.wantLevel {
+				t.Errorf("level = %q, want %q for stderr %q", entry.level, tc.wantLevel, tc.stderr)
+			}
+		})
+	}
+}
+
 func TestStart_launchFails_shippedTextHoldsNoPassword(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -729,8 +843,8 @@ func TestStart_authFails_shipsStructuredFieldsOnly(t *testing.T) {
 	if authEntry == nil {
 		t.Fatalf("expected a shipped auth-failure entry, got %+v", *entries)
 	}
-	if authEntry.level != logshipping.LevelError {
-		t.Errorf("expected ERROR level, got %q", authEntry.level)
+	if authEntry.level != logshipping.LevelWarn {
+		t.Errorf("expected WARN level, got %q", authEntry.level)
 	}
 
 	want := map[string]string{

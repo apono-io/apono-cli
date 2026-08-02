@@ -36,6 +36,12 @@ const (
 	fieldExitCode        = "exit_code"
 )
 
+var missingClientMarkers = []string{
+	"command not found",
+	"no such file or directory",
+	"unable to find application",
+}
+
 type ClientStarter struct {
 	FetchClients               func(context.Context, *aponoapi.AponoClient, string) (*ClientFetchResult, error)
 	RunShellCommand            func(*cobra.Command, string) (int, string, error)
@@ -62,7 +68,7 @@ func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.
 	}
 	result, err := s.FetchClients(ctx, apiClient, sessionID)
 	if err != nil {
-		s.reportLauncher(ctx, logshipping.LevelError, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
 		return nil, fmt.Errorf("could not fetch session details: %w", err)
 	}
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
@@ -85,14 +91,14 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	// the command directly and never saw that prompt - surface it here ourselves.
 	if isTerminal && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
 		err = fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
-		s.reportLauncher(ctx, logshipping.LevelError, "launcher: credentials already used elsewhere", err, sessionID, clientID, "", isTerminal)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials already used elsewhere", err, sessionID, clientID, "", isTerminal)
 		return err
 	}
 
 	client, ok := findClient(result.Clients, clientID)
 	if !ok {
 		err = fmt.Errorf("client %q is not supported yet.\nSupported clients for this session: %s.\nYou can still copy the connection command and run it manually in your preferred client", clientID, availableIDs(result.Clients))
-		s.reportLauncher(ctx, logshipping.LevelError, "launcher: client not supported", err, sessionID, clientID, "", isTerminal)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: client not supported", err, sessionID, clientID, "", isTerminal)
 		return err
 	}
 
@@ -107,7 +113,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	if authCommand != "" && !headlessTerminalLauncher {
 		exitCode, authErr := s.executeCommand(cobraCmd, authCommand)
 		if authErr != nil {
-			s.reportCommandFailure(ctx, "launcher: auth command failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: auth command failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
 			return authErr
 		}
 	}
@@ -116,7 +122,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	if strings.Contains(invocationCommand, passwordPlaceholder) {
 		pwd, readErr := readCachedPassword(sessionID)
 		if readErr != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("resolve credentials: %w", readErr)
 		}
 		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
@@ -130,7 +136,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	case ClientKindGUI:
 		exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
 		if launchErr != nil {
-			s.reportCommandFailure(ctx, "launcher: GUI launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: GUI launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
 			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -140,7 +146,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		if !headlessTerminalLauncher {
 			exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
 			if launchErr != nil {
-				s.reportCommandFailure(ctx, "launcher: interactive launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+				s.reportCommandFailure(ctx, launchFailureLevel(launchErr), "launcher: interactive launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
 				return launchErr
 			}
 			s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -152,12 +158,12 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 		wrapped, wrapErr := s.BuildTerminalLaunchCommand(combined)
 		if wrapErr != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: build terminal launch command failed", withoutSecrets(wrapErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: build terminal launch command failed", withoutSecrets(wrapErr, secrets), sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("build terminal launch command: %w", wrapErr)
 		}
 		exitCode, launchErr := s.executeCommand(cobraCmd, wrapped)
 		if launchErr != nil {
-			s.reportCommandFailure(ctx, "launcher: headless launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: headless launch failed", exitCode, withoutSecrets(launchErr, secrets), sessionID, clientID, launcherType, isTerminal)
 			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
@@ -239,7 +245,7 @@ func (s *ClientStarter) reportLauncher(ctx context.Context, level, message strin
 	s.Report(ctx, level, message, fields)
 }
 
-func (s *ClientStarter) reportCommandFailure(ctx context.Context, message string, exitCode int, cause error, sessionID, clientID, launcherType string, isTerminal bool) {
+func (s *ClientStarter) reportCommandFailure(ctx context.Context, level, message string, exitCode int, cause error, sessionID, clientID, launcherType string, isTerminal bool) {
 	if s.Report == nil {
 		return
 	}
@@ -248,7 +254,20 @@ func (s *ClientStarter) reportCommandFailure(ctx context.Context, message string
 	if cause != nil {
 		fields[fieldError] = cause.Error()
 	}
-	s.Report(ctx, logshipping.LevelError, message, fields)
+	s.Report(ctx, level, message, fields)
+}
+
+func launchFailureLevel(cause error) string {
+	if cause == nil {
+		return logshipping.LevelError
+	}
+	message := strings.ToLower(cause.Error())
+	for _, marker := range missingClientMarkers {
+		if strings.Contains(message, marker) {
+			return logshipping.LevelWarn
+		}
+	}
+	return logshipping.LevelError
 }
 
 func launcherFields(sessionID, clientID, launcherType string, isTerminal bool) map[string]string {
