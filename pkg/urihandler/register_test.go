@@ -34,6 +34,8 @@ func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 		"command -v apono",      // explicit resolve check before exec
 		"trap",                  // failure backstop
 		"describe_path",         // install-dir reachability captured on failure
+		"level=ERROR",           // a malformed launch URL still pages
+		"level=WARN",            // per-machine failures do not
 		"exec apono access use", // still hands off to the CLI
 	}
 	for _, want := range wantSubstrings {

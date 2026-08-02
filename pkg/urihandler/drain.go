@@ -69,7 +69,7 @@ func parseLines(data []byte) []LogLine {
 	if len(data) > maxDrainBytes {
 		dropped := bytes.Count(data[:len(data)-maxDrainBytes], []byte{'\n'})
 		data = data[len(data)-maxDrainBytes:]
-		notices = append(notices, LogLine{Level: logshipping.LevelWarn, Message: fmt.Sprintf(sizeCapNotice, dropped)})
+		notices = append(notices, LogLine{Level: logshipping.LevelInfo, Message: fmt.Sprintf(sizeCapNotice, dropped)})
 	}
 
 	var lines []LogLine
@@ -88,7 +88,7 @@ func parseLines(data []byte) []LogLine {
 
 	if dropped := len(lines) - maxDrainLines; dropped > 0 {
 		lines = lines[dropped:]
-		notices = append(notices, LogLine{Level: logshipping.LevelWarn, Message: fmt.Sprintf(lineCapNotice, dropped)})
+		notices = append(notices, LogLine{Level: logshipping.LevelInfo, Message: fmt.Sprintf(lineCapNotice, dropped)})
 	}
 	return append(notices, lines...)
 }

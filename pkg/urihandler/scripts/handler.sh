@@ -18,11 +18,11 @@ trap '
   code=$?
   if [[ $code -ne 0 ]]; then
     case $code in
-      64)  reason="invalid launch URL" ;;
-      127) reason="apono CLI not found on PATH" ;;
-      *)   reason="handler failed" ;;
+      64)  level=ERROR; reason="invalid launch URL" ;;
+      127) level=WARN;  reason="apono CLI not found on PATH" ;;
+      *)   level=WARN;  reason="handler failed" ;;
     esac
-    log ERROR "$reason code=$code $(describe_path)"
+    log "$level" "$reason code=$code $(describe_path)"
   fi
 ' EXIT
 
