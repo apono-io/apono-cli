@@ -32,6 +32,15 @@ const (
 
 var sessionID = uuid.NewString()
 
+func IsKnownLevel(level string) bool {
+	switch level {
+	case LevelTrace, LevelDebug, LevelInfo, LevelWarn, LevelError:
+		return true
+	default:
+		return false
+	}
+}
+
 // Report sends one structured log event to the Apono backend.
 //
 // No-op when the context lacks an authenticated client (pre-login state).

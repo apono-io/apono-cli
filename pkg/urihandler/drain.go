@@ -1,6 +1,8 @@
 package urihandler
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +14,9 @@ const (
 	handlerLogFileName = "handler.log"
 	logLineSeparator   = "\t"
 	maxDrainBytes      = 64 * 1024
-	truncationNotice   = "handler log truncated: dropped oldest lines over size cap"
+	maxDrainLines      = 50
+	sizeCapNotice      = "handler log truncated: dropped %d oldest lines over size cap"
+	lineCapNotice      = "handler log truncated: dropped %d oldest lines over line cap"
 )
 
 // LogLine is one parsed record drained from the handler log file. Its Level is
@@ -61,23 +65,30 @@ func DrainLog(path string) ([]LogLine, error) {
 }
 
 func parseLines(data []byte) []LogLine {
-	var lines []LogLine
+	var notices []LogLine
 	if len(data) > maxDrainBytes {
+		dropped := bytes.Count(data[:len(data)-maxDrainBytes], []byte{'\n'})
 		data = data[len(data)-maxDrainBytes:]
-		lines = append(lines, LogLine{Level: logshipping.LevelWarn, Message: truncationNotice})
+		notices = append(notices, LogLine{Level: logshipping.LevelWarn, Message: fmt.Sprintf(sizeCapNotice, dropped)})
 	}
 
+	var lines []LogLine
 	for _, raw := range strings.Split(string(data), "\n") {
 		raw = strings.TrimRight(raw, "\r")
 		if strings.TrimSpace(raw) == "" {
 			continue
 		}
 		level, message, found := strings.Cut(raw, logLineSeparator)
-		if !found {
+		if !found || !logshipping.IsKnownLevel(level) {
 			lines = append(lines, LogLine{Level: logshipping.LevelInfo, Message: raw})
 			continue
 		}
 		lines = append(lines, LogLine{Level: level, Message: message})
 	}
-	return lines
+
+	if dropped := len(lines) - maxDrainLines; dropped > 0 {
+		lines = lines[dropped:]
+		notices = append(notices, LogLine{Level: logshipping.LevelWarn, Message: fmt.Sprintf(lineCapNotice, dropped)})
+	}
+	return append(notices, lines...)
 }

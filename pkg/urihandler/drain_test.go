@@ -1,8 +1,10 @@
 package urihandler
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -76,15 +78,124 @@ func TestDrainLog_malformedLineDefaultsToInfo(t *testing.T) {
 	}
 }
 
-func TestDrainLog_overCapPrependsTruncationNotice(t *testing.T) {
-	body := strings.Repeat("INFO\tx\n", (maxDrainBytes/7)+100) // 7 bytes per line, well over cap
+func TestDrainLog_everyKnownLevelPassesThrough(t *testing.T) {
+	levels := []string{
+		logshipping.LevelTrace,
+		logshipping.LevelDebug,
+		logshipping.LevelInfo,
+		logshipping.LevelWarn,
+		logshipping.LevelError,
+	}
+
+	var body strings.Builder
+	for _, level := range levels {
+		fmt.Fprintf(&body, "%s\tmessage\n", level)
+	}
+	path := writeLog(t, body.String())
+
+	lines, err := DrainLog(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(lines) != len(levels) {
+		t.Fatalf("expected %d lines, got %d: %+v", len(levels), len(lines), lines)
+	}
+	for i, level := range levels {
+		if lines[i] != (LogLine{Level: level, Message: "message"}) {
+			t.Errorf("line %d = %+v, want level %q with the message split off", i, lines[i], level)
+		}
+	}
+}
+
+func TestDrainLog_unknownLevel_keepsWholeLineAsMessage(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{"invented severity", "CRITICAL\tdisk on fire"},
+		{"lowercase severity", "info\tnot our spelling"},
+		{"prose before a tab", "some prefix\ttrailing text"},
+		{"blank before a tab", "\ttrailing text"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			lines, err := DrainLog(writeLog(t, tc.raw+"\n"))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(lines) != 1 {
+				t.Fatalf("expected 1 line, got %d: %+v", len(lines), lines)
+			}
+			if lines[0] != (LogLine{Level: logshipping.LevelInfo, Message: tc.raw}) {
+				t.Errorf("got %+v, want INFO carrying the whole line %q", lines[0], tc.raw)
+			}
+		})
+	}
+}
+
+func TestDrainLog_overLineCap_keepsNewestAndCountsTheRest(t *testing.T) {
+	const total = maxDrainLines + 17
+
+	var body strings.Builder
+	for i := range total {
+		fmt.Fprintf(&body, "INFO\tline-%d\n", i)
+	}
+	path := writeLog(t, body.String())
+
+	lines, err := DrainLog(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(lines) != maxDrainLines+1 {
+		t.Fatalf("expected %d lines (cap plus one notice), got %d", maxDrainLines+1, len(lines))
+	}
+	if lines[0].Level != logshipping.LevelWarn || !strings.Contains(lines[0].Message, "17") {
+		t.Errorf("expected a WARN notice counting the 17 dropped lines, got %+v", lines[0])
+	}
+	if lines[1].Message != "line-17" {
+		t.Errorf("expected the oldest surviving line to be line-17, got %q", lines[1].Message)
+	}
+	if lines[len(lines)-1].Message != fmt.Sprintf("line-%d", total-1) {
+		t.Errorf("expected the newest line to survive, got %q", lines[len(lines)-1].Message)
+	}
+}
+
+func TestDrainLog_atLineCap_addsNoNotice(t *testing.T) {
+	var body strings.Builder
+	for i := range maxDrainLines {
+		fmt.Fprintf(&body, "INFO\tline-%d\n", i)
+	}
+	path := writeLog(t, body.String())
+
+	lines, err := DrainLog(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(lines) != maxDrainLines {
+		t.Fatalf("expected exactly %d lines with no notice, got %d", maxDrainLines, len(lines))
+	}
+	if lines[0].Message != "line-0" {
+		t.Errorf("expected the first line to survive untouched, got %q", lines[0].Message)
+	}
+}
+
+func TestDrainLog_overByteCap_countsDroppedLines(t *testing.T) {
+	const entry = "INFO\tx\n"
+
+	body := strings.Repeat(entry, (maxDrainBytes/len(entry))+100)
 	path := writeLog(t, body)
 
 	lines, err := DrainLog(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(lines) == 0 || lines[0].Level != logshipping.LevelWarn || !strings.Contains(lines[0].Message, "truncated") {
-		t.Fatalf("expected first line to be a WARN truncation notice, got %+v", lines[0])
+	if len(lines) == 0 {
+		t.Fatal("expected a truncation notice, got no lines")
+	}
+
+	wantDropped := (len(body) - maxDrainBytes) / len(entry)
+	if lines[0].Level != logshipping.LevelWarn || !strings.Contains(lines[0].Message, strconv.Itoa(wantDropped)) {
+		t.Fatalf("expected a WARN notice counting %d dropped lines, got %+v", wantDropped, lines[0])
 	}
 }
