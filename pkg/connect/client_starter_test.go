@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +80,15 @@ func captureReports(s *ClientStarter) *[]shippedEntry {
 		entries = append(entries, shippedEntry{level: level, message: message, fields: fields})
 	}
 	return &entries
+}
+
+func findEntry(entries []shippedEntry, message string) *shippedEntry {
+	for i := range entries {
+		if entries[i].message == message {
+			return &entries[i]
+		}
+	}
+	return nil
 }
 
 func hasEntry(entries []shippedEntry, level, message string) bool {
@@ -472,6 +482,208 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 	}
 }
 
+func TestReporters_clearSecretsWithoutHelpFromTheCallSite(t *testing.T) {
+	const secret = "p@ss w&rd!"
+
+	cases := []struct {
+		name   string
+		report func(s *ClientStarter, cause error)
+	}{
+		{
+			name: "reportLauncher",
+			report: func(s *ClientStarter, cause error) {
+				s.reportLauncher(context.Background(), logshipping.LevelError, "launcher: some step failed", cause, "sess-1", "psql", ClientKindGUI, true)
+			},
+		},
+		{
+			name: "reportCommandFailure",
+			report: func(s *ClientStarter, cause error) {
+				s.reportCommandFailure(context.Background(), "launcher: GUI launch failed", 1, cause, "sess-1", "psql", ClientKindGUI, true)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &ClientStarter{secrets: []string{secret}}
+			entries := captureReports(s)
+
+			tc.report(s, errors.New(`psql "postgres://u:`+secret+`@h/db" rejected`))
+
+			if len(*entries) != 1 {
+				t.Fatalf("expected 1 shipped entry, got %d", len(*entries))
+			}
+			shipped := (*entries)[0].fields[fieldError]
+			if strings.Contains(shipped, secret) {
+				t.Errorf("the reporter shipped the secret verbatim: %q", shipped)
+			}
+			if !strings.Contains(shipped, redactedMarker) {
+				t.Errorf("expected the secret to be replaced, got %q", shipped)
+			}
+			if !strings.Contains(shipped, "rejected") {
+				t.Errorf("expected the diagnostic around the secret to survive, got %q", shipped)
+			}
+		})
+	}
+}
+
+func TestStart_launchFails_shippedTextHoldsNoPassword(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(passwordWithSpecials))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+	encoded := encodePassword(passwordWithSpecials, passwordEncodingURL)
+
+	tableplus := clientapi.LauncherClientModel{
+		Id:                "tableplus",
+		LauncherType:      ClientKindGUI,
+		InvocationCommand: `open -a TablePlus "postgres://user:__APONO_PASSWORD__@host:5432/db"`,
+		PasswordEncoding:  passwordEncodingURL,
+	}
+	clientStderr := "connection to postgres://user:" + encoded + "@host:5432/db failed, password " + passwordWithSpecials + " rejected"
+	s, _, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		return 2, clientStderr, nil
+	})
+	entries := captureReports(s)
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus", nil)
+	if err == nil {
+		t.Fatal("expected error when the client fails, got nil")
+	}
+	if !strings.Contains(err.Error(), passwordWithSpecials) {
+		t.Errorf("the user-facing error must keep the client output verbatim, got %q", err.Error())
+	}
+
+	launchEntry := findEntry(*entries, "launcher: GUI launch failed")
+	if launchEntry == nil {
+		t.Fatalf("expected a shipped launch-failure entry, got %+v", *entries)
+	}
+	if launchEntry.fields[fieldExitCode] != "2" {
+		t.Errorf("expected shipped exit_code %q, got %q", "2", launchEntry.fields[fieldExitCode])
+	}
+	shipped := launchEntry.fields[fieldError]
+	if !strings.Contains(shipped, "connection to postgres://user:") || !strings.Contains(shipped, "@host:5432/db failed") {
+		t.Errorf("shipped text must keep the diagnostic around the redaction, got %q", shipped)
+	}
+	for _, form := range []string{passwordWithSpecials, encoded} {
+		for key, value := range launchEntry.fields {
+			if strings.Contains(value, form) {
+				t.Errorf("field %q still carries the password form %q: %q", key, form, value)
+			}
+		}
+	}
+}
+
+func TestStart_headlessLaunchFails_shippedTextHoldsNoPassword(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(passwordWithSpecials))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+	encoded := encodePassword(passwordWithSpecials, passwordEncodingURL)
+
+	psql := clientapi.LauncherClientModel{
+		Id:                "psql",
+		LauncherType:      ClientKindTERMINAL,
+		InvocationCommand: `psql "postgres://user:__APONO_PASSWORD__@host/db"`,
+		PasswordEncoding:  passwordEncodingURL,
+	}
+	s, _, wraps := testClientStarter(false, []clientapi.LauncherClientModel{psql}, aponoapi.ConsumedByAponoCli, nil)
+	s.RunShellCommand = func(_ *cobra.Command, combined string) (int, string, error) {
+		return 1, "sh: cannot execute " + combined, nil
+	}
+	entries := captureReports(s)
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "psql", nil)
+	if err == nil {
+		t.Fatal("expected error when the headless launch fails, got nil")
+	}
+	if len(*wraps) != 1 || !strings.Contains((*wraps)[0], encoded) {
+		t.Fatalf("expected the wrapper to receive the substituted command, got %+v", *wraps)
+	}
+	if !strings.Contains(err.Error(), encoded) {
+		t.Errorf("the user-facing error must keep the command verbatim, got %q", err.Error())
+	}
+
+	launchEntry := findEntry(*entries, "launcher: headless launch failed")
+	if launchEntry == nil {
+		t.Fatalf("expected a shipped headless-failure entry, got %+v", *entries)
+	}
+	if launchEntry.fields[fieldExitCode] != "1" {
+		t.Errorf("expected shipped exit_code %q, got %q", "1", launchEntry.fields[fieldExitCode])
+	}
+	if !strings.Contains(launchEntry.fields[fieldError], "sh: cannot execute") {
+		t.Errorf("shipped text must keep the diagnostic, got %q", launchEntry.fields[fieldError])
+	}
+	for _, form := range []string{passwordWithSpecials, encoded} {
+		for key, value := range launchEntry.fields {
+			if strings.Contains(value, form) {
+				t.Errorf("field %q still carries the password form %q: %q", key, form, value)
+			}
+		}
+	}
+}
+
+func TestStart_wrapBuilderFails_shippedTextHoldsNoPassword(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cacheDir := filepath.Join(home, ".apono", "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "sess-1"), []byte(base64.StdEncoding.EncodeToString([]byte(passwordWithSpecials))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+	encoded := encodePassword(passwordWithSpecials, passwordEncodingURL)
+
+	psql := clientapi.LauncherClientModel{
+		Id:                "psql",
+		LauncherType:      ClientKindTERMINAL,
+		InvocationCommand: `psql "postgres://user:__APONO_PASSWORD__@host/db"`,
+		PasswordEncoding:  passwordEncodingURL,
+	}
+	s, runs, _ := testClientStarter(false, []clientapi.LauncherClientModel{psql}, aponoapi.ConsumedByAponoCli, nil)
+	s.BuildTerminalLaunchCommand = func(command string) (string, error) {
+		return "", errors.New("write launch script for " + command + ": no space left on device")
+	}
+	entries := captureReports(s)
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "psql", nil)
+	if err == nil {
+		t.Fatal("expected error when the wrap builder fails, got nil")
+	}
+	if len(*runs) != 0 {
+		t.Errorf("expected no runShell calls when the wrap builder fails, got %d", len(*runs))
+	}
+	if !strings.Contains(err.Error(), encoded) {
+		t.Errorf("the user-facing error must keep the command verbatim, got %q", err.Error())
+	}
+
+	wrapEntry := findEntry(*entries, "launcher: build terminal launch command failed")
+	if wrapEntry == nil {
+		t.Fatalf("expected a shipped wrap-failure entry, got %+v", *entries)
+	}
+	if !strings.Contains(wrapEntry.fields[fieldError], "no space left on device") {
+		t.Errorf("shipped text must keep the diagnostic, got %q", wrapEntry.fields[fieldError])
+	}
+	for _, form := range []string{passwordWithSpecials, encoded} {
+		for key, value := range wrapEntry.fields {
+			if strings.Contains(value, form) {
+				t.Errorf("field %q still carries the password form %q: %q", key, form, value)
+			}
+		}
+	}
+}
+
 func TestStart_noPlaceholder_skipsCacheRead(t *testing.T) {
 	// HOME points at an empty temp dir — if the substitution path were hit,
 	// readCachedPassword would error. dbeaver's invocation has no placeholder,
@@ -536,6 +748,67 @@ func TestStart_authFails_invocationSkipped(t *testing.T) {
 	}
 	if (*runs)[0].combined != "auth-cmd" {
 		t.Errorf("expected first call to be auth_command, got %q", (*runs)[0].combined)
+	}
+}
+
+func TestStart_authFails_shipsStructuredFieldsOnly(t *testing.T) {
+	const authOutput = "auth-cmd output marker"
+
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "auth-cmd", "invocation-cmd"),
+	}
+	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		return 7, authOutput, nil
+	})
+	entries := captureReports(s)
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
+	if err == nil {
+		t.Fatal("expected error when auth_command fails, got nil")
+	}
+	if !strings.Contains(err.Error(), authOutput) {
+		t.Errorf("the user-facing error must keep the command output, got %q", err.Error())
+	}
+
+	authEntry := findEntry(*entries, "launcher: auth command failed")
+	if authEntry == nil {
+		t.Fatalf("expected a shipped auth-failure entry, got %+v", *entries)
+	}
+	if authEntry.level != logshipping.LevelError {
+		t.Errorf("expected ERROR level, got %q", authEntry.level)
+	}
+
+	want := map[string]string{
+		fieldAccessSessionID: "sess-1",
+		fieldClientID:        "dbeaver",
+		fieldLauncherType:    ClientKindGUI,
+		fieldIsTerminal:      "true",
+		fieldExitCode:        "7",
+	}
+	if !maps.Equal(authEntry.fields, want) {
+		t.Errorf("shipped fields = %+v, want exactly %+v", authEntry.fields, want)
+	}
+}
+
+func TestStart_authCommandNeverRan_shipsExitCodeMinusOne(t *testing.T) {
+	clients := []clientapi.LauncherClientModel{
+		newClientModel("dbeaver", ClientKindGUI, "auth-cmd", "invocation-cmd"),
+	}
+	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
+		return -1, "", errors.New("fork/exec: resource temporarily unavailable")
+	})
+	entries := captureReports(s)
+
+	if err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil); err == nil {
+		t.Fatal("expected error when the auth command cannot be spawned, got nil")
+	}
+
+	authEntry := findEntry(*entries, "launcher: auth command failed")
+	if authEntry == nil {
+		t.Fatalf("expected a shipped auth-failure entry, got %+v", *entries)
+	}
+	if authEntry.fields[fieldExitCode] != "-1" {
+		t.Errorf("expected exit_code %q when the process never ran, got %q", "-1", authEntry.fields[fieldExitCode])
 	}
 }
 

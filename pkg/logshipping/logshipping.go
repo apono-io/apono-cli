@@ -32,6 +32,15 @@ const (
 
 var sessionID = uuid.NewString()
 
+func IsKnownLevel(level string) bool {
+	switch level {
+	case LevelTrace, LevelDebug, LevelInfo, LevelWarn, LevelError:
+		return true
+	default:
+		return false
+	}
+}
+
 // Report sends one structured log event to the Apono backend.
 //
 // No-op when the context lacks an authenticated client (pre-login state).
@@ -53,10 +62,10 @@ func buildLogEntry(caller, level, message string, fields map[string]string) clie
 	return clientapi.LogEntryClientModel{
 		SessionId: sessionID,
 		Level:     level,
-		Message:   message,
+		Message:   redactPaths(message),
 		Caller:    newCaller(caller),
 		Timestamp: getTimestamp(),
-		Fields:    withCLIVersion(fields),
+		Fields:    withCLIVersion(redactValues(fields)),
 	}
 }
 

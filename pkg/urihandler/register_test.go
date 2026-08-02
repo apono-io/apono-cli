@@ -33,7 +33,7 @@ func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 		"log INFO",              // step logging
 		"command -v apono",      // explicit resolve check before exec
 		"trap",                  // failure backstop
-		"PATH=$PATH",            // PATH captured on failure
+		"describe_path",         // install-dir reachability captured on failure
 		"exec apono access use", // still hands off to the CLI
 	}
 	for _, want := range wantSubstrings {

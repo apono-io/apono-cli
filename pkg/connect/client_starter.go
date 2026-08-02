@@ -33,6 +33,7 @@ const (
 	fieldLauncherType    = "launcher_type"
 	fieldIsTerminal      = "is_terminal"
 	fieldError           = "error"
+	fieldExitCode        = "exit_code"
 )
 
 type ClientStarter struct {
@@ -41,6 +42,8 @@ type ClientStarter struct {
 	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 	Report                     func(ctx context.Context, level, message string, fields map[string]string)
+
+	secrets []string
 }
 
 func NewClientStarter() *ClientStarter {
@@ -104,9 +107,10 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		(launcherType == ClientKindTUI || launcherType == ClientKindTERMINAL || launcherType == ClientKindCLI)
 
 	if authCommand != "" && !headlessTerminalLauncher {
-		if err = s.executeCommand(cobraCmd, authCommand); err != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: auth command failed", err, sessionID, clientID, launcherType, isTerminal)
-			return err
+		exitCode, authErr := s.executeCommand(cobraCmd, authCommand)
+		if authErr != nil {
+			s.reportCommandFailure(ctx, "launcher: auth command failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
+			return authErr
 		}
 	}
 
@@ -116,25 +120,29 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 			s.reportLauncher(ctx, logshipping.LevelError, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("resolve credentials: %w", readErr)
 		}
-		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodePassword(pwd, client.PasswordEncoding))
+		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
+		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodedPwd)
+		s.secrets = []string{pwd, encodedPwd}
 	}
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: launching client", nil, sessionID, clientID, launcherType, isTerminal)
 
 	switch launcherType {
 	case ClientKindGUI:
-		if err = s.executeCommand(cobraCmd, invocationCommand); err != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: GUI launch failed", err, sessionID, clientID, launcherType, isTerminal)
-			return err
+		exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
+		if launchErr != nil {
+			s.reportCommandFailure(ctx, "launcher: GUI launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
+			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
 		return nil
 
 	case ClientKindTUI, ClientKindTERMINAL, ClientKindCLI:
 		if !headlessTerminalLauncher {
-			if err = s.executeCommand(cobraCmd, invocationCommand); err != nil {
-				s.reportLauncher(ctx, logshipping.LevelError, "launcher: interactive launch failed", err, sessionID, clientID, launcherType, isTerminal)
-				return err
+			exitCode, launchErr := s.executeCommand(cobraCmd, invocationCommand)
+			if launchErr != nil {
+				s.reportCommandFailure(ctx, "launcher: interactive launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
+				return launchErr
 			}
 			s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
 			return nil
@@ -148,9 +156,10 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 			s.reportLauncher(ctx, logshipping.LevelError, "launcher: build terminal launch command failed", wrapErr, sessionID, clientID, launcherType, isTerminal)
 			return fmt.Errorf("build terminal launch command: %w", wrapErr)
 		}
-		if err = s.executeCommand(cobraCmd, wrapped); err != nil {
-			s.reportLauncher(ctx, logshipping.LevelError, "launcher: headless launch failed", err, sessionID, clientID, launcherType, isTerminal)
-			return err
+		exitCode, launchErr := s.executeCommand(cobraCmd, wrapped)
+		if launchErr != nil {
+			s.reportCommandFailure(ctx, "launcher: headless launch failed", exitCode, launchErr, sessionID, clientID, launcherType, isTerminal)
+			return launchErr
 		}
 		s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client launched", nil, sessionID, clientID, launcherType, isTerminal)
 		return nil
@@ -162,15 +171,15 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	}
 }
 
-func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) error {
+func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) (int, error) {
 	exitCode, stderr, err := s.RunShellCommand(cobraCmd, command)
 	if err != nil {
-		return fmt.Errorf("failed to start client: %w\n%s", err, stderr)
+		return exitCode, fmt.Errorf("failed to start client: %w\n%s", err, stderr)
 	}
 	if exitCode != 0 {
-		return fmt.Errorf("client exited with code %d\n%s", exitCode, stderr)
+		return exitCode, fmt.Errorf("client exited with code %d\n%s", exitCode, stderr)
 	}
-	return nil
+	return exitCode, nil
 }
 
 func findClient(clients []clientapi.LauncherClientModel, id string) (clientapi.LauncherClientModel, bool) {
@@ -224,14 +233,30 @@ func (s *ClientStarter) reportLauncher(ctx context.Context, level, message strin
 	if s.Report == nil {
 		return
 	}
-	fields := map[string]string{
+	fields := launcherFields(sessionID, clientID, launcherType, isTerminal)
+	if cause != nil {
+		fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
+	}
+	s.Report(ctx, level, message, fields)
+}
+
+func (s *ClientStarter) reportCommandFailure(ctx context.Context, message string, exitCode int, cause error, sessionID, clientID, launcherType string, isTerminal bool) {
+	if s.Report == nil {
+		return
+	}
+	fields := launcherFields(sessionID, clientID, launcherType, isTerminal)
+	fields[fieldExitCode] = strconv.Itoa(exitCode)
+	if cause != nil {
+		fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
+	}
+	s.Report(ctx, logshipping.LevelError, message, fields)
+}
+
+func launcherFields(sessionID, clientID, launcherType string, isTerminal bool) map[string]string {
+	return map[string]string{
 		fieldAccessSessionID: sessionID,
 		fieldClientID:        clientID,
 		fieldLauncherType:    launcherType,
 		fieldIsTerminal:      strconv.FormatBool(isTerminal),
 	}
-	if cause != nil {
-		fields[fieldError] = cause.Error()
-	}
-	s.Report(ctx, level, message, fields)
 }

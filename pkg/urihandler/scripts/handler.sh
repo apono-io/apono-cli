@@ -3,6 +3,16 @@ set -e
 
 logfile="${HOME}/Library/Application Support/apono-cli/handler.log"
 log() { print -r -- "$1"$'\t'"$2" >> "$logfile" 2>/dev/null || true }
+describe_path() {
+  local brew=no userbin=no
+  case ":$PATH:" in
+    *":/opt/homebrew/bin:"*|*":/usr/local/bin:"*) brew=yes ;;
+  esac
+  case ":$PATH:" in
+    *":$HOME/.local/bin:"*|*":$HOME/bin:"*) userbin=yes ;;
+  esac
+  print -r -- "brew=$brew userbin=$userbin"
+}
 
 trap '
   code=$?
@@ -12,7 +22,7 @@ trap '
       127) reason="apono CLI not found on PATH" ;;
       *)   reason="handler failed" ;;
     esac
-    log ERROR "$reason code=$code apono=$(command -v apono 2>/dev/null || echo MISSING) PATH=$PATH"
+    log ERROR "$reason code=$code $(describe_path)"
   fi
 ' EXIT
 
@@ -48,6 +58,6 @@ if ! command -v apono >/dev/null 2>&1; then
   echo "apono CLI not found on PATH" >&2
   exit 127
 fi
-log INFO "apono resolved at $(command -v apono); handing off to access use"
+log INFO "apono resolved; handing off to access use"
 export _APONO_ACCOUNT_ID_="$account"
 exec apono access use "$session" --client "$client" >/dev/null

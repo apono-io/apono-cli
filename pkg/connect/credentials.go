@@ -2,6 +2,7 @@ package connect
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -15,6 +16,8 @@ const (
 	passwordPlaceholder = "__APONO_PASSWORD__"
 
 	passwordEncodingURL = "url"
+
+	redactedMarker = "***"
 )
 
 func readCachedPassword(sessionID string) (string, error) {
@@ -37,4 +40,20 @@ func encodePassword(raw, encoding string) string {
 	default:
 		return raw
 	}
+}
+
+func withoutSecrets(err error, secrets []string) error {
+	if err == nil {
+		return nil
+	}
+	message := err.Error()
+	seen := make(map[string]bool, len(secrets))
+	for _, secret := range secrets {
+		if secret == "" || seen[secret] {
+			continue
+		}
+		seen[secret] = true
+		message = strings.ReplaceAll(message, secret, redactedMarker)
+	}
+	return errors.New(message)
 }
