@@ -482,6 +482,51 @@ func TestStart_substitutesPasswordPlaceholder_withURLEncoding(t *testing.T) {
 	}
 }
 
+func TestReporters_clearSecretsWithoutHelpFromTheCallSite(t *testing.T) {
+	const secret = "p@ss w&rd!"
+
+	cases := []struct {
+		name   string
+		report func(s *ClientStarter, cause error)
+	}{
+		{
+			name: "reportLauncher",
+			report: func(s *ClientStarter, cause error) {
+				s.reportLauncher(context.Background(), logshipping.LevelError, "launcher: some step failed", cause, "sess-1", "psql", ClientKindGUI, true)
+			},
+		},
+		{
+			name: "reportCommandFailure",
+			report: func(s *ClientStarter, cause error) {
+				s.reportCommandFailure(context.Background(), "launcher: GUI launch failed", 1, cause, "sess-1", "psql", ClientKindGUI, true)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &ClientStarter{secrets: []string{secret}}
+			entries := captureReports(s)
+
+			tc.report(s, errors.New(`psql "postgres://u:`+secret+`@h/db" rejected`))
+
+			if len(*entries) != 1 {
+				t.Fatalf("expected 1 shipped entry, got %d", len(*entries))
+			}
+			shipped := (*entries)[0].fields[fieldError]
+			if strings.Contains(shipped, secret) {
+				t.Errorf("the reporter shipped the secret verbatim: %q", shipped)
+			}
+			if !strings.Contains(shipped, redactedMarker) {
+				t.Errorf("expected the secret to be replaced, got %q", shipped)
+			}
+			if !strings.Contains(shipped, "rejected") {
+				t.Errorf("expected the diagnostic around the secret to survive, got %q", shipped)
+			}
+		})
+	}
+}
+
 func TestStart_launchFails_shippedTextHoldsNoPassword(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
