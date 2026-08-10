@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 
 	"github.com/apono-io/apono-cli/pkg/groups"
@@ -30,6 +31,8 @@ const (
 	portalURLFlagName     = "portal-url"
 	tokenURLFlagName      = "token-url"
 	personalTokenFlagName = "personal-token"
+
+	analyticsTimeout = 2 * time.Second
 )
 
 type loginCommandFlags struct {
@@ -118,6 +121,8 @@ func Login() *cobra.Command {
 					return err
 				}
 			}
+
+			sendLoginAnalytics(cmd.Context(), cmdFlags.profileName)
 			return nil
 		},
 	}
@@ -138,6 +143,18 @@ func Login() *cobra.Command {
 	_ = flags.MarkHidden(portalURLFlagName)
 	_ = flags.MarkHidden(tokenURLFlagName)
 	return cmd
+}
+
+func sendLoginAnalytics(ctx context.Context, profileName string) {
+	client, err := aponoapi.CreateClient(ctx, profileName)
+	if err != nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, analyticsTimeout)
+	defer cancel()
+
+	analytics.SendLoginEvent(ctx, client)
 }
 
 func loginViaBrowser(ready <-chan string, cmdFlags loginCommandFlags, ctx context.Context) error {
