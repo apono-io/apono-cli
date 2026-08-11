@@ -108,18 +108,20 @@ func Login() *cobra.Command {
 					return loginViaBrowser(ready, cmdFlags, ctx)
 				})
 				eg.Go(func() error {
-					token, err := oauth2cli.GetToken(ctx, cfg)
+					var err error
+					oauthToken, err = oauth2cli.GetToken(ctx, cfg)
 					if err != nil {
 						return fmt.Errorf("could not get a oauthToken: %w", err)
 					}
-					oauthToken = token
 					return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, "", ctx)
 				})
 				if err := eg.Wait(); err != nil {
 					return fmt.Errorf("authorization error: %s", err)
 				}
-			} else if err := storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx); err != nil {
-				return err
+			} else {
+				if err := storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx); err != nil {
+					return err
+				}
 			}
 
 			if clientAPI, err := createLoginClientAPI(cmd.Context(), apiURL, oauthToken, personalToken); err == nil {
