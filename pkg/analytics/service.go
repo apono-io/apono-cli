@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/version"
 
@@ -95,6 +96,19 @@ func SendLaunchClientEvent(ctx context.Context, clientID, sessionID, integration
 	}
 
 	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
+}
+
+func SendLoginEvent(ctx context.Context, client *clientapi.APIClient) {
+	req := clientapi.CreateAnalyticEventClientModel{
+		EventName:  eventLogin,
+		ClientType: "CLI",
+		Properties: map[string]interface{}{
+			cliVersionField:      build.Version,
+			operatingSystemField: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		},
+	}
+
+	_, _ = client.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
 }
 
 func GenerateCommandID() string {

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 
 	"github.com/apono-io/apono-cli/pkg/groups"
 
@@ -98,13 +100,16 @@ func Login() *cobra.Command {
 				cfg.Logf = log.Printf
 			}
 
+			var oauthToken *oauth2.Token
+
 			eg, ctx := errgroup.WithContext(cmd.Context())
 			if personalToken == "" {
 				eg.Go(func() error {
 					return loginViaBrowser(ready, cmdFlags, ctx)
 				})
 				eg.Go(func() error {
-					oauthToken, err := oauth2cli.GetToken(ctx, cfg)
+					var err error
+					oauthToken, err = oauth2cli.GetToken(ctx, cfg)
 					if err != nil {
 						return fmt.Errorf("could not get a oauthToken: %w", err)
 					}
@@ -118,6 +123,11 @@ func Login() *cobra.Command {
 					return err
 				}
 			}
+
+			if clientAPI, err := createLoginClientAPI(cmd.Context(), apiURL, oauthToken, personalToken); err == nil {
+				analytics.SendLoginEvent(cmd.Context(), clientAPI)
+			}
+
 			return nil
 		},
 	}
@@ -153,6 +163,19 @@ func loginViaBrowser(ready <-chan string, cmdFlags loginCommandFlags, ctx contex
 	case <-ctx.Done():
 		return fmt.Errorf("context done while waiting for authorization: %w", ctx.Err())
 	}
+}
+
+func createLoginClientAPI(ctx context.Context, apiURL string, oauthToken *oauth2.Token, personalToken string) (*clientapi.APIClient, error) {
+	endpointURL, err := url.Parse(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed parsing url %s with error: %w", apiURL, err)
+	}
+
+	if oauthToken != nil {
+		return aponoapi.CreateClientAPI(endpointURL, oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken))), nil
+	}
+
+	return aponoapi.CreateClientAPI(endpointURL, aponoapi.HTTPClientWithPersonalToken(personalToken)), nil
 }
 
 func storeAndLogProfileToken(profileName, clientID, apiURL, appURL, portalURL string, oauthToken *oauth2.Token, personalToken string, ctx context.Context) error {
@@ -194,6 +217,11 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 	var accountID, accountName string
 	var userID, userName, userEmail string
 
+	clientAPI, err := createLoginClientAPI(ctx, apiURL, oauthToken, personalToken)
+	if err != nil {
+		return nil, err
+	}
+
 	if oauthToken != nil {
 		claims := new(aponoClaims)
 		_, _, err = jwt.NewParser().ParseUnverified(oauthToken.AccessToken, claims)
@@ -203,13 +231,6 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		accountID = claims.AccountID
 		userID = claims.UserID
 
-		endpointURL, urlParseErr := url.Parse(apiURL)
-		if urlParseErr != nil {
-			return nil, fmt.Errorf("failed parsing url %s with error: %w", apiURL, urlParseErr)
-		}
-
-		httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(oauthToken))
-		clientAPI := aponoapi.CreateClientAPI(endpointURL, httpClient)
 		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
 		if userSessionErr != nil {
 			log.Printf("Warning: failed to fetch user session details: %v", userSessionErr)
@@ -219,11 +240,6 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 			accountName = userSession.Account.Name
 		}
 	} else {
-		endpointURL, urlParseErr := url.Parse(apiURL)
-		if urlParseErr != nil {
-			return nil, fmt.Errorf("failed parsing url %s with error: %w", portalURL, urlParseErr)
-		}
-		clientAPI := aponoapi.CreateClientAPI(endpointURL, aponoapi.HTTPClientWithPersonalToken(personalToken))
 		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
 		if userSessionErr != nil {
 			return nil, fmt.Errorf("failed fetching user session with error: %w", userSessionErr)

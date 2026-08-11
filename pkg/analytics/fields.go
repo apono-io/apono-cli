@@ -22,6 +22,8 @@ const (
 	originField          = "origin"
 )
 
+const eventLogin = "Apono Login"
+
 const (
 	OriginInteractive = "interactive mode"
 	OriginBrowser     = "browser"
