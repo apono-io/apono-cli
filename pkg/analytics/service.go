@@ -98,7 +98,7 @@ func SendLaunchClientEvent(ctx context.Context, clientID, sessionID, integration
 	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
 }
 
-func SendLoginEvent(ctx context.Context, client *aponoapi.AponoClient) {
+func SendLoginEvent(ctx context.Context, client *clientapi.APIClient) {
 	req := clientapi.CreateAnalyticEventClientModel{
 		EventName:  eventLogin,
 		ClientType: "CLI",
@@ -108,7 +108,7 @@ func SendLoginEvent(ctx context.Context, client *aponoapi.AponoClient) {
 		},
 	}
 
-	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
+	_, _ = client.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
 }
 
 func GenerateCommandID() string {
