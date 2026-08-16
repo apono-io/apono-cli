@@ -165,9 +165,6 @@ func RenderAccessDetails(accessDetails *clientapi.AccessSessionDetailsClientMode
 	return output, customInstructionMessage, nil
 }
 
-// ShouldSuggestCredentialsReset reports whether this session's credentials were already
-// collected and a new set can be requested. Sessions that do not use credentials at all
-// have nothing to reset.
 func ShouldSuggestCredentialsReset(session *clientapi.AccessSessionClientModel) bool {
 	if !session.Credentials.IsSet() {
 		return false
