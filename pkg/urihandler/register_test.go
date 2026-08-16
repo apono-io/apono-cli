@@ -55,6 +55,12 @@ func TestRegister_rejectsNonDarwin(t *testing.T) {
 	}
 }
 
+func TestReregister_skipsWithoutTerminal(t *testing.T) {
+	if err := Reregister(&bytes.Buffer{}); err != nil {
+		t.Errorf("expected no error without a terminal, got %v", err)
+	}
+}
+
 func TestUnregister_rejectsNonDarwin(t *testing.T) {
 	if runtime.GOOS == utils.DarwinOS {
 		t.Skip("non-darwin guard test")
