@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -24,7 +25,7 @@ const (
 	LinkOutputFormat         = "link"
 	InstructionsOutputFormat = "instructions"
 	JSONOutputFormat         = "json"
-	newCredentialsStatus     = "NEW"
+	newCredentialsStatus     = "new"
 )
 
 type CustomInstructionMessage = string
@@ -164,15 +165,13 @@ func RenderAccessDetails(accessDetails *clientapi.AccessSessionDetailsClientMode
 	return output, customInstructionMessage, nil
 }
 
-func IsSessionHaveNewCredentials(session *clientapi.AccessSessionClientModel) bool {
-	if session.Credentials.IsSet() {
-		credentials := session.Credentials.Get()
-		if credentials.Status == newCredentialsStatus && credentials.CanReset {
-			return true
-		}
+func ShouldSuggestCredentialsReset(session *clientapi.AccessSessionClientModel) bool {
+	if !session.Credentials.IsSet() {
+		return false
 	}
 
-	return false
+	credentials := session.Credentials.Get()
+	return !strings.EqualFold(credentials.Status, newCredentialsStatus) && credentials.CanReset
 }
 
 func PrintCustomInstructionMessage(cmd *cobra.Command, customInstructionMessage CustomInstructionMessage) error {
