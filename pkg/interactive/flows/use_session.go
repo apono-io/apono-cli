@@ -125,7 +125,7 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 		}
 	}
 
-	if !services.IsSessionHaveNewCredentials(session) {
+	if services.ShouldSuggestCredentialsReset(session) {
 		err = printResetCredentialsSuggestion(cmd, session.Id)
 		if err != nil {
 			return err
