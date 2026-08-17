@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/apono-io/apono-cli/pkg/config"
+	"github.com/apono-io/apono-cli/pkg/urihandler"
 )
 
 const (
@@ -128,6 +130,9 @@ func Login() *cobra.Command {
 				analytics.SendLoginEvent(cmd.Context(), clientAPI)
 			}
 
+			if regErr := urihandler.Reregister(os.Stdin); regErr != nil {
+				fmt.Fprintf(os.Stderr, "warning: apono:// URL handler not installed: %v\n", regErr)
+			}
 			return nil
 		},
 	}

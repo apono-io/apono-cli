@@ -52,17 +52,21 @@ var infoPlistEntries = []struct {
 
 // EnsureRegistered builds and registers the apono:// handler bundle when missing.
 // No-op on non-macOS, in non-interactive contexts, or when a bundle is already on disk.
-func EnsureRegistered(in io.Reader, out io.Writer) error {
+func EnsureRegistered(in io.Reader) error {
+	if bundleExists() {
+		return nil
+	}
+	return Reregister(in)
+}
+
+func Reregister(in io.Reader) error {
 	if !urlHandlerSupported() {
 		return nil
 	}
 	if !terminal.IsRunning(in) {
 		return nil
 	}
-	if bundleExists() {
-		return nil
-	}
-	return Register(out)
+	return Register(io.Discard)
 }
 
 // Register builds the apono:// handler bundle and registers it with LaunchServices.
