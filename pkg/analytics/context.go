@@ -9,8 +9,9 @@ import (
 type contextKey string
 
 const (
-	startTimeContextKey = contextKey("__apono_start_time")
-	commandIDContextKey = contextKey("__apono_command_id")
+	startTimeContextKey       = contextKey("__apono_start_time")
+	commandIDContextKey       = contextKey("__apono_command_id")
+	interactiveModeContextKey = contextKey("__apono_interactive_mode")
 )
 
 var (
@@ -50,4 +51,13 @@ func GetCommandID(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrIllegalContextValue
+}
+
+func CreateInteractiveModeContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, interactiveModeContextKey, true)
+}
+
+func IsInteractiveMode(ctx context.Context) bool {
+	interactiveMode, ok := ctx.Value(interactiveModeContextKey).(bool)
+	return ok && interactiveMode
 }
