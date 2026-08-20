@@ -27,6 +27,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	if err != nil {
 		return err
 	}
+	analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDAccessSelection, session.Name)
 
 	if len(session.ConnectionMethods) == 0 {
 		return fmt.Errorf("no connection methods found for session %s", session.Id)
@@ -65,6 +66,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 
 	switch accessMethod {
 	case selectors.ExecuteOption:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionConnect)
 		err = PrintErrorConnectingSuggestion(cmd, session.Id)
 		if err != nil {
 			return err
@@ -73,9 +75,11 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		return services.ExecuteCliCommand(cmd, session, details.GetCli())
 
 	case selectors.PrintOption:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionInstructions)
 		return printSessionInstructions(cmd, client, session, details)
 
 	case selectors.ExecuteWithAppOption:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionConnectWithApp)
 		selectedID, err := selectors.RunLauncherClientSelector(guiTuiInstalled)
 		if err != nil {
 			return err
