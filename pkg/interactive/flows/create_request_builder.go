@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
@@ -31,11 +32,13 @@ func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.Apo
 	var request *clientapi.CreateAccessRequestClientModel
 	switch requestType {
 	case selectors.BundleRequestType:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDRequestType, analytics.RequestTypeBundle)
 		request, err = StartBundleRequestBuilderInteractiveMode(cmd, client, "", "", nil)
 		if err != nil {
 			return nil, err
 		}
 	case selectors.IntegrationRequestType:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDRequestType, analytics.RequestTypeIntegration)
 		request, err = StartIntegrationRequestBuilderInteractiveMode(cmd, client, "", "", []string{}, []string{}, "", nil)
 		if err != nil {
 			return nil, err
@@ -62,6 +65,7 @@ func StartBundleRequestBuilderInteractiveMode(
 		if err != nil {
 			return nil, err
 		}
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDBundle, bundle.Name)
 
 		bundleID = bundle.Id
 		requestModels.Bundles = []clientapi.BundleClientModel{*bundle}
@@ -251,7 +255,13 @@ func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi
 
 func resolveIntegration(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string) (*clientapi.IntegrationClientModel, error) {
 	if integrationID == "" {
-		return selectors.RunIntegrationSelector(cmd.Context(), client)
+		integration, err := selectors.RunIntegrationSelector(cmd.Context(), client)
+		if err != nil {
+			return nil, err
+		}
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDIntegration, integration.Name)
+
+		return integration, nil
 	}
 
 	return services.GetIntegrationByIDOrByTypeAndName(cmd.Context(), client, integrationID)
@@ -259,7 +269,13 @@ func resolveIntegration(cmd *cobra.Command, client *aponoapi.AponoClient, integr
 
 func resolveResourceType(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string) (*clientapi.ResourceTypeClientModel, error) {
 	if resourceTypeID == "" {
-		return selectors.RunResourceTypeSelector(cmd.Context(), client, integrationID)
+		resourceType, err := selectors.RunResourceTypeSelector(cmd.Context(), client, integrationID)
+		if err != nil {
+			return nil, err
+		}
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDResourceType, resourceType.Name)
+
+		return resourceType, nil
 	}
 
 	return services.GetResourceTypeByID(cmd.Context(), client, integrationID, resourceTypeID)
@@ -267,7 +283,18 @@ func resolveResourceType(cmd *cobra.Command, client *aponoapi.AponoClient, integ
 
 func resolveResources(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, resourceIDs []string) ([]clientapi.ResourceClientModel, error) {
 	if len(resourceIDs) == 0 {
-		return selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
+		resources, err := selectors.RunResourcesSelector(cmd.Context(), client, integrationID, resourceTypeID)
+		if err != nil {
+			return nil, err
+		}
+
+		var resourceNames []string
+		for _, resource := range resources {
+			resourceNames = append(resourceNames, resource.Name)
+		}
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDResource, resourceNames)
+
+		return resources, nil
 	}
 
 	return services.ListResourcesBySourceIDs(cmd.Context(), client, integrationID, resourceTypeID, resourceIDs)
@@ -281,9 +308,12 @@ func resolvePermissions(cmd *cobra.Command, client *aponoapi.AponoClient, integr
 		}
 
 		var selectorPermissionIDs []string
+		var permissionNames []string
 		for _, permission := range permissions {
 			selectorPermissionIDs = append(selectorPermissionIDs, permission.Id)
+			permissionNames = append(permissionNames, permission.Name)
 		}
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDPermissions, permissionNames)
 
 		return selectorPermissionIDs, nil
 	}
