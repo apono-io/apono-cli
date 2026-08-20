@@ -47,7 +47,7 @@ func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) 
 }
 
 func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	req, err := flows.StartRequestBuilderInteractiveMode(cmd, client)
+	req, requestModels, err := flows.StartRequestBuilderInteractiveMode(cmd, client)
 	if err != nil {
 		return err
 	}
@@ -63,6 +63,8 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 
 		return err
 	}
+
+	analytics.SendAccessRequestSubmittedEvent(cmd.Context(), buildAccessRequestSubmittedProperties(req, requestModels))
 
 	if len(createResp.RequestIds) == 0 {
 		return fmt.Errorf("failed to create access request, no request IDs returned from the API")
@@ -99,4 +101,36 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	return flows.RunUseSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
+}
+
+func buildAccessRequestSubmittedProperties(req *clientapi.CreateAccessRequestClientModel, models *flows.CreateAccessRequestWithFullModels) analytics.AccessRequestSubmittedProperties {
+	submitted := analytics.AccessRequestSubmittedProperties{
+		Duration: models.Duration,
+	}
+	if justification := req.Justification.Get(); justification != nil {
+		submitted.Justification = *justification
+	}
+
+	if len(req.FilterBundleIds) > 0 {
+		submitted.RequestType = analytics.RequestTypeBundle
+		if len(models.Bundles) > 0 {
+			submitted.BundleName = models.Bundles[0].Name
+		}
+
+		return submitted
+	}
+
+	submitted.RequestType = analytics.RequestTypeIntegration
+	if len(models.Integrations) > 0 {
+		submitted.IntegrationName = models.Integrations[0].Name
+	}
+	if models.ResourceType != nil {
+		submitted.ResourceType = models.ResourceType.Name
+	}
+	submitted.ResourcesCount = len(req.FilterResources)
+	for _, permission := range models.Permissions {
+		submitted.Permissions = append(submitted.Permissions, permission.Name)
+	}
+
+	return submitted
 }
