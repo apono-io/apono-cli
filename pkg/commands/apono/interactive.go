@@ -6,6 +6,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/interactive/selectors"
 
+	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
@@ -22,6 +23,9 @@ const (
 )
 
 func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
+	cmd.SetContext(analytics.CreateInteractiveModeContext(cmd.Context()))
+	analytics.SendInteractiveSessionStartedEvent(cmd.Context())
+
 	services.FetchAndPrintNotifications(cmd, client.ClientAPI)
 
 	mainAction, err := selectors.RunMainActionSelector()
@@ -31,8 +35,10 @@ func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) 
 
 	switch mainAction {
 	case selectors.RequestAccessOption:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.InteractiveSurface, analytics.SelectIDActionSelection, analytics.RequestNewAccessFlow)
 		return RunFullRequestInteractiveFlow(cmd, client)
 	case selectors.ConnectOption:
+		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.InteractiveSurface, analytics.SelectIDActionSelection, analytics.ConnectToResourceFlow)
 		return flows.RunUseSessionInteractiveFlow(cmd, client, "")
 
 	default:
