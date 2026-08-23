@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/apono-io/apono-cli/pkg/agent"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -52,6 +53,17 @@ func SendCommandAnalyticsEvent(cmd *cobra.Command, args []string) {
 
 	if shell := os.Getenv("SHELL"); shell != "" {
 		properties[shellField] = shell
+	}
+
+	properties[isInteractiveField] = agent.IsInteractive()
+	if name := agent.Detect(); name != "" {
+		properties[invokedByField] = name
+	}
+	if termProgram := os.Getenv("TERM_PROGRAM"); termProgram != "" {
+		properties[termProgramField] = termProgram
+	}
+	if os.Getenv("CI") != "" {
+		properties[ciField] = true
 	}
 
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
