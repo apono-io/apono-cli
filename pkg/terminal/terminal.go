@@ -34,6 +34,10 @@ func IsRunning(in io.Reader) bool {
 	return isatty.IsTerminal(f.Fd())
 }
 
+func IsInteractive() bool {
+	return isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
+}
+
 func BuildLaunchCommand(command string) (string, error) {
 	scriptPath, err := writeLaunchScript(command)
 	if err != nil {

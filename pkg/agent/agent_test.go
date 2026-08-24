@@ -2,22 +2,14 @@ package agent
 
 import "testing"
 
-// allVars is every env var Detect reads; tests clear them all so the
-// environment running the tests (possibly an agent itself) can't leak in.
-var allVars = []string{
-	"CURSOR_TRACE_ID", "CURSOR_AGENT", "GEMINI_CLI",
-	"CODEX_SANDBOX", "CODEX_CI", "CODEX_THREAD_ID",
-	"ANTIGRAVITY_AGENT", "AUGMENT_AGENT", "OPENCODE_CLIENT",
-	"CLAUDECODE", "CLAUDE_CODE", "REPL_ID",
-	"COPILOT_MODEL", "COPILOT_ALLOW_ALL", "COPILOT_GITHUB_TOKEN",
-	"AI_AGENT",
-}
-
 func clearEnv(t *testing.T) {
 	t.Helper()
-	for _, v := range allVars {
-		t.Setenv(v, "")
+	for _, a := range knownAgents {
+		for _, v := range a.vars {
+			t.Setenv(v, "")
+		}
 	}
+	t.Setenv("AI_AGENT", "")
 }
 
 func TestDetect(t *testing.T) {

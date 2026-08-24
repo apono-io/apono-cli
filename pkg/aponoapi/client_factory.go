@@ -16,9 +16,6 @@ import (
 	"github.com/apono-io/apono-cli/pkg/config"
 )
 
-// userAgent identifies the CLI and, when detected, the AI agent that invoked
-// it, e.g. "apono-cli/1.2.3 (abc; 2026-01-01) agent/claude-code". Without an
-// agent the format is byte-identical to previous releases.
 func userAgent() string {
 	ua := fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
 	if name := agent.Detect(); name != "" {
