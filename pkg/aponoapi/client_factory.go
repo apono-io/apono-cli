@@ -10,10 +10,19 @@ import (
 	"github.com/apono-io/apono-sdk-go"
 	"golang.org/x/oauth2"
 
+	"github.com/apono-io/apono-cli/pkg/agent"
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 )
+
+func userAgent() string {
+	ua := fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	if name := agent.Detect(); name != "" {
+		ua += " agent/" + name
+	}
+	return ua
+}
 
 const (
 	authorizationHeaderKey = "Authorization"
@@ -63,7 +72,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	adminAPIClientCfg := apono.NewConfiguration()
 	adminAPIClientCfg.Scheme = endpointURL.Scheme
 	adminAPIClientCfg.Host = endpointURL.Host
-	adminAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	adminAPIClientCfg.UserAgent = userAgent()
 	adminAPIClientCfg.HTTPClient = httpClient
 
 	client := apono.NewAPIClient(adminAPIClientCfg)
@@ -91,7 +100,7 @@ func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client) *clientapi.A
 	clientAPIClientCfg := clientapi.NewConfiguration()
 	clientAPIClientCfg.Scheme = endpointURL.Scheme
 	clientAPIClientCfg.Host = endpointURL.Host
-	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
+	clientAPIClientCfg.UserAgent = userAgent()
 	clientAPIClientCfg.HTTPClient = httpClient
 	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
 	return clientAPI
