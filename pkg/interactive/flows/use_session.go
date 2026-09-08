@@ -134,9 +134,6 @@ func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error
 	return err
 }
 
-// maybePrintResetCredentialsSuggestion only suggests a credentials reset for sessions that
-// actually use resettable credentials; integrations without credentials should just surface
-// the underlying error instead (DVL-7847).
 func maybePrintResetCredentialsSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
 	if !services.ShouldSuggestCredentialsReset(session) {
 		return nil
@@ -157,9 +154,6 @@ func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error 
 	return err
 }
 
-// MaybePrintErrorConnectingSuggestion only suggests a credentials reset for sessions that
-// actually use resettable credentials; integrations without credentials should just surface
-// the underlying error instead (DVL-7847).
 func MaybePrintErrorConnectingSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
 	if !services.ShouldSuggestCredentialsReset(session) {
 		return nil
