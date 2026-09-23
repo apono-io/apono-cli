@@ -65,7 +65,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 
 	switch accessMethod {
 	case selectors.ExecuteOption:
-		err = PrintErrorConnectingSuggestion(cmd, session.Id)
+		err = ShouldPrintErrorConnectingSuggestion(cmd, session)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		err = PrintErrorConnectingSuggestion(cmd, session.Id)
+		err = ShouldPrintErrorConnectingSuggestion(cmd, session)
 		if err != nil {
 			return err
 		}
@@ -125,20 +125,21 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 		}
 	}
 
-	if services.ShouldSuggestCredentialsReset(session) {
-		err = printResetCredentialsSuggestion(cmd, session.Id)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return maybePrintResetCredentialsSuggestion(cmd, session)
 }
 
 func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error {
 	resetCommand := resetCredentialsCommand + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
 	return err
+}
+
+func maybePrintResetCredentialsSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
+	if !services.ShouldSuggestCredentialsReset(session) {
+		return nil
+	}
+
+	return printResetCredentialsSuggestion(cmd, session.Id)
 }
 
 func printLauncherAliasSuggestion(cmd *cobra.Command, sessionID, clientID string) error {
@@ -151,4 +152,12 @@ func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error 
 	resetCommand := resetCredentialsCommand + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
 	return err
+}
+
+func ShouldPrintErrorConnectingSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
+	if !services.ShouldSuggestCredentialsReset(session) {
+		return nil
+	}
+
+	return PrintErrorConnectingSuggestion(cmd, session.Id)
 }
