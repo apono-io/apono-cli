@@ -41,7 +41,7 @@ func TestMaybePrintErrorConnectingSuggestion(t *testing.T) {
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 
-			if err := MaybePrintErrorConnectingSuggestion(cmd, tt.session); err != nil {
+			if err := ShouldPrintErrorConnectingSuggestion(cmd, tt.session); err != nil {
 				t.Fatalf("MaybePrintErrorConnectingSuggestion() error = %v", err)
 			}
 

@@ -65,7 +65,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 
 	switch accessMethod {
 	case selectors.ExecuteOption:
-		err = MaybePrintErrorConnectingSuggestion(cmd, session)
+		err = ShouldPrintErrorConnectingSuggestion(cmd, session)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		err = MaybePrintErrorConnectingSuggestion(cmd, session)
+		err = ShouldPrintErrorConnectingSuggestion(cmd, session)
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error 
 	return err
 }
 
-func MaybePrintErrorConnectingSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
+func ShouldPrintErrorConnectingSuggestion(cmd *cobra.Command, session *clientapi.AccessSessionClientModel) error {
 	if !services.ShouldSuggestCredentialsReset(session) {
 		return nil
 	}
