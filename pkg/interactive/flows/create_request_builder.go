@@ -20,34 +20,36 @@ type CreateAccessRequestWithFullModels struct {
 	Bundles      []clientapi.BundleClientModel
 	Integrations []clientapi.IntegrationClientModel
 	Resources    []clientapi.ResourceClientModel
+	Permissions  []clientapi.PermissionClientModel
 	Duration     *time.Duration
 }
 
-func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, error) {
+func StartRequestBuilderInteractiveMode(cmd *cobra.Command, client *aponoapi.AponoClient) (*clientapi.CreateAccessRequestClientModel, *CreateAccessRequestWithFullModels, error) {
 	requestType, err := selectors.RunRequestTypeSelector()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var request *clientapi.CreateAccessRequestClientModel
+	var reqModels *CreateAccessRequestWithFullModels
 	switch requestType {
 	case selectors.BundleRequestType:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDRequestType, analytics.RequestTypeBundle)
-		request, err = StartBundleRequestBuilderInteractiveMode(cmd, client, "", "", nil)
+		request, reqModels, err = StartBundleRequestBuilderInteractiveMode(cmd, client, "", "", nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	case selectors.IntegrationRequestType:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDRequestType, analytics.RequestTypeIntegration)
-		request, err = StartIntegrationRequestBuilderInteractiveMode(cmd, client, "", "", []string{}, []string{}, "", nil)
+		request, reqModels, err = StartIntegrationRequestBuilderInteractiveMode(cmd, client, "", "", []string{}, []string{}, "", nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	default:
-		return nil, fmt.Errorf("invalid request type: %s", requestType)
+		return nil, nil, fmt.Errorf("invalid request type: %s", requestType)
 	}
 
-	return request, nil
+	return request, reqModels, nil
 }
 
 func StartBundleRequestBuilderInteractiveMode(
@@ -56,14 +58,14 @@ func StartBundleRequestBuilderInteractiveMode(
 	bundleID string,
 	justification string,
 	accessDuration *time.Duration,
-) (*clientapi.CreateAccessRequestClientModel, error) {
+) (*clientapi.CreateAccessRequestClientModel, *CreateAccessRequestWithFullModels, error) {
 	request := services.GetEmptyNewRequestAPIModel()
 	requestModels := &CreateAccessRequestWithFullModels{}
 
 	if bundleID == "" {
 		bundle, err := selectors.RunBundleSelector(cmd.Context(), client)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDBundle, bundle.Name)
 
@@ -86,7 +88,7 @@ func StartBundleRequestBuilderInteractiveMode(
 		var newDuration *time.Duration
 		newDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		accessDuration = newDuration
@@ -101,7 +103,7 @@ func StartBundleRequestBuilderInteractiveMode(
 		var newJustification string
 		newJustification, err = selectors.RunJustificationInput(justificationOptional)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		justification = newJustification
@@ -110,22 +112,22 @@ func StartBundleRequestBuilderInteractiveMode(
 
 	requestCustomFields, err := services.GetRequestCustomFields(cmd.Context(), client)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	customFieldValues, err := selectors.RunCustomFieldsInputs(requestCustomFields)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	request.CustomFields = customFieldValues
 
 	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return request, nil
+	return request, requestModels, nil
 }
 
 func StartIntegrationRequestBuilderInteractiveMode(
@@ -137,23 +139,23 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	permissionIDs []string,
 	justification string,
 	accessDuration *time.Duration,
-) (*clientapi.CreateAccessRequestClientModel, error) {
+) (*clientapi.CreateAccessRequestClientModel, *CreateAccessRequestWithFullModels, error) {
 	request := services.GetEmptyNewRequestAPIModel()
 	requestModels := &CreateAccessRequestWithFullModels{}
 
 	integration, err := resolveIntegration(cmd, client, integrationID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	resourceType, err := resolveResourceType(cmd, client, integration.Id, resourceTypeID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	resources, err := resolveResources(cmd, client, integration.Id, resourceType.Id, resourceIDs)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var resolvedResourceIDs []string
 	for _, resource := range resources {
@@ -162,16 +164,22 @@ func StartIntegrationRequestBuilderInteractiveMode(
 
 	permissions, err := resolvePermissions(cmd, client, integration.Id, resourceType.Id, permissionIDs, resourceType.AllowMultiplePermissions)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	var resolvedPermissionIDs []string
+	for _, permission := range permissions {
+		resolvedPermissionIDs = append(resolvedPermissionIDs, permission.Id)
 	}
 
 	requestModels.Integrations = []clientapi.IntegrationClientModel{*integration}
 	requestModels.Resources = resources
+	requestModels.Permissions = permissions
 
 	request.FilterIntegrationIds = []string{integration.Id}
 	request.FilterResourceTypeIds = []string{resourceType.Id}
 	request.FilterResources = services.ListResourceFiltersFromResourcesIDs(resolvedResourceIDs)
-	request.FilterPermissionIds = permissions
+	request.FilterPermissionIds = resolvedPermissionIDs
 
 	var justificationOptional bool
 	var durationRequired bool
@@ -186,7 +194,7 @@ func StartIntegrationRequestBuilderInteractiveMode(
 	if accessDuration == nil && durationRequired {
 		accessDuration, err = selectors.RunDurationInput(!durationRequired, 0, maxRequestDuration.Hours())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if accessDuration != nil {
@@ -197,28 +205,28 @@ func StartIntegrationRequestBuilderInteractiveMode(
 
 	resolvedJustification, err := resolveJustification(justification, justificationOptional)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	request.Justification = *clientapi.NewNullableString(resolvedJustification)
 
 	requestCustomFields, err := services.GetRequestCustomFields(cmd.Context(), client)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	customFieldValues, err := selectors.RunCustomFieldsInputs(requestCustomFields)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	request.CustomFields = customFieldValues
 
 	err = GenerateAndPrintCreateRequestCommand(cmd, request, requestModels)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return request, nil
+	return request, requestModels, nil
 }
 
 func GenerateAndPrintCreateRequestCommand(cmd *cobra.Command, request *clientapi.CreateAccessRequestClientModel, models *CreateAccessRequestWithFullModels) error {
@@ -300,29 +308,33 @@ func resolveResources(cmd *cobra.Command, client *aponoapi.AponoClient, integrat
 	return services.ListResourcesBySourceIDs(cmd.Context(), client, integrationID, resourceTypeID, resourceIDs)
 }
 
-func resolvePermissions(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, permissionIDs []string, allowMultiplePermissions bool) ([]string, error) {
+func resolvePermissions(cmd *cobra.Command, client *aponoapi.AponoClient, integrationID string, resourceTypeID string, permissionIDs []string, allowMultiplePermissions bool) ([]clientapi.PermissionClientModel, error) {
 	if len(permissionIDs) == 0 {
 		permissions, err := selectors.RunPermissionsSelector(cmd.Context(), client, integrationID, resourceTypeID, allowMultiplePermissions)
 		if err != nil {
 			return nil, err
 		}
 
-		var selectorPermissionIDs []string
 		var permissionNames []string
 		for _, permission := range permissions {
-			selectorPermissionIDs = append(selectorPermissionIDs, permission.Id)
 			permissionNames = append(permissionNames, permission.Name)
 		}
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.RequestNewAccessFlow, analytics.SelectIDPermissions, permissionNames)
 
-		return selectorPermissionIDs, nil
+		return permissions, nil
 	}
 
 	if !allowMultiplePermissions && len(permissionIDs) > 1 {
 		return nil, fmt.Errorf("only one permission can be selected for this resource type")
 	}
 
-	return permissionIDs, nil
+	// Only the IDs are known when permissions come from flags, so use them as names too
+	var permissions []clientapi.PermissionClientModel
+	for _, permissionID := range permissionIDs {
+		permissions = append(permissions, clientapi.PermissionClientModel{Id: permissionID, Name: permissionID})
+	}
+
+	return permissions, nil
 }
 
 func resolveJustification(userJustification string, isJustificationOptional bool) (*string, error) {

@@ -1,6 +1,7 @@
 package apono
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -47,11 +48,10 @@ func startMainInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) 
 }
 
 func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient) error {
-	req, err := flows.StartRequestBuilderInteractiveMode(cmd, client)
+	req, reqModel, err := flows.StartRequestBuilderInteractiveMode(cmd, client)
 	if err != nil {
 		return err
 	}
-
 	createResp, resp, err := client.ClientAPI.AccessRequestsAPI.CreateUserAccessRequest(cmd.Context()).
 		CreateAccessRequestClientModel(*req).
 		Execute()
@@ -60,10 +60,9 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 		if apiError != nil {
 			return apiError
 		}
-
 		return err
 	}
-
+	sendAccessRequestSubmittedEvent(cmd.Context(), req, reqModel)
 	if len(createResp.RequestIds) == 0 {
 		return fmt.Errorf("failed to create access request, no request IDs returned from the API")
 	}
@@ -99,4 +98,37 @@ func RunFullRequestInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoCli
 	}
 
 	return flows.RunUseSessionInteractiveFlow(cmd, client, newAccessRequest.Id)
+}
+
+func sendAccessRequestSubmittedEvent(ctx context.Context, req *clientapi.CreateAccessRequestClientModel, reqModel *flows.CreateAccessRequestWithFullModels) {
+	requestType := analytics.RequestTypeIntegration
+	var integrationName string
+	var bundleName string
+	var resourceType string
+	var resourcesCount int
+	var permissionNames []string
+	if len(reqModel.Bundles) > 0 {
+		requestType = analytics.RequestTypeBundle
+		bundleName = reqModel.Bundles[0].Name
+	}
+	if len(reqModel.Integrations) > 0 {
+		integrationName = reqModel.Integrations[0].Name
+	}
+	if len(reqModel.Resources) > 0 {
+		resourceType = reqModel.Resources[0].Name
+		resourcesCount = len(reqModel.Resources)
+	}
+	for _, permission := range reqModel.Permissions {
+		permissionNames = append(permissionNames, permission.Name)
+	}
+	analytics.SendAccessRequestSubmittedEvent(ctx, analytics.AccessRequestSubmittedProperties{
+		RequestType:     requestType,
+		BundleName:      bundleName,
+		IntegrationName: integrationName,
+		ResourceType:    resourceType,
+		ResourcesCount:  resourcesCount,
+		Permissions:     permissionNames,
+		Duration:        reqModel.Duration,
+		Justification:   req.GetJustification(),
+	})
 }
