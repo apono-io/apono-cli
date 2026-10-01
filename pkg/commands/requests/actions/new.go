@@ -204,7 +204,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		}
 
 		if flags.runInteractiveMode {
-			req, err = flows.StartIntegrationRequestBuilderInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification, durationFlagValue)
+			req, _, err = flows.StartIntegrationRequestBuilderInteractiveMode(cmd, client, integration.Id, flags.resourceType, flags.resourceIDs, flags.permissionIDs, flags.justification, durationFlagValue)
 			if err != nil {
 				return nil, err
 			}
@@ -227,7 +227,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 		}
 
 		if flags.runInteractiveMode {
-			req, err = flows.StartBundleRequestBuilderInteractiveMode(cmd, client, bundle.Id, flags.justification, durationFlagValue)
+			req, _, err = flows.StartBundleRequestBuilderInteractiveMode(cmd, client, bundle.Id, flags.justification, durationFlagValue)
 			if err != nil {
 				return nil, err
 			}
@@ -238,7 +238,7 @@ func createNewRequestAPIModelFromFlags(cmd *cobra.Command, client *aponoapi.Apon
 	default:
 		if flags.runInteractiveMode {
 			var err error
-			req, err = flows.StartRequestBuilderInteractiveMode(cmd, client)
+			req, _, err = flows.StartRequestBuilderInteractiveMode(cmd, client)
 			if err != nil {
 				return nil, err
 			}
