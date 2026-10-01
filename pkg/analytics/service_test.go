@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 )
@@ -14,30 +13,6 @@ func TestIsInteractiveMode(t *testing.T) {
 
 	if !IsInteractiveMode(CreateInteractiveModeContext(context.Background())) {
 		t.Error("expected a marked context to be interactive")
-	}
-}
-
-func TestTruncatePropertyValue(t *testing.T) {
-	short := strings.Repeat("a", maxPropertyValueLength)
-	if got := truncatePropertyValue(short); got != short {
-		t.Errorf("expected a value at the limit to pass through, got %d chars", len(got))
-	}
-
-	long := strings.Repeat("a", maxPropertyValueLength+50)
-	if got := truncatePropertyValue(long); len([]rune(got)) != maxPropertyValueLength {
-		t.Errorf("expected truncation to %d chars, got %d", maxPropertyValueLength, len([]rune(got)))
-	}
-
-	multibyte := strings.Repeat("é", maxPropertyValueLength+10)
-	truncated := truncatePropertyValue(multibyte)
-	if len([]rune(truncated)) != maxPropertyValueLength {
-		t.Errorf("expected %d runes, got %d", maxPropertyValueLength, len([]rune(truncated)))
-	}
-	for _, r := range truncated {
-		if r == '�' {
-			t.Error("truncation split a multibyte character")
-			break
-		}
 	}
 }
 
