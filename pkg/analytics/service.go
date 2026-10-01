@@ -118,3 +118,87 @@ func GenerateCommandID() string {
 func formatTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05.000Z07:00")
 }
+
+type AccessRequestSubmittedProperties struct {
+	RequestType     string
+	BundleName      string
+	IntegrationName string
+	ResourceType    string
+	ResourcesCount  int
+	Permissions     []string
+	Duration        *time.Duration
+	Justification   string
+}
+
+func SendInteractiveSessionStartedEvent(ctx context.Context) {
+	sendInteractiveEvent(ctx, eventInteractiveSessionStarted, nil)
+}
+
+func SendOptionSelectedEvent(ctx context.Context, surface, selectID string, optionValue interface{}) {
+	sendInteractiveEvent(ctx, eventOptionSelected, map[string]interface{}{
+		surfaceField:     surface,
+		selectIDField:    selectID,
+		optionValueField: optionValue,
+	})
+}
+
+func SendAccessRequestSubmittedEvent(ctx context.Context, submitted AccessRequestSubmittedProperties) {
+	sendInteractiveEvent(ctx, eventAccessRequestSubmitted, accessRequestSubmittedProperties(submitted))
+}
+
+func accessRequestSubmittedProperties(submitted AccessRequestSubmittedProperties) map[string]interface{} {
+	permissions := submitted.Permissions
+	if permissions == nil {
+		permissions = []string{}
+	}
+
+	var durationHours float64
+	if submitted.Duration != nil {
+		durationHours = submitted.Duration.Hours()
+	}
+
+	return map[string]interface{}{
+		surfaceField:         RequestNewAccessFlow,
+		requestTypeField:     submitted.RequestType,
+		bundleNameField:      submitted.BundleName,
+		integrationNameField: submitted.IntegrationName,
+		resourceTypeField:    submitted.ResourceType,
+		resourcesCountField:  submitted.ResourcesCount,
+		permissionsField:     permissions,
+		durationField:        durationHours,
+		justificationField:   truncatePropertyValue(submitted.Justification),
+	}
+}
+
+func sendInteractiveEvent(ctx context.Context, eventName string, properties map[string]interface{}) {
+	if !IsInteractiveMode(ctx) {
+		return
+	}
+
+	client, err := aponoapi.GetClient(ctx)
+	if err != nil {
+		return
+	}
+
+	if properties == nil {
+		properties = map[string]interface{}{}
+	}
+	properties[cliVersionField] = build.Version
+
+	req := clientapi.CreateAnalyticEventClientModel{
+		EventName:  eventName,
+		ClientType: clientTypeCLI,
+		Properties: properties,
+	}
+
+	_, _ = client.ClientAPI.AnalyticsAPI.SendAnalyticsEvent(ctx).CreateAnalyticEventClientModel(req).Execute()
+}
+
+func truncatePropertyValue(value string) string {
+	runes := []rune(value)
+	if len(runes) <= maxPropertyValueLength {
+		return value
+	}
+
+	return string(runes[:maxPropertyValueLength])
+}
