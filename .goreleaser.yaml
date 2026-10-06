@@ -1,3 +1,5 @@
+version: 2
+
 project_name: apono-cli
 before:
   hooks:
@@ -41,8 +43,7 @@ archives:
   - id: windows
     format_overrides:
       - goos: windows
-        format: zip
-    rlcp: true
+        formats: [zip]
     files:
       - LICENSE
       - contrib/completion/**/*
@@ -69,11 +70,11 @@ nfpms:
         dst: "/usr/share/zsh/vendor-completions/_exo"
 
 brews:
-  - tap:
+  - repository:
       owner: apono-io
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    folder: Formula
+    directory: Formula
     homepage: "https://www.apono.io"
     description: "View, request and receive permissions to services, DBs and applications."
     license: "Apache-2.0"
@@ -85,15 +86,15 @@ brews:
       bash_completion.install "contrib/completion/bash/apono"
       zsh_completion.install "contrib/completion/zsh/_apono"
 
-scoop:
-  bucket:
-    owner: apono-io
-    name: scoop-bucket
-    token: "{{ .Env.SCOOP_TAP_GITHUB_TOKEN }}"
-  folder: bucket
-  homepage: "https://www.apono.io"
-  description: "View, request and receive permissions to services, DBs and applications."
-  license: "Apache-2.0"
+scoops:
+  - repository:
+      owner: apono-io
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_TAP_GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: "https://www.apono.io"
+    description: "View, request and receive permissions to services, DBs and applications."
+    license: "Apache-2.0"
 
 checksum:
   name_template: 'checksums.txt'
@@ -113,7 +114,7 @@ signs:
       - "${artifact}"
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-snapshot"
+  version_template: "{{ incpatch .Version }}-snapshot"
 
 changelog:
   sort: asc
