@@ -27,13 +27,26 @@ mod: ## go mod tidy
 	$(call print-target)
 	go mod tidy
 
+GORELEASER_VERSION := v1.17.2
+
 .PHONY: inst
 inst: ## go install tools
 	$(call print-target)
 	go install github.com/client9/misspell/cmd/misspell@v0.3.4
 	go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.7
-	go install github.com/goreleaser/goreleaser@v1.17.2
+	# goreleaser v1 can't be built from source with Go >= 1.25 (old x/tools), so install the release binary
+	set -euo pipefail; \
+	os=$$(uname -s); arch=$$(uname -m); \
+	case "$$arch" in aarch64) arch=arm64;; esac; \
+	asset="goreleaser_$${os}_$${arch}.tar.gz"; \
+	url="https://github.com/goreleaser/goreleaser/releases/download/$(GORELEASER_VERSION)"; \
+	tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+	curl -sSfL -o "$$tmp/$$asset" "$$url/$$asset"; \
+	curl -sSfL -o "$$tmp/checksums.txt" "$$url/checksums.txt"; \
+	(cd "$$tmp" && grep " $$asset\$$" checksums.txt | shasum -a 256 -c -); \
+	bin=$$(go env GOBIN); bin=$${bin:-$$(go env GOPATH)/bin}; mkdir -p "$$bin"; \
+	tar -xzf "$$tmp/$$asset" -C "$$bin" goreleaser
 
 .PHONY: gen
 gen: ## go generate
