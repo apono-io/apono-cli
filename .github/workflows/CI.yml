@@ -42,7 +42,7 @@ jobs:
           name: coverage
           path: coverage.*
 
-      - run: goreleaser release --clean --snapshot
+      - run: goreleaser release --rm-dist --snapshot
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
