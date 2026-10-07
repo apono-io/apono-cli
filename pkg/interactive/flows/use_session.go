@@ -67,12 +67,7 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	switch accessMethod {
 	case selectors.ExecuteOption:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionConnect)
-		err = PrintErrorConnectingSuggestion(cmd, session.Id)
-		if err != nil {
-			return err
-		}
-
-		return services.ExecuteCliCommand(cmd, session, details.GetCli())
+		return services.ExecuteCliCommand(cmd, client, session, details.GetCli())
 
 	case selectors.PrintOption:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionInstructions)
