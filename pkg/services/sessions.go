@@ -126,7 +126,7 @@ func ResetSessionCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 			return fmt.Errorf("access session with id %s not found", sessionID)
 		}
 
-		if session.Credentials.IsSet() && session.Credentials.Get().Status == newCredentialsStatus {
+		if session.Credentials.IsSet() && strings.EqualFold(session.Credentials.Get().Status, newCredentialsStatus) {
 			return nil
 		}
 
