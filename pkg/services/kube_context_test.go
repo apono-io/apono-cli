@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -50,29 +54,32 @@ type kubeStubs struct {
 	fetchCalls  int
 }
 
-func stubKube(t *testing.T, exists bool, existsErr error, resetErr error, fetched string) *kubeStubs {
-	t.Helper()
+type kubeStubConfig struct {
+	exists    bool
+	existsErr error
+	resetErr  error
+	fetched   string
+	fetchErr  error
+}
+
+func stubKube(cfg kubeStubConfig) (kubeCommandResolver, *kubeStubs) {
 	stubs := &kubeStubs{}
-
-	origExists, origReset, origFetch := kubeContextExists, resetCredentialsFn, fetchCliCommandFn
-	t.Cleanup(func() {
-		kubeContextExists, resetCredentialsFn, fetchCliCommandFn = origExists, origReset, origFetch
-	})
-
-	kubeContextExists = func(_ context.Context, _ string) (bool, error) {
-		stubs.existsCalls++
-		return exists, existsErr
-	}
-	resetCredentialsFn = func(_ context.Context, _ *aponoapi.AponoClient, _ string) error {
-		stubs.resetCalls++
-		return resetErr
-	}
-	fetchCliCommandFn = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (string, error) {
-		stubs.fetchCalls++
-		return fetched, nil
+	resolver := kubeCommandResolver{
+		contextExists: func(_ context.Context, _ string) (bool, error) {
+			stubs.existsCalls++
+			return cfg.exists, cfg.existsErr
+		},
+		resetCredentials: func(_ context.Context, _ *aponoapi.AponoClient, _ string) error {
+			stubs.resetCalls++
+			return cfg.resetErr
+		},
+		fetchCliCommand: func(_ context.Context, _ *aponoapi.AponoClient, _ string) (string, error) {
+			stubs.fetchCalls++
+			return cfg.fetched, cfg.fetchErr
+		},
 	}
 
-	return stubs
+	return resolver, stubs
 }
 
 func kubeSession(withCredentials, canReset bool) *clientapi.AccessSessionClientModel {
@@ -94,41 +101,45 @@ func newKubeTestCommand() (*cobra.Command, *bytes.Buffer) {
 }
 
 func TestResolveKubeCliCommand(t *testing.T) {
+	const otherContextCommand = "kubectl config set-context other-cluster --cluster=other && kubectl config use-context my-cluster"
+
 	tests := []struct {
 		name           string
 		command        string
 		session        *clientapi.AccessSessionClientModel
-		exists         bool
-		existsErr      error
-		resetErr       error
-		fetched        string
+		stub           kubeStubConfig
 		want           string
 		wantErr        bool
 		wantExistsCall bool
 		wantResetCall  bool
+		wantFetchCall  bool
 	}{
 		{name: "non kubectl command", command: "psql -h localhost", session: kubeSession(true, true), want: "psql -h localhost"},
 		{name: "full setup command is untouched", command: fullKubeCommand, session: kubeSession(true, true), want: fullKubeCommand},
-		{name: "context exists", command: shortKubeCommand, session: kubeSession(true, true), exists: true, want: shortKubeCommand, wantExistsCall: true},
-		{name: "existence check fails", command: shortKubeCommand, session: kubeSession(true, true), existsErr: errors.New("kubectl not found"), want: shortKubeCommand, wantExistsCall: true},
-		{name: "context missing, credentials reissued", command: shortKubeCommand, session: kubeSession(true, true), fetched: fullKubeCommand, want: fullKubeCommand, wantExistsCall: true, wantResetCall: true},
+		{name: "set-context for another context is not a full setup", command: otherContextCommand, session: kubeSession(true, true), stub: kubeStubConfig{exists: true}, want: otherContextCommand, wantExistsCall: true},
+		{name: "context exists", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{exists: true}, want: shortKubeCommand, wantExistsCall: true},
+		{name: "existence check fails", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{existsErr: errors.New("kubectl not found")}, want: shortKubeCommand, wantExistsCall: true},
+		{name: "context missing, credentials reissued", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{fetched: fullKubeCommand}, want: fullKubeCommand, wantExistsCall: true, wantResetCall: true, wantFetchCall: true},
 		{name: "context missing, reset not allowed", command: shortKubeCommand, session: kubeSession(true, false), wantErr: true, wantExistsCall: true},
 		{name: "context missing, no credentials", command: shortKubeCommand, session: kubeSession(false, false), wantErr: true, wantExistsCall: true},
-		{name: "context missing, reset fails", command: shortKubeCommand, session: kubeSession(true, true), resetErr: errors.New("boom"), wantErr: true, wantExistsCall: true, wantResetCall: true},
-		{name: "context missing, refetched command still short", command: shortKubeCommand, session: kubeSession(true, true), fetched: shortKubeCommand, wantErr: true, wantExistsCall: true, wantResetCall: true},
+		{name: "context missing, reset fails", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{resetErr: errors.New("boom")}, wantErr: true, wantExistsCall: true, wantResetCall: true},
+		{name: "context missing, refetch fails", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{fetchErr: errors.New("boom")}, wantErr: true, wantExistsCall: true, wantResetCall: true, wantFetchCall: true},
+		{name: "context missing, refetched command still short", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{fetched: shortKubeCommand}, wantErr: true, wantExistsCall: true, wantResetCall: true, wantFetchCall: true},
+		{name: "context missing, refetched command sets another context", command: shortKubeCommand, session: kubeSession(true, true), stub: kubeStubConfig{fetched: otherContextCommand}, wantErr: true, wantExistsCall: true, wantResetCall: true, wantFetchCall: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stubs := stubKube(t, tt.exists, tt.existsErr, tt.resetErr, tt.fetched)
+			t.Parallel()
+			resolver, stubs := stubKube(tt.stub)
 			cmd, _ := newKubeTestCommand()
 
-			got, err := resolveKubeCliCommand(cmd, nil, tt.session, tt.command)
+			got, err := resolver.resolve(cmd, nil, tt.session, tt.command)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("resolveKubeCliCommand() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("resolve() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if got != tt.want {
-				t.Errorf("resolveKubeCliCommand() = %q, want %q", got, tt.want)
+				t.Errorf("resolve() = %q, want %q", got, tt.want)
 			}
 			if (stubs.existsCalls > 0) != tt.wantExistsCall {
 				t.Errorf("existence check calls = %d, want called = %v", stubs.existsCalls, tt.wantExistsCall)
@@ -136,19 +147,87 @@ func TestResolveKubeCliCommand(t *testing.T) {
 			if (stubs.resetCalls > 0) != tt.wantResetCall {
 				t.Errorf("reset calls = %d, want called = %v", stubs.resetCalls, tt.wantResetCall)
 			}
+			if (stubs.fetchCalls > 0) != tt.wantFetchCall {
+				t.Errorf("fetch calls = %d, want called = %v", stubs.fetchCalls, tt.wantFetchCall)
+			}
 		})
 	}
 }
 
 func TestResolveKubeCliCommand_printsNoticeWhenCreatingContext(t *testing.T) {
-	stubKube(t, false, nil, nil, fullKubeCommand)
+	resolver, _ := stubKube(kubeStubConfig{fetched: fullKubeCommand})
 	cmd, out := newKubeTestCommand()
 
-	if _, err := resolveKubeCliCommand(cmd, nil, kubeSession(true, true), shortKubeCommand); err != nil {
-		t.Fatalf("resolveKubeCliCommand() error = %v", err)
+	if _, err := resolver.resolve(cmd, nil, kubeSession(true, true), shortKubeCommand); err != nil {
+		t.Fatalf("resolve() error = %v", err)
 	}
 
 	if !bytes.Contains(out.Bytes(), []byte("my-cluster")) || !bytes.Contains(out.Bytes(), []byte("creating it")) {
 		t.Errorf("expected notice about creating the context, got %q", out.String())
 	}
+}
+
+func TestSetsKubeContext(t *testing.T) {
+	tests := []struct {
+		name    string
+		command string
+		context string
+		want    bool
+	}{
+		{name: "full setup", command: fullKubeCommand, context: "my-cluster", want: true},
+		{name: "use-context only", command: shortKubeCommand, context: "my-cluster", want: false},
+		{name: "quoted", command: `kubectl config set-context "my-cluster" --cluster=c`, context: "my-cluster", want: true},
+		{name: "different context", command: "kubectl config set-context other --cluster=c", context: "my-cluster", want: false},
+		{name: "prefix of another context", command: "kubectl config set-context my-cluster-2 --cluster=c", context: "my-cluster", want: false},
+		{name: "current context flag", command: "kubectl config set-context --current --namespace=x", context: "my-cluster", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setsKubeContext(tt.command, tt.context); got != tt.want {
+				t.Errorf("setsKubeContext(%q, %q) = %v, want %v", tt.command, tt.context, got, tt.want)
+			}
+		})
+	}
+}
+
+// fakeKubectl puts a kubectl script on PATH that exits with the given code.
+func fakeKubectl(t *testing.T, exitCode int) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake kubectl script requires a unix shell")
+	}
+
+	dir := t.TempDir()
+	script := fmt.Sprintf("#!/bin/sh\nexit %d\n", exitCode)
+	if err := os.WriteFile(filepath.Join(dir, "kubectl"), []byte(script), 0o755); err != nil { //nolint:gosec // test executable
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+}
+
+func TestKubectlContextExists(t *testing.T) {
+	t.Run("context found", func(t *testing.T) {
+		fakeKubectl(t, 0)
+		exists, err := kubectlContextExists(context.Background(), "my-cluster")
+		if err != nil || !exists {
+			t.Errorf("kubectlContextExists() = (%v, %v), want (true, nil)", exists, err)
+		}
+	})
+
+	t.Run("context not found", func(t *testing.T) {
+		fakeKubectl(t, 1)
+		exists, err := kubectlContextExists(context.Background(), "my-cluster")
+		if err != nil || exists {
+			t.Errorf("kubectlContextExists() = (%v, %v), want (false, nil)", exists, err)
+		}
+	})
+
+	t.Run("kubectl not installed", func(t *testing.T) {
+		t.Setenv("PATH", t.TempDir())
+		exists, err := kubectlContextExists(context.Background(), "my-cluster")
+		if err == nil || exists {
+			t.Errorf("kubectlContextExists() = (%v, %v), want (false, error)", exists, err)
+		}
+	})
 }
