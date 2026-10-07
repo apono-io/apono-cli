@@ -2,16 +2,11 @@ package actions
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
-)
-
-const (
-	newCredentialsStatus = "new"
-	maxWaitTime          = 30 * time.Second
+	"github.com/apono-io/apono-cli/pkg/services"
 )
 
 func AccessReset() *cobra.Command {
@@ -28,34 +23,14 @@ func AccessReset() *cobra.Command {
 				return err
 			}
 
-			sessionID := args[0]
-
-			_, _, err = client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(cmd.Context(), sessionID).Execute()
-			if err != nil {
-				return err
-			}
-
 			_, err = fmt.Fprintln(cmd.OutOrStdout(), "credentials reset request has been submitted, waiting for new credentials...")
 			if err != nil {
 				return err
 			}
 
-			startTime := time.Now()
-			for {
-				session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
-				if err != nil {
-					return fmt.Errorf("access session with id %s not found", sessionID)
-				}
-
-				if session.Credentials.IsSet() && session.Credentials.Get().Status == newCredentialsStatus {
-					break
-				}
-
-				time.Sleep(1 * time.Second)
-
-				if time.Now().After(startTime.Add(maxWaitTime)) {
-					return fmt.Errorf("timeout while waiting for credentials to reset")
-				}
+			err = services.ResetSessionCredentials(cmd.Context(), client, args[0])
+			if err != nil {
+				return err
 			}
 
 			fmt.Println("credentials reset finished successfully")

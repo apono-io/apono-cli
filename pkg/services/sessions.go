@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
@@ -26,6 +27,7 @@ const (
 	InstructionsOutputFormat = "instructions"
 	JSONOutputFormat         = "json"
 	newCredentialsStatus     = "new"
+	credentialsResetMaxWait  = 30 * time.Second
 )
 
 type CustomInstructionMessage = string
@@ -90,14 +92,50 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
 	}
 
-	return executeCommand(cobraCmd, accessDetails.GetCli())
+	command, err := resolveKubeCliCommand(cobraCmd, client, session, accessDetails.GetCli())
+	if err != nil {
+		return err
+	}
+
+	return executeCommand(cobraCmd, command)
 }
 
-func ExecuteCliCommand(cobraCmd *cobra.Command, session *clientapi.AccessSessionClientModel, command string) error {
+func ExecuteCliCommand(cobraCmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel, command string) error {
 	if err := checkCliExecutable(session); err != nil {
 		return err
 	}
+
+	command, err := resolveKubeCliCommand(cobraCmd, client, session, command)
+	if err != nil {
+		return err
+	}
+
 	return executeCommand(cobraCmd, command)
+}
+
+func ResetSessionCredentials(ctx context.Context, client *aponoapi.AponoClient, sessionID string) error {
+	_, _, err := client.ClientAPI.AccessSessionsAPI.ResetAccessSessionCredentials(ctx, sessionID).Execute()
+	if err != nil {
+		return err
+	}
+
+	startTime := time.Now()
+	for {
+		session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, sessionID).Execute()
+		if err != nil {
+			return fmt.Errorf("access session with id %s not found", sessionID)
+		}
+
+		if session.Credentials.IsSet() && session.Credentials.Get().Status == newCredentialsStatus {
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
+
+		if time.Now().After(startTime.Add(credentialsResetMaxWait)) {
+			return fmt.Errorf("timeout while waiting for credentials to reset")
+		}
+	}
 }
 
 func checkCliExecutable(session *clientapi.AccessSessionClientModel) error {
