@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -60,7 +60,7 @@ func (r kubeCommandResolver) resolve(cobraCmd *cobra.Command, client *aponoapi.A
 		return "", fmt.Errorf("kubernetes context %q does not exist in your kubeconfig and the credentials for session %s cannot be reissued. request access again to connect", contextName, session.Id)
 	}
 
-	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "\nKubernetes context %s not found in your kubeconfig, creating it...\n\n", color.Green.Sprint(contextName))
+	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "\nKubernetes context %s not found in your kubeconfig, reissuing credentials to create it (previously issued credentials for this session will stop working)...\n\n", color.Green.Sprint(contextName))
 	if err != nil {
 		return "", err
 	}
@@ -103,18 +103,22 @@ func setsKubeContext(command, name string) bool {
 	return false
 }
 
+// kubectlContextExists lists all contexts instead of querying the name directly, so a failing
+// kubectl (malformed kubeconfig, unreadable file) is reported as an error rather than as a
+// missing context, which would needlessly reissue the session credentials.
 func kubectlContextExists(ctx context.Context, name string) (bool, error) {
-	err := exec.CommandContext(ctx, "kubectl", "config", "get-contexts", name, "-o", "name").Run()
-	if err == nil {
-		return true, nil
+	output, err := exec.CommandContext(ctx, "kubectl", "config", "get-contexts", "-o", "name").Output()
+	if err != nil {
+		return false, err
 	}
 
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		return false, nil
+	for _, contextName := range strings.Fields(string(output)) {
+		if contextName == name {
+			return true, nil
+		}
 	}
 
-	return false, err
+	return false, nil
 }
 
 func fetchCliCommand(ctx context.Context, client *aponoapi.AponoClient, sessionID string) (string, error) {

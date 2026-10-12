@@ -130,7 +130,11 @@ func ResetSessionCredentials(ctx context.Context, client *aponoapi.AponoClient, 
 			return nil
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Second):
+		}
 
 		if time.Now().After(startTime.Add(credentialsResetMaxWait)) {
 			return fmt.Errorf("timeout while waiting for credentials to reset")

@@ -23,7 +23,7 @@ func AccessReset() *cobra.Command {
 				return err
 			}
 
-			_, err = fmt.Fprintln(cmd.OutOrStdout(), "credentials reset request has been submitted, waiting for new credentials...")
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "resetting credentials, waiting for new credentials...")
 			if err != nil {
 				return err
 			}

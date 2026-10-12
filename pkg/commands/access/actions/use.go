@@ -12,6 +12,7 @@ import (
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/connect"
+	"github.com/apono-io/apono-cli/pkg/interactive/flows"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -92,7 +93,8 @@ func AccessDetails() *cobra.Command {
 			connectionDetailsOutputFormat := resolveOutputFormat(cmdFlags)
 
 			if cmdFlags.shouldExecuteAccessCommand && connectionDetailsOutputFormat == services.CliOutputFormat {
-				return services.ExecuteAccessDetails(cmd, client, session)
+				err = services.ExecuteAccessDetails(cmd, client, session)
+				return flows.PrintErrorConnectingSuggestionOnFailure(cmd, session, err)
 			}
 
 			if !utils.Contains(session.ConnectionMethods, connectionDetailsOutputFormat) {

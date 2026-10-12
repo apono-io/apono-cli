@@ -162,8 +162,8 @@ func TestResolveKubeCliCommand_printsNoticeWhenCreatingContext(t *testing.T) {
 		t.Fatalf("resolve() error = %v", err)
 	}
 
-	if !bytes.Contains(out.Bytes(), []byte("my-cluster")) || !bytes.Contains(out.Bytes(), []byte("creating it")) {
-		t.Errorf("expected notice about creating the context, got %q", out.String())
+	if !bytes.Contains(out.Bytes(), []byte("my-cluster")) || !bytes.Contains(out.Bytes(), []byte("reissuing credentials")) {
+		t.Errorf("expected notice about reissuing credentials, got %q", out.String())
 	}
 }
 
@@ -191,15 +191,15 @@ func TestSetsKubeContext(t *testing.T) {
 	}
 }
 
-// fakeKubectl puts a kubectl script on PATH that exits with the given code.
-func fakeKubectl(t *testing.T, exitCode int) {
+// fakeKubectl puts a kubectl script on PATH that prints output and exits with the given code.
+func fakeKubectl(t *testing.T, output string, exitCode int) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("fake kubectl script requires a unix shell")
 	}
 
 	dir := t.TempDir()
-	script := fmt.Sprintf("#!/bin/sh\nexit %d\n", exitCode)
+	script := fmt.Sprintf("#!/bin/sh\nprintf '%s'\nexit %d\n", output, exitCode)
 	if err := os.WriteFile(filepath.Join(dir, "kubectl"), []byte(script), 0o755); err != nil { //nolint:gosec // test executable
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func fakeKubectl(t *testing.T, exitCode int) {
 
 func TestKubectlContextExists(t *testing.T) {
 	t.Run("context found", func(t *testing.T) {
-		fakeKubectl(t, 0)
+		fakeKubectl(t, "other-cluster\nmy-cluster\n", 0)
 		exists, err := kubectlContextExists(context.Background(), "my-cluster")
 		if err != nil || !exists {
 			t.Errorf("kubectlContextExists() = (%v, %v), want (true, nil)", exists, err)
@@ -216,10 +216,26 @@ func TestKubectlContextExists(t *testing.T) {
 	})
 
 	t.Run("context not found", func(t *testing.T) {
-		fakeKubectl(t, 1)
+		fakeKubectl(t, "other-cluster\nmy-cluster-2\n", 0)
 		exists, err := kubectlContextExists(context.Background(), "my-cluster")
 		if err != nil || exists {
 			t.Errorf("kubectlContextExists() = (%v, %v), want (false, nil)", exists, err)
+		}
+	})
+
+	t.Run("empty kubeconfig", func(t *testing.T) {
+		fakeKubectl(t, "", 0)
+		exists, err := kubectlContextExists(context.Background(), "my-cluster")
+		if err != nil || exists {
+			t.Errorf("kubectlContextExists() = (%v, %v), want (false, nil)", exists, err)
+		}
+	})
+
+	t.Run("kubectl fails", func(t *testing.T) {
+		fakeKubectl(t, "", 1)
+		exists, err := kubectlContextExists(context.Background(), "my-cluster")
+		if err == nil || exists {
+			t.Errorf("kubectlContextExists() = (%v, %v), want (false, error)", exists, err)
 		}
 	})
 
