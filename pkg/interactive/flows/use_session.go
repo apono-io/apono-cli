@@ -67,12 +67,8 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 	switch accessMethod {
 	case selectors.ExecuteOption:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionConnect)
-		err = PrintErrorConnectingSuggestion(cmd, session.Id)
-		if err != nil {
-			return err
-		}
-
-		return services.ExecuteCliCommand(cmd, session, details.GetCli())
+		err = services.ExecuteCliCommand(cmd, client, session, details.GetCli())
+		return PrintErrorConnectingSuggestionOnFailure(cmd, session, err)
 
 	case selectors.PrintOption:
 		analytics.SendOptionSelectedEvent(cmd.Context(), analytics.ConnectToResourceFlow, analytics.SelectIDConnectOption, analytics.ConnectOptionInstructions)
@@ -155,6 +151,17 @@ func printLauncherAliasSuggestion(cmd *cobra.Command, sessionID, clientID string
 func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error {
 	resetCommand := resetCredentialsCommand + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	return err
+}
+
+// PrintErrorConnectingSuggestionOnFailure suggests a credentials reset when running the
+// connect command failed, and returns the original error.
+func PrintErrorConnectingSuggestionOnFailure(cmd *cobra.Command, session *clientapi.AccessSessionClientModel, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	_ = ShouldPrintErrorConnectingSuggestion(cmd, session)
 	return err
 }
 

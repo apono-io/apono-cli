@@ -93,12 +93,8 @@ func AccessDetails() *cobra.Command {
 			connectionDetailsOutputFormat := resolveOutputFormat(cmdFlags)
 
 			if cmdFlags.shouldExecuteAccessCommand && connectionDetailsOutputFormat == services.CliOutputFormat {
-				err = flows.ShouldPrintErrorConnectingSuggestion(cmd, session)
-				if err != nil {
-					return err
-				}
-
-				return services.ExecuteAccessDetails(cmd, client, session)
+				err = services.ExecuteAccessDetails(cmd, client, session)
+				return flows.PrintErrorConnectingSuggestionOnFailure(cmd, session, err)
 			}
 
 			if !utils.Contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
