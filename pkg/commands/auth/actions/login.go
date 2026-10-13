@@ -2,6 +2,7 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -118,7 +119,7 @@ func Login() *cobra.Command {
 					return storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, oauthToken, "", ctx)
 				})
 				if err := eg.Wait(); err != nil {
-					return fmt.Errorf("authorization error: %s", err)
+					return fmt.Errorf("authorization error: %w", err)
 				}
 			} else {
 				if err := storeAndLogProfileToken(cmdFlags.profileName, cmdFlags.clientID, apiURL, appURL, portalURL, nil, personalToken, ctx); err != nil {
@@ -237,6 +238,10 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		userID = claims.UserID
 
 		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
+		var unsupportedErr *aponoapi.UnsupportedAccountError
+		if errors.As(userSessionErr, &unsupportedErr) {
+			return nil, unsupportedErr
+		}
 		if userSessionErr != nil {
 			log.Printf("Warning: failed to fetch user session details: %v", userSessionErr)
 		} else {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/version"
 
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/commands/apono"
 	"github.com/apono-io/apono-cli/pkg/urihandler"
@@ -32,6 +33,11 @@ func main() {
 
 	err = execute(runner)
 	if err != nil {
+		if userErr := aponoapi.UserFacingError(err); userErr != err { //nolint:errorlint // identity check: was err replaced
+			fmt.Fprintln(os.Stderr, "Error:", userErr.Error())
+			os.Exit(1)
+		}
+
 		fmt.Fprintln(os.Stderr, "Error:", err.Error())
 		fmt.Fprintln(os.Stderr, "Use '--help' to see usage.")
 		os.Exit(1)
