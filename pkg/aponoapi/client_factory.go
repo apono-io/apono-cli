@@ -37,7 +37,7 @@ type Session struct {
 }
 
 func CreateClient(ctx context.Context, profileName string) (*AponoClient, error) {
-	sessionCfg, err := config.GetProfileByName(config.ProfileName(profileName))
+	sessionCfg, err := getSessionConfig(profileName)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +85,20 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 			UserID:    sessionCfg.UserID,
 		},
 	}, nil
+}
+
+// getSessionConfig resolves the session to use for this invocation. An
+// explicit --profile flag always wins; otherwise a token in the environment
+// takes precedence over the persisted config, so that an environment-provided
+// credential is honored even when a stale profile exists on disk.
+func getSessionConfig(profileName string) (*config.SessionConfig, error) {
+	if profileName == "" {
+		if envCfg := config.GetSessionConfigFromEnv(); envCfg != nil {
+			return envCfg, nil
+		}
+	}
+
+	return config.GetProfileByName(config.ProfileName(profileName))
 }
 
 func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client) *clientapi.APIClient {
