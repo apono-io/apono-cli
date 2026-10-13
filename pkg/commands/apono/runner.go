@@ -61,6 +61,9 @@ type Runner struct {
 func (r *Runner) Run(ctx context.Context, args []string) error {
 	r.rootCmd.SetArgs(args)
 	if err := r.rootCmd.ExecuteContext(ctx); err != nil {
+		if unsupportedErr, ok := aponoapi.AsUnsupportedAccountError(err); ok {
+			return unsupportedErr
+		}
 		if aponoapi.IsInvalidGrant(err) {
 			return aponoapi.ErrSessionExpired
 		}

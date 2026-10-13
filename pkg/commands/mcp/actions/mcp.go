@@ -92,7 +92,7 @@ func createAponoMCPClient(cmd *cobra.Command) (string, *http.Client, error) {
 
 	var httpClient *http.Client
 	if sessionCfg.PersonalToken != "" {
-		httpClient = aponoapi.HTTPClientWithPersonalToken(sessionCfg.PersonalToken)
+		httpClient = aponoapi.WithUnsupportedAccountCheck(aponoapi.HTTPClientWithPersonalToken(sessionCfg.PersonalToken))
 	} else {
 		client, err := aponoapi.CreateClient(cmd.Context(), "")
 		if err != nil {
@@ -216,6 +216,10 @@ func sendMcpRequest(endpoint string, httpClient *http.Client, request string, us
 	}
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
+		if unsupportedErr, ok := aponoapi.AsUnsupportedAccountError(err); ok {
+			utils.McpLogf("[Error]: Unsupported account: %v", unsupportedErr)
+			return createErrorResponse(ErrorCodeAuthorizationFailed, "Unsupported account", unsupportedErr.Message), http.StatusForbidden
+		}
 		utils.McpLogf("[Error]: Failed to send HTTP request: %v", err)
 		return "", EmptyErrorStatusCode
 	}
@@ -264,6 +268,27 @@ func propagateResponseToStdout(response string, statusCode int) {
 	utils.McpLogf("No response body to send, status: %d", statusCode)
 }
 
+type jsonRPCError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    string `json:"data"`
+}
+
+type jsonRPCErrorResponse struct {
+	JSONRPC string       `json:"jsonrpc"`
+	ID      any          `json:"id"`
+	Error   jsonRPCError `json:"error"`
+}
+
+// createErrorResponse marshals the response so server-provided text (newlines, quotes) stays valid JSON.
 func createErrorResponse(errorCode int, message, data string) string {
-	return fmt.Sprintf(`{"jsonrpc":"2.0","id":null,"error":{"code":%d,"message":"%s","data":"%s"}}`, errorCode, message, data)
+	response, err := json.Marshal(jsonRPCErrorResponse{
+		JSONRPC: "2.0",
+		Error:   jsonRPCError{Code: errorCode, Message: message, Data: data},
+	})
+	if err != nil {
+		return fmt.Sprintf(`{"jsonrpc":"2.0","id":null,"error":{"code":%d,"message":"Internal error"}}`, ErrorCodeInternalError)
+	}
+
+	return string(response)
 }

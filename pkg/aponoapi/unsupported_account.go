@@ -13,6 +13,7 @@ const (
 	errorCodeHeader              = "X-Apono-Error-Code"
 	unsupportedAccountErrorCode  = "cli_unsupported_account"
 	unsupportedAccountMaxBodyLen = 64 * 1024
+	unsupportedAccountFallback   = "The Apono CLI doesn't support this account. Use the Apono web portal to manage your access instead."
 )
 
 // UnsupportedAccountError is returned when the account can't be used from the CLI
@@ -25,24 +26,29 @@ func (e *UnsupportedAccountError) Error() string {
 	return e.Message
 }
 
-// UserFacingError replaces errors that carry a server message the user should see as-is.
-func UserFacingError(err error) error {
+// AsUnsupportedAccountError reports whether err means the account can't be used from the CLI,
+// either from an API response or from an OAuth token request the server rejected.
+func AsUnsupportedAccountError(err error) (*UnsupportedAccountError, bool) {
 	var unsupportedErr *UnsupportedAccountError
 	if errors.As(err, &unsupportedErr) {
-		return unsupportedErr
+		return unsupportedErr, true
 	}
 
 	var retrieveErr *oauth2.RetrieveError
-	if errors.As(err, &retrieveErr) && retrieveErr.ErrorCode == unsupportedAccountErrorCode && retrieveErr.ErrorDescription != "" {
-		return &UnsupportedAccountError{Message: retrieveErr.ErrorDescription}
+	if errors.As(err, &retrieveErr) && retrieveErr.ErrorCode == unsupportedAccountErrorCode {
+		message := retrieveErr.ErrorDescription
+		if message == "" {
+			message = unsupportedAccountFallback
+		}
+		return &UnsupportedAccountError{Message: message}, true
 	}
 
-	return err
+	return nil, false
 }
 
-// withUnsupportedAccountCheck returns a copy of client whose responses tagged with
+// WithUnsupportedAccountCheck returns a copy of client whose responses tagged with
 // cli_unsupported_account become an UnsupportedAccountError instead of a bare 403.
-func withUnsupportedAccountCheck(client *http.Client) *http.Client {
+func WithUnsupportedAccountCheck(client *http.Client) *http.Client {
 	base := client.Transport
 	if base == nil {
 		base = http.DefaultTransport
@@ -72,7 +78,7 @@ func (t *unsupportedAccountTransport) RoundTrip(req *http.Request) (*http.Respon
 	}
 	bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, unsupportedAccountMaxBodyLen))
 	if jsonErr := json.Unmarshal(bodyBytes, &body); jsonErr != nil || body.Message == "" {
-		body.Message = "The Apono CLI doesn't support this account"
+		body.Message = unsupportedAccountFallback
 	}
 
 	return nil, &UnsupportedAccountError{Message: body.Message}

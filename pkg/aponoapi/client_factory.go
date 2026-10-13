@@ -64,7 +64,7 @@ func CreateClient(ctx context.Context, profileName string) (*AponoClient, error)
 	adminAPIClientCfg.Scheme = endpointURL.Scheme
 	adminAPIClientCfg.Host = endpointURL.Host
 	adminAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
-	adminAPIClientCfg.HTTPClient = withUnsupportedAccountCheck(httpClient)
+	adminAPIClientCfg.HTTPClient = WithUnsupportedAccountCheck(httpClient)
 
 	client := apono.NewAPIClient(adminAPIClientCfg)
 	if err != nil {
@@ -92,7 +92,7 @@ func CreateClientAPI(endpointURL *url.URL, httpClient *http.Client) *clientapi.A
 	clientAPIClientCfg.Scheme = endpointURL.Scheme
 	clientAPIClientCfg.Host = endpointURL.Host
 	clientAPIClientCfg.UserAgent = fmt.Sprintf("apono-cli/%s (%s; %s)", build.Version, build.Commit, build.Date)
-	clientAPIClientCfg.HTTPClient = withUnsupportedAccountCheck(httpClient)
+	clientAPIClientCfg.HTTPClient = WithUnsupportedAccountCheck(httpClient)
 	clientAPI := clientapi.NewAPIClient(clientAPIClientCfg)
 	return clientAPI
 }

@@ -21,7 +21,7 @@ func TestUnsupportedAccountTransport(t *testing.T) {
 		wantMessage string
 	}{
 		{name: "tagged response with message", header: unsupportedAccountErrorCode, body: `{"status":403,"message":"` + "The Apono CLI doesn't support 1Password Privileged Access accounts.\\nGo to the web portal" + `"}`, wantMessage: unsupportedMessage},
-		{name: "tagged response without message", header: unsupportedAccountErrorCode, body: `not json`, wantMessage: "The Apono CLI doesn't support this account"},
+		{name: "tagged response without message", header: unsupportedAccountErrorCode, body: `not json`, wantMessage: unsupportedAccountFallback},
 		{name: "untagged 403 passes through", header: "", body: `{"message":"forbidden"}`},
 	}
 
@@ -40,7 +40,7 @@ func TestUnsupportedAccountTransport(t *testing.T) {
 			if reqErr != nil {
 				t.Fatal(reqErr)
 			}
-			resp, err := withUnsupportedAccountCheck(&http.Client{}).Do(req)
+			resp, err := WithUnsupportedAccountCheck(&http.Client{}).Do(req)
 			if tt.wantMessage == "" {
 				if err != nil {
 					t.Fatalf("expected no error, got %v", err)
@@ -63,34 +63,34 @@ func TestUnsupportedAccountTransport(t *testing.T) {
 	}
 }
 
-func TestUserFacingError(t *testing.T) {
+func TestAsUnsupportedAccountError(t *testing.T) {
 	unsupportedErr := &UnsupportedAccountError{Message: unsupportedMessage}
-	otherErr := errors.New("boom")
-	otherRetrieveErr := &oauth2.RetrieveError{ErrorCode: "invalid_grant", ErrorDescription: "expired"}
 
 	tests := []struct {
-		name string
-		err  error
-		want string
-		same bool
+		name   string
+		err    error
+		want   string
+		wantOK bool
 	}{
-		{name: "wrapped unsupported account error", err: fmt.Errorf("authorization error: %w", unsupportedErr), want: unsupportedMessage},
-		{name: "token refresh rejection", err: fmt.Errorf("refresh: %w", &oauth2.RetrieveError{ErrorCode: unsupportedAccountErrorCode, ErrorDescription: unsupportedMessage}), want: unsupportedMessage},
-		{name: "other retrieve error", err: otherRetrieveErr, same: true},
-		{name: "other error", err: otherErr, same: true},
+		{name: "wrapped unsupported account error", err: fmt.Errorf("authorization error: %w", unsupportedErr), want: unsupportedMessage, wantOK: true},
+		{name: "token refresh rejection", err: fmt.Errorf("refresh: %w", &oauth2.RetrieveError{ErrorCode: unsupportedAccountErrorCode, ErrorDescription: unsupportedMessage}), want: unsupportedMessage, wantOK: true},
+		{name: "token refresh rejection without description", err: &oauth2.RetrieveError{ErrorCode: unsupportedAccountErrorCode}, want: unsupportedAccountFallback, wantOK: true},
+		{name: "other retrieve error", err: &oauth2.RetrieveError{ErrorCode: "invalid_grant", ErrorDescription: "expired"}},
+		{name: "other error", err: errors.New("boom")},
+		{name: "nil error", err: nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := UserFacingError(tt.err)
-			if tt.same {
-				if got != tt.err { //nolint:errorlint // identity check
-					t.Fatalf("expected the original error, got %v", got)
-				}
+			got, ok := AsUnsupportedAccountError(tt.err)
+			if ok != tt.wantOK {
+				t.Fatalf("expected ok=%v, got %v", tt.wantOK, ok)
+			}
+			if !ok {
 				return
 			}
-			if got.Error() != tt.want {
-				t.Fatalf("expected %q, got %q", tt.want, got.Error())
+			if got.Message != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got.Message)
 			}
 		})
 	}

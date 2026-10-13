@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -33,8 +34,10 @@ func main() {
 
 	err = execute(runner)
 	if err != nil {
-		if userErr := aponoapi.UserFacingError(err); userErr != err { //nolint:errorlint // identity check: was err replaced
-			fmt.Fprintln(os.Stderr, "Error:", userErr.Error())
+		// The server's message already tells the user what to do, so skip the usage hint.
+		var unsupportedErr *aponoapi.UnsupportedAccountError
+		if errors.As(err, &unsupportedErr) {
+			fmt.Fprintln(os.Stderr, "Error:", unsupportedErr.Error())
 			os.Exit(1)
 		}
 

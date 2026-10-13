@@ -238,11 +238,11 @@ func storeProfileToken(profileName, clientID, apiURL, appURL, portalURL string, 
 		userID = claims.UserID
 
 		userSession, _, userSessionErr := clientAPI.UserSessionAPI.GetUserSession(ctx).Execute()
-		var unsupportedErr *aponoapi.UnsupportedAccountError
-		if errors.As(userSessionErr, &unsupportedErr) {
-			return nil, unsupportedErr
-		}
 		if userSessionErr != nil {
+			var unsupportedErr *aponoapi.UnsupportedAccountError
+			if errors.As(userSessionErr, &unsupportedErr) {
+				return nil, unsupportedErr
+			}
 			log.Printf("Warning: failed to fetch user session details: %v", userSessionErr)
 		} else {
 			userName = userSession.User.Name
