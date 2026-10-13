@@ -280,7 +280,6 @@ type jsonRPCErrorResponse struct {
 	Error   jsonRPCError `json:"error"`
 }
 
-// createErrorResponse marshals the response so server-provided text (newlines, quotes) stays valid JSON.
 func createErrorResponse(errorCode int, message, data string) string {
 	response, err := json.Marshal(jsonRPCErrorResponse{
 		JSONRPC: "2.0",
