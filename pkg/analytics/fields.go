@@ -11,6 +11,10 @@ const (
 	endTimeField         = "end_time"
 	exitCodeField        = "exit_code"
 	flagFieldPrefix      = "flag_"
+	invokedByField       = "invoked_by"
+	isInteractiveField   = "is_interactive"
+	termProgramField     = "term_program"
+	ciField              = "ci"
 )
 
 const (
