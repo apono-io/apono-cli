@@ -11,18 +11,13 @@ import (
 )
 
 const (
-	errorCodeHeader              = "X-Apono-Error-Code"
-	unsupportedAccountErrorCode  = "cli_unsupported_account"
-	unsupportedAccountMaxBodyLen = 64 * 1024
-	unsupportedAccountFallback   = "The Apono CLI doesn't support this account. Use the Apono web portal to manage your access instead."
-
-	// oauth2cli reports a browser-login callback with ?error=... as a plain string error in the form
-	// "authorization error from server: <error> <error_description>".
+	errorCodeHeader                  = "X-Apono-Error-Code"
+	unsupportedAccountErrorCode      = "cli_unsupported_account"
+	unsupportedAccountMaxBodyLen     = 64 * 1024
+	unsupportedAccountFallback       = "The Apono CLI doesn't support this account. Use the Apono web portal to manage your access instead."
 	authorizationCallbackErrorPrefix = "authorization error from server: " + unsupportedAccountErrorCode
 )
 
-// UnsupportedAccountError is returned when the account can't be used from the CLI
-// (e.g. 1Password Privileged Access accounts). Message is the server's user-facing text.
 type UnsupportedAccountError struct {
 	Message string
 }
