@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 
 	"github.com/apono-io/apono-cli/pkg/version"
 
+	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/build"
 	"github.com/apono-io/apono-cli/pkg/commands/apono"
 	"github.com/apono-io/apono-cli/pkg/urihandler"
@@ -32,6 +34,13 @@ func main() {
 
 	err = execute(runner)
 	if err != nil {
+		// The server's message already tells the user what to do, so skip the usage hint.
+		var unsupportedErr *aponoapi.UnsupportedAccountError
+		if errors.As(err, &unsupportedErr) {
+			fmt.Fprintln(os.Stderr, "Error:", unsupportedErr.Error())
+			os.Exit(1)
+		}
+
 		fmt.Fprintln(os.Stderr, "Error:", err.Error())
 		fmt.Fprintln(os.Stderr, "Use '--help' to see usage.")
 		os.Exit(1)
