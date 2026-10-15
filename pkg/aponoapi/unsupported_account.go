@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"golang.org/x/oauth2"
 )
@@ -14,6 +15,10 @@ const (
 	unsupportedAccountErrorCode  = "cli_unsupported_account"
 	unsupportedAccountMaxBodyLen = 64 * 1024
 	unsupportedAccountFallback   = "The Apono CLI doesn't support this account. Use the Apono web portal to manage your access instead."
+
+	// oauth2cli reports a browser-login callback with ?error=... as a plain string error in the form
+	// "authorization error from server: <error> <error_description>".
+	authorizationCallbackErrorPrefix = "authorization error from server: " + unsupportedAccountErrorCode
 )
 
 // UnsupportedAccountError is returned when the account can't be used from the CLI
@@ -27,7 +32,8 @@ func (e *UnsupportedAccountError) Error() string {
 }
 
 // AsUnsupportedAccountError reports whether err means the account can't be used from the CLI,
-// either from an API response or from an OAuth token request the server rejected.
+// either from an API response, an OAuth token request the server rejected, or a browser-login
+// callback the server redirected with ?error=cli_unsupported_account.
 func AsUnsupportedAccountError(err error) (*UnsupportedAccountError, bool) {
 	var unsupportedErr *UnsupportedAccountError
 	if errors.As(err, &unsupportedErr) {
@@ -41,6 +47,16 @@ func AsUnsupportedAccountError(err error) (*UnsupportedAccountError, bool) {
 			message = unsupportedAccountFallback
 		}
 		return &UnsupportedAccountError{Message: message}, true
+	}
+
+	if err != nil {
+		if _, rest, found := strings.Cut(err.Error(), authorizationCallbackErrorPrefix); found && (rest == "" || rest[0] == ' ') {
+			message := strings.TrimSpace(rest)
+			if message == "" {
+				message = unsupportedAccountFallback
+			}
+			return &UnsupportedAccountError{Message: message}, true
+		}
 	}
 
 	return nil, false
