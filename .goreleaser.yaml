@@ -29,6 +29,8 @@ builds:
         goarch: arm
       - goos: openbsd
         goarch: arm64
+      - goos: windows
+        goarch: arm
     flags:
       - -trimpath
     asmflags:
