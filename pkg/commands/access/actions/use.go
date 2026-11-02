@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -24,6 +25,9 @@ const (
 	profileFlagName = "profile"
 
 	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
+	// sessionURLEncodedEnvVar is set by the apono:// handler script when the
+	// session argument is still percent-encoded as it appeared in the launch URL.
+	sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
 )
 
 type accessUseCommandFlags struct {
@@ -67,9 +71,14 @@ func AccessDetails() *cobra.Command {
 
 			shipHandlerLog(cmd.Context())
 
-			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
+			sessionID, err := resolveSessionIDArg(args[0], os.Getenv(sessionURLEncodedEnvVar) != "")
 			if err != nil {
-				return fmt.Errorf("access session with id %s not found", args[0])
+				return err
+			}
+
+			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+			if err != nil {
+				return fmt.Errorf("access session with id %s not found", sessionID)
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
@@ -146,6 +155,26 @@ func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) erro
 	cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), overrideClient))
 	cmd.SetContext(config.CreateProfileContext(cmd.Context(), string(profileName)))
 	return nil
+}
+
+// resolveSessionIDArg returns the session ID to look up. When the argument came
+// from an apono:// launch URL it is still percent-encoded (e.g. a Secrets
+// Manager path yields "dev%2Fmysql%2F..."), so it is decoded exactly once.
+// PathUnescape is used rather than QueryUnescape so a literal '+' is preserved.
+func resolveSessionIDArg(arg string, urlEncoded bool) (string, error) {
+	if !urlEncoded {
+		return arg, nil
+	}
+	decoded, err := url.PathUnescape(arg)
+	if err != nil {
+		return "", fmt.Errorf("invalid session id in launch URL: %w", err)
+	}
+	for _, r := range decoded {
+		if r < 0x20 || r == 0x7f {
+			return "", fmt.Errorf("invalid session id in launch URL: contains control characters")
+		}
+	}
+	return decoded, nil
 }
 
 func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {

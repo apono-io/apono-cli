@@ -2,6 +2,7 @@ package urihandler
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -43,6 +44,59 @@ func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 			t.Errorf("expected handler.sh to contain %q, got:\n%s", want, handlerShellTemplate)
 		}
 	}
+}
+
+func TestHandlerShellTemplate_passesEncodedSessionSafely(t *testing.T) {
+	wantSubstrings := []string{
+		`export _APONO_SESSION_URL_ENCODED_=1`, // CLI decodes the session exactly once
+		`-- "$session"`,                        // session can never be parsed as a flag
+		`[[ "$account$client" == *%* ]]`,       // account/client stay unencoded
+		`session_has_pct=`,                     // diagnostics for encoded IDs
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(handlerShellTemplate, want) {
+			t.Errorf("expected handler.sh to contain %q, got:\n%s", want, handlerShellTemplate)
+		}
+	}
+	if strings.Contains(handlerShellTemplate, `"$session$account$client" == *%*`) {
+		t.Errorf("handler.sh must not reject percent-encoded session IDs (DVL-12422)")
+	}
+}
+
+func writeInstalledHandler(t *testing.T, home, body string) {
+	t.Helper()
+	dir := filepath.Join(home, bundleParentDir, bundleDirName, "Contents", "Resources")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "handler.sh"), []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHandlerScriptUpToDate(t *testing.T) {
+	t.Run("missing script is stale", func(t *testing.T) {
+		t.Setenv("HOME", t.TempDir())
+		if handlerScriptUpToDate() {
+			t.Error("expected missing handler.sh to be reported stale")
+		}
+	})
+	t.Run("older script is stale", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		writeInstalledHandler(t, home, "#!/bin/zsh\n# older version\n")
+		if handlerScriptUpToDate() {
+			t.Error("expected outdated handler.sh to be reported stale")
+		}
+	})
+	t.Run("matching script is current", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		writeInstalledHandler(t, home, handlerShellTemplate)
+		if !handlerScriptUpToDate() {
+			t.Error("expected handler.sh matching the embedded template to be current")
+		}
+	})
 }
 
 func TestRegister_rejectsNonDarwin(t *testing.T) {
