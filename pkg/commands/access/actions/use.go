@@ -24,9 +24,7 @@ const (
 	clientFlagName  = "client"
 	profileFlagName = "profile"
 
-	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
-	// sessionURLEncodedEnvVar is set by the apono:// handler script when the
-	// session argument is still percent-encoded as it appeared in the launch URL.
+	accountIDEnvVar         = "_APONO_ACCOUNT_ID_"
 	sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
 )
 
@@ -157,10 +155,6 @@ func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) erro
 	return nil
 }
 
-// resolveSessionIDArg returns the session ID to look up. When the argument came
-// from an apono:// launch URL it is still percent-encoded (e.g. a Secrets
-// Manager path yields "dev%2Fmysql%2F..."), so it is decoded exactly once.
-// PathUnescape is used rather than QueryUnescape so a literal '+' is preserved.
 func resolveSessionIDArg(arg string, urlEncoded bool) (string, error) {
 	if !urlEncoded {
 		return arg, nil
