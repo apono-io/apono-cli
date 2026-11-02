@@ -58,8 +58,14 @@ func TestHandlerShellTemplate_passesEncodedSessionSafely(t *testing.T) {
 			t.Errorf("expected handler.sh to contain %q, got:\n%s", want, handlerShellTemplate)
 		}
 	}
-	if strings.Contains(handlerShellTemplate, `"$session$account$client" == *%*`) {
-		t.Errorf("handler.sh must not reject percent-encoded session IDs (DVL-12422)")
+	unwantedSubstrings := []string{
+		`"$session$account$client" == *%*`, // must not reject percent-encoded session IDs (DVL-12422)
+		`[[ "$session" == *[^`,             // must not restrict session characters beyond the previous handler
+	}
+	for _, unwanted := range unwantedSubstrings {
+		if strings.Contains(handlerShellTemplate, unwanted) {
+			t.Errorf("handler.sh must not contain %q", unwanted)
+		}
 	}
 }
 

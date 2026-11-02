@@ -69,7 +69,10 @@ func AccessDetails() *cobra.Command {
 
 			shipHandlerLog(cmd.Context())
 
-			sessionID, err := resolveSessionIDArg(args[0], os.Getenv(sessionURLEncodedEnvVar) != "")
+			sessionURLEncoded := os.Getenv(sessionURLEncodedEnvVar) != ""
+			// Unset so child processes (e.g. the client launch command) never decode the session ID again.
+			_ = os.Unsetenv(sessionURLEncodedEnvVar)
+			sessionID, err := resolveSessionIDArg(args[0], sessionURLEncoded)
 			if err != nil {
 				return err
 			}

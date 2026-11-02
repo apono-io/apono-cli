@@ -51,10 +51,6 @@ if [[ -z "$session" || -z "$account" || -z "$client" ]]; then
 fi
 # Session IDs may carry percent-encoded characters (e.g. %2F from a Secrets
 # Manager path). Pass them through still encoded; the CLI decodes exactly once.
-if [[ "$session" == *[^A-Za-z0-9._~%-]* ]]; then
-  echo "unsupported characters in session param" >&2
-  exit 64
-fi
 if [[ "$account$client" == *%* ]]; then
   echo "URL-encoded characters not supported in account/client params" >&2
   exit 64
