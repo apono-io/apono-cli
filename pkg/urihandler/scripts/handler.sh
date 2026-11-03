@@ -49,8 +49,6 @@ if [[ -z "$session" || -z "$account" || -z "$client" ]]; then
   echo "missing required params in: $uri" >&2
   exit 64
 fi
-# Session IDs may carry percent-encoded characters (e.g. %2F from a Secrets
-# Manager path). Pass them through still encoded; the CLI decodes exactly once.
 if [[ "$account$client" == *%* ]]; then
   echo "URL-encoded characters not supported in account/client params" >&2
   exit 64

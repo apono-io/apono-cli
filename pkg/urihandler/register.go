@@ -233,10 +233,6 @@ func bundleExists() bool {
 	return err == nil
 }
 
-// handlerScriptUpToDate reports whether the installed handler.sh matches the
-// script embedded in this binary. A mismatch (or unreadable script) means the
-// bundle was built by another CLI version and should be rebuilt so handler
-// fixes reach users who installed it earlier.
 func handlerScriptUpToDate() bool {
 	home, err := os.UserHomeDir()
 	if err != nil {
