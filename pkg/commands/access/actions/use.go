@@ -24,9 +24,10 @@ const (
 	clientFlagName  = "client"
 	profileFlagName = "profile"
 
-	accountIDEnvVar         = "_APONO_ACCOUNT_ID_"
-	sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
+	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
 )
+
+const sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
 
 type accessUseCommandFlags struct {
 	outputFormat               string
