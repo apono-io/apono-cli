@@ -19,7 +19,6 @@ const (
 
 	redactedMarker = "***"
 
-	// cacheDirMarker is how launcher commands refer to the session's cached password file.
 	cacheDirMarker = ".apono/cache/"
 )
 
