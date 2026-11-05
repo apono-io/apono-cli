@@ -18,11 +18,17 @@ const (
 	passwordEncodingURL = "url"
 
 	redactedMarker = "***"
+
+	// cacheDirMarker is how launcher commands refer to the session's cached password file.
+	cacheDirMarker = ".apono/cache/"
 )
 
+func cachedPasswordPath(sessionID string) string {
+	return filepath.Clean(filepath.Join(utils.DefaultCacheDir(), sessionID))
+}
+
 func readCachedPassword(sessionID string) (string, error) {
-	path := filepath.Join(utils.DefaultCacheDir(), sessionID)
-	raw, err := os.ReadFile(filepath.Clean(path))
+	raw, err := os.ReadFile(cachedPasswordPath(sessionID))
 	if err != nil {
 		return "", fmt.Errorf("read cache file: %w", err)
 	}

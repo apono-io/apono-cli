@@ -84,11 +84,13 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
-		err = ShouldPrintErrorConnectingSuggestion(cmd, session)
-		if err != nil {
-			return err
+		starter := connect.NewClientStarter()
+		err = starter.Start(cmd, client, session.Id, selectedID, result)
+		// A GUI launch succeeds even when the app later fails to authenticate, so the reset hint
+		// is shown either way - unless the credentials were just reset to connect.
+		if !starter.CredentialsReissued() {
+			_ = ShouldPrintErrorConnectingSuggestion(cmd, session)
 		}
-		err = connect.NewClientStarter().Start(cmd, client, session.Id, selectedID, result)
 		if err != nil {
 			return err
 		}

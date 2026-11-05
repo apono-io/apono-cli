@@ -5,17 +5,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/logshipping"
+	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/terminal"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -48,8 +52,11 @@ type ClientStarter struct {
 	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 	Report                     func(ctx context.Context, level, message string, fields map[string]string)
+	CanResetCredentials        func(context.Context, *aponoapi.AponoClient, string) (bool, error)
+	ResetCredentials           func(context.Context, *aponoapi.AponoClient, string) error
 
-	secrets []string
+	secrets  []string
+	reissued bool
 }
 
 func NewClientStarter() *ClientStarter {
@@ -61,7 +68,17 @@ func NewClientStarter() *ClientStarter {
 		Report: func(ctx context.Context, level, message string, fields map[string]string) {
 			logshipping.Report(ctx, logshipping.CallerCLI, level, message, fields)
 		},
+		CanResetCredentials: canResetCredentials,
+		ResetCredentials:    services.ResetSessionCredentials,
 	}
+}
+
+func canResetCredentials(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (bool, error) {
+	session, _, err := apiClient.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, sessionID).Execute()
+	if err != nil {
+		return false, err
+	}
+	return session.Credentials.IsSet() && session.Credentials.Get().CanReset, nil
 }
 
 func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID, clientID string, isTerminal bool, prefetched *ClientFetchResult) (*ClientFetchResult, error) {
@@ -106,7 +123,6 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 
 	launcherType := client.LauncherType
 	authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand))
-	invocationCommand := client.InvocationCommand
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client resolved", nil, sessionID, clientID, launcherType, isTerminal)
 
 	headlessTerminalLauncher := !isTerminal &&
@@ -120,16 +136,11 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 	}
 
-	if strings.Contains(invocationCommand, passwordPlaceholder) {
-		pwd, readErr := readCachedPassword(sessionID)
-		if readErr != nil {
-			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
-			return fmt.Errorf("resolve credentials: %w", readErr)
-		}
-		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
-		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodedPwd)
-		s.secrets = []string{pwd, encodedPwd}
+	client, err = s.resolveCachedCredentials(cobraCmd, apiClient, sessionID, client, isTerminal, headlessTerminalLauncher)
+	if err != nil {
+		return err
 	}
+	invocationCommand := client.InvocationCommand
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: launching client", nil, sessionID, clientID, launcherType, isTerminal)
 
@@ -175,6 +186,188 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		s.reportLauncher(ctx, logshipping.LevelError, "launcher: unknown launcher kind", err, sessionID, clientID, launcherType, isTerminal)
 		return err
 	}
+}
+
+// resolveCachedCredentials makes sure the cached password the invocation needs exists, and
+// substitutes it for the password placeholder. Invocations read the cache either through the
+// placeholder or directly from the shell (e.g. `$(base64 -d -i ~/.apono/cache/<session>)`), in
+// which case a missing file silently becomes an empty password.
+//
+// The backend only renders the commands that write the cache while the credentials are new, so a
+// missing cache with nothing in this launch to write it means the credentials were already handed
+// out (printed instructions, another machine). Only then are the credentials reissued and the
+// launcher refreshed; whenever something would write the cache, the launch proceeds as before.
+func (s *ClientStarter) resolveCachedCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID string, client clientapi.LauncherClientModel, isTerminal, headless bool) (clientapi.LauncherClientModel, error) {
+	if !usesCachedPassword(client.InvocationCommand, sessionID) {
+		return client, nil
+	}
+
+	ctx := cobraCmd.Context()
+	clientID, launcherType := client.Id, client.LauncherType
+
+	if cachedPasswordMissing(sessionID) && !launchCachesPassword(client, sessionID) {
+		if headless {
+			// Headless output is discarded, so an error here is invisible: launch as before and let
+			// the client report the failed login. A placeholder cannot be substituted, which always
+			// failed - keep failing, with an actionable message for the handler log.
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials not cached", nil, sessionID, clientID, launcherType, isTerminal)
+			if strings.Contains(client.InvocationCommand, passwordPlaceholder) {
+				return client, credentialsUnavailableError(sessionID, clientID)
+			}
+			return client, nil
+		}
+
+		refreshed, err := s.reissueCredentials(cobraCmd, apiClient, sessionID, clientID, launcherType, isTerminal)
+		if err != nil {
+			return client, err
+		}
+		client = refreshed
+		if cachedPasswordMissing(sessionID) && !writesCachedPassword(client.InvocationCommand, sessionID) {
+			err = fmt.Errorf("resolve credentials: no cached password for session %s after reissuing credentials", sessionID)
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", err, sessionID, clientID, launcherType, isTerminal)
+			return client, err
+		}
+	}
+
+	if !strings.Contains(client.InvocationCommand, passwordPlaceholder) {
+		return client, nil
+	}
+
+	pwd, readErr := readCachedPassword(sessionID)
+	if readErr != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
+		return client, fmt.Errorf("resolve credentials: %w", readErr)
+	}
+
+	encodedPwd := encodePassword(pwd, client.PasswordEncoding)
+	client.InvocationCommand = strings.ReplaceAll(client.InvocationCommand, passwordPlaceholder, encodedPwd)
+	s.secrets = []string{pwd, encodedPwd}
+	return client, nil
+}
+
+func cachedPasswordMissing(sessionID string) bool {
+	_, err := os.Stat(cachedPasswordPath(sessionID))
+	return errors.Is(err, fs.ErrNotExist)
+}
+
+// launchCachesPassword reports whether this launch writes the session's cached password: an auth
+// command (rendered only for new credentials; already run, or deferred into the new terminal for
+// headless launches) or an invocation that writes the cache itself, like the `cli` launcher.
+func launchCachesPassword(client clientapi.LauncherClientModel, sessionID string) bool {
+	return strings.TrimSpace(utils.FromNullableString(client.AuthCommand)) != "" ||
+		writesCachedPassword(client.InvocationCommand, sessionID)
+}
+
+// usesCachedPassword reports whether the command needs the session's cached password, through
+// the placeholder or by reading `.apono/cache/<sessionID>` itself.
+func usesCachedPassword(command, sessionID string) bool {
+	return strings.Contains(command, passwordPlaceholder) || len(cacheFileRefs(command, sessionID)) > 0
+}
+
+// writesCachedPassword reports whether the command redirects output into the session's cache file,
+// e.g. `base64 > ~/.apono/cache/<sessionID>`.
+func writesCachedPassword(command, sessionID string) bool {
+	for _, i := range cacheFileRefs(command, sessionID) {
+		j := i
+		for j > 0 && !strings.ContainsRune(" \t'\"(>", rune(command[j-1])) {
+			j-- // the path prefix: ~/, $HOME/, ${HOME}/, /Users/x/
+		}
+		for j > 0 && strings.ContainsRune(" \t'\"", rune(command[j-1])) {
+			j--
+		}
+		if j > 0 && command[j-1] == '>' {
+			return true
+		}
+	}
+	return false
+}
+
+// cacheFileRefs returns the offsets of every `.apono/cache/<sessionID>` reference in the command,
+// skipping references to a longer session id that only shares the prefix.
+func cacheFileRefs(command, sessionID string) []int {
+	ref := cacheDirMarker + sessionID
+	var refs []int
+	for offset := 0; ; {
+		i := strings.Index(command[offset:], ref)
+		if i < 0 {
+			return refs
+		}
+		start, end := offset+i, offset+i+len(ref)
+		if end == len(command) || !isSessionIDChar(command[end]) {
+			refs = append(refs, start)
+		}
+		offset = end
+	}
+}
+
+func isSessionIDChar(c byte) bool {
+	return c == '-' || c == '_' || c == '.' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+// CredentialsReissued reports whether the last Start reset the session credentials to connect.
+func (s *ClientStarter) CredentialsReissued() bool {
+	return s.reissued
+}
+
+// reissueCredentials resets the session credentials, fetches the launcher again and runs
+// its new auth command, which caches the fresh password for the invocation to use.
+func (s *ClientStarter) reissueCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID, launcherType string, isTerminal bool) (clientapi.LauncherClientModel, error) {
+	ctx := cobraCmd.Context()
+
+	canReset, err := s.CanResetCredentials(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: check credentials reset failed", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, fmt.Errorf("credentials for session %s are not available on this machine, and checking whether they can be reissued failed: %w", sessionID, err)
+	}
+	if !canReset {
+		err = fmt.Errorf("credentials for session %s are not available on this machine and cannot be reissued. request access again to connect", sessionID)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials cannot be reissued", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, err
+	}
+
+	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "\n%s Credentials for this session are not available on this machine. Resetting credentials to connect with %s...\n", styles.NoticeMsgPrefix, color.Green.Sprint(clientID))
+	if err != nil {
+		return clientapi.LauncherClientModel{}, err
+	}
+
+	err = s.ResetCredentials(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: reset credentials failed", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, fmt.Errorf("failed to reissue credentials: %w. %w", err, credentialsUnavailableError(sessionID, clientID))
+	}
+
+	result, err := s.FetchClients(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: fetch session details after reset failed", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, fmt.Errorf("could not fetch session details: %w", err)
+	}
+
+	client, ok := findClient(result.Clients, clientID)
+	if !ok {
+		err = fmt.Errorf("client %q is no longer available for session %s", clientID, sessionID)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: client not found after reset", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, err
+	}
+
+	if authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand)); authCommand != "" {
+		exitCode, authErr := s.executeCommand(cobraCmd, authCommand)
+		if authErr != nil {
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: auth command after reset failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
+			return clientapi.LauncherClientModel{}, authErr
+		}
+	}
+
+	s.reissued = true
+	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "%s Credentials reset successfully, connecting...\n\n", styles.NoticeMsgPrefix)
+	if err != nil {
+		return clientapi.LauncherClientModel{}, err
+	}
+	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: credentials reissued", nil, sessionID, clientID, launcherType, isTerminal)
+	return client, nil
+}
+
+func credentialsUnavailableError(sessionID, clientID string) error {
+	return fmt.Errorf("credentials for this session were already viewed and are not available on this machine. to connect with %s, reset them with `apono access reset-credentials %s` and try again", clientID, sessionID)
 }
 
 func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) (int, error) {
