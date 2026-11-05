@@ -59,3 +59,54 @@ jobs:
         with:
           name: dist
           path: dist
+
+  # End-to-end tests: the real apono binary against an in-process mock of the Apono API
+  # (no secrets, no Apono environment). Connect tests use a Postgres service container and a
+  # kind cluster started inside the runner.
+  e2e:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+        env:
+          POSTGRES_USER: apono_e2e
+          POSTGRES_PASSWORD: e2e-password
+          POSTGRES_DB: e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U apono_e2e -d e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Create kind cluster
+        run: |
+          go install sigs.k8s.io/kind@v0.27.0
+          kind create cluster --name apono-e2e --kubeconfig "$RUNNER_TEMP/kind.kubeconfig" --wait 120s
+
+      - name: Run e2e tests
+        env:
+          E2E_PG_URL: postgres://apono_e2e:e2e-password@localhost:5432/e2e?sslmode=disable
+          E2E_KIND_KUBECONFIG: ${{ runner.temp }}/kind.kubeconfig
+          E2E_REQUIRE_RESOURCES: "1"
+        run: make e2e
+
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name apono-e2e || true
