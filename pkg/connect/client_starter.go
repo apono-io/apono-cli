@@ -5,17 +5,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/logshipping"
+	"github.com/apono-io/apono-cli/pkg/services"
+	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/terminal"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -48,8 +53,10 @@ type ClientStarter struct {
 	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 	Report                     func(ctx context.Context, level, message string, fields map[string]string)
+	ResetCredentials           func(context.Context, *aponoapi.AponoClient, string) error
 
-	secrets []string
+	secrets  []string
+	reissued bool
 }
 
 func NewClientStarter() *ClientStarter {
@@ -61,6 +68,7 @@ func NewClientStarter() *ClientStarter {
 		Report: func(ctx context.Context, level, message string, fields map[string]string) {
 			logshipping.Report(ctx, logshipping.CallerCLI, level, message, fields)
 		},
+		ResetCredentials: services.ResetSessionCredentials,
 	}
 }
 
@@ -106,7 +114,6 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 
 	launcherType := client.LauncherType
 	authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand))
-	invocationCommand := client.InvocationCommand
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: client resolved", nil, sessionID, clientID, launcherType, isTerminal)
 
 	headlessTerminalLauncher := !isTerminal &&
@@ -120,16 +127,11 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		}
 	}
 
-	if strings.Contains(invocationCommand, passwordPlaceholder) {
-		pwd, readErr := readCachedPassword(sessionID)
-		if readErr != nil {
-			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
-			return fmt.Errorf("resolve credentials: %w", readErr)
-		}
-		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
-		invocationCommand = strings.ReplaceAll(invocationCommand, passwordPlaceholder, encodedPwd)
-		s.secrets = []string{pwd, encodedPwd}
+	client, err = s.resolveCachedCredentials(cobraCmd, apiClient, sessionID, client, isTerminal, headlessTerminalLauncher)
+	if err != nil {
+		return err
 	}
+	invocationCommand := client.InvocationCommand
 
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: launching client", nil, sessionID, clientID, launcherType, isTerminal)
 
@@ -175,6 +177,121 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		s.reportLauncher(ctx, logshipping.LevelError, "launcher: unknown launcher kind", err, sessionID, clientID, launcherType, isTerminal)
 		return err
 	}
+}
+
+func (s *ClientStarter) resolveCachedCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID string, client clientapi.LauncherClientModel, isTerminal, headless bool) (clientapi.LauncherClientModel, error) {
+	if !usesCachedPassword(client.InvocationCommand, sessionID) {
+		return client, nil
+	}
+
+	ctx := cobraCmd.Context()
+	clientID, launcherType := client.Id, client.LauncherType
+
+	if cachedPasswordMissing(sessionID) && !launchCachesPassword(client, sessionID) {
+		if headless {
+			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials not cached", nil, sessionID, clientID, launcherType, isTerminal)
+			if strings.Contains(client.InvocationCommand, passwordPlaceholder) {
+				return client, credentialsUnavailableError(sessionID, clientID)
+			}
+			return client, nil
+		}
+
+		refreshed, err := s.reissueCredentials(cobraCmd, apiClient, sessionID, clientID, launcherType, isTerminal)
+		if err != nil {
+			return client, err
+		}
+		client = refreshed
+	}
+
+	if !strings.Contains(client.InvocationCommand, passwordPlaceholder) {
+		return client, nil
+	}
+
+	pwd, readErr := readCachedPassword(sessionID)
+	if readErr != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
+		return client, fmt.Errorf("resolve credentials: %w", readErr)
+	}
+
+	encodedPwd := encodePassword(pwd, client.PasswordEncoding)
+	client.InvocationCommand = strings.ReplaceAll(client.InvocationCommand, passwordPlaceholder, encodedPwd)
+	s.secrets = []string{pwd, encodedPwd}
+	return client, nil
+}
+
+func cachedPasswordMissing(sessionID string) bool {
+	_, err := os.Stat(cachedPasswordPath(sessionID))
+	return errors.Is(err, fs.ErrNotExist)
+}
+
+func launchCachesPassword(client clientapi.LauncherClientModel, sessionID string) bool {
+	return strings.TrimSpace(utils.FromNullableString(client.AuthCommand)) != "" ||
+		writesCachedPassword(client.InvocationCommand, sessionID)
+}
+
+func cacheFileRefPattern(sessionID string) string {
+	return regexp.QuoteMeta(cacheDirMarker+sessionID) + `(?:[^A-Za-z0-9._-]|$)`
+}
+
+func usesCachedPassword(command, sessionID string) bool {
+	return strings.Contains(command, passwordPlaceholder) ||
+		regexp.MustCompile(cacheFileRefPattern(sessionID)).MatchString(command)
+}
+
+func writesCachedPassword(command, sessionID string) bool {
+	return regexp.MustCompile(`>\s*["']?[^\s"'>]*` + cacheFileRefPattern(sessionID)).MatchString(command)
+}
+
+func (s *ClientStarter) CredentialsReissued() bool {
+	return s.reissued
+}
+
+func (s *ClientStarter) reissueCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID, launcherType string, isTerminal bool) (clientapi.LauncherClientModel, error) {
+	ctx := cobraCmd.Context()
+
+	_, err := fmt.Fprintf(cobraCmd.OutOrStdout(), "\n%s Credentials for this session are not available on this machine. Resetting credentials to connect with %s...\n", styles.NoticeMsgPrefix, color.Green.Sprint(clientID))
+	if err != nil {
+		return clientapi.LauncherClientModel{}, err
+	}
+
+	err = s.ResetCredentials(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: reset credentials failed", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, fmt.Errorf("failed to reissue credentials: %w. %w", err, credentialsUnavailableError(sessionID, clientID))
+	}
+
+	result, err := s.FetchClients(ctx, apiClient, sessionID)
+	if err != nil {
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: fetch session details after reset failed", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, fmt.Errorf("could not fetch session details: %w", err)
+	}
+
+	client, ok := findClient(result.Clients, clientID)
+	if !ok {
+		err = fmt.Errorf("client %q is no longer available for session %s", clientID, sessionID)
+		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: client not found after reset", err, sessionID, clientID, launcherType, isTerminal)
+		return clientapi.LauncherClientModel{}, err
+	}
+
+	if authCommand := strings.TrimSpace(utils.FromNullableString(client.AuthCommand)); authCommand != "" {
+		exitCode, authErr := s.executeCommand(cobraCmd, authCommand)
+		if authErr != nil {
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: auth command after reset failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
+			return clientapi.LauncherClientModel{}, authErr
+		}
+	}
+
+	s.reissued = true
+	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "%s Credentials reset successfully, connecting...\n\n", styles.NoticeMsgPrefix)
+	if err != nil {
+		return clientapi.LauncherClientModel{}, err
+	}
+	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: credentials reissued", nil, sessionID, clientID, launcherType, isTerminal)
+	return client, nil
+}
+
+func credentialsUnavailableError(sessionID, clientID string) error {
+	return fmt.Errorf("credentials for this session were already viewed and are not available on this machine. to connect with %s, reset them with `apono access reset-credentials %s` and try again", clientID, sessionID)
 }
 
 func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) (int, error) {
