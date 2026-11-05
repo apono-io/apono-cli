@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -52,7 +53,6 @@ type ClientStarter struct {
 	BuildTerminalLaunchCommand func(string) (string, error)
 	IsRunningInTerminal        func() bool
 	Report                     func(ctx context.Context, level, message string, fields map[string]string)
-	CanResetCredentials        func(context.Context, *aponoapi.AponoClient, string) (bool, error)
 	ResetCredentials           func(context.Context, *aponoapi.AponoClient, string) error
 
 	secrets  []string
@@ -68,17 +68,8 @@ func NewClientStarter() *ClientStarter {
 		Report: func(ctx context.Context, level, message string, fields map[string]string) {
 			logshipping.Report(ctx, logshipping.CallerCLI, level, message, fields)
 		},
-		CanResetCredentials: canResetCredentials,
-		ResetCredentials:    services.ResetSessionCredentials,
+		ResetCredentials: services.ResetSessionCredentials,
 	}
-}
-
-func canResetCredentials(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (bool, error) {
-	session, _, err := apiClient.ClientAPI.AccessSessionsAPI.GetAccessSession(ctx, sessionID).Execute()
-	if err != nil {
-		return false, err
-	}
-	return session.Credentials.IsSet() && session.Credentials.Get().CanReset, nil
 }
 
 func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID, clientID string, isTerminal bool, prefetched *ClientFetchResult) (*ClientFetchResult, error) {
@@ -222,11 +213,6 @@ func (s *ClientStarter) resolveCachedCredentials(cobraCmd *cobra.Command, apiCli
 			return client, err
 		}
 		client = refreshed
-		if cachedPasswordMissing(sessionID) && !writesCachedPassword(client.InvocationCommand, sessionID) {
-			err = fmt.Errorf("resolve credentials: no cached password for session %s after reissuing credentials", sessionID)
-			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", err, sessionID, clientID, launcherType, isTerminal)
-			return client, err
-		}
 	}
 
 	if !strings.Contains(client.InvocationCommand, passwordPlaceholder) {
@@ -258,50 +244,22 @@ func launchCachesPassword(client clientapi.LauncherClientModel, sessionID string
 		writesCachedPassword(client.InvocationCommand, sessionID)
 }
 
+// cacheFileRefPattern matches `.apono/cache/<sessionID>`, but not a longer session id sharing the prefix.
+func cacheFileRefPattern(sessionID string) string {
+	return regexp.QuoteMeta(cacheDirMarker+sessionID) + `(?:[^A-Za-z0-9._-]|$)`
+}
+
 // usesCachedPassword reports whether the command needs the session's cached password, through
 // the placeholder or by reading `.apono/cache/<sessionID>` itself.
 func usesCachedPassword(command, sessionID string) bool {
-	return strings.Contains(command, passwordPlaceholder) || len(cacheFileRefs(command, sessionID)) > 0
+	return strings.Contains(command, passwordPlaceholder) ||
+		regexp.MustCompile(cacheFileRefPattern(sessionID)).MatchString(command)
 }
 
 // writesCachedPassword reports whether the command redirects output into the session's cache file,
 // e.g. `base64 > ~/.apono/cache/<sessionID>`.
 func writesCachedPassword(command, sessionID string) bool {
-	for _, i := range cacheFileRefs(command, sessionID) {
-		j := i
-		for j > 0 && !strings.ContainsRune(" \t'\"(>", rune(command[j-1])) {
-			j-- // the path prefix: ~/, $HOME/, ${HOME}/, /Users/x/
-		}
-		for j > 0 && strings.ContainsRune(" \t'\"", rune(command[j-1])) {
-			j--
-		}
-		if j > 0 && command[j-1] == '>' {
-			return true
-		}
-	}
-	return false
-}
-
-// cacheFileRefs returns the offsets of every `.apono/cache/<sessionID>` reference in the command,
-// skipping references to a longer session id that only shares the prefix.
-func cacheFileRefs(command, sessionID string) []int {
-	ref := cacheDirMarker + sessionID
-	var refs []int
-	for offset := 0; ; {
-		i := strings.Index(command[offset:], ref)
-		if i < 0 {
-			return refs
-		}
-		start, end := offset+i, offset+i+len(ref)
-		if end == len(command) || !isSessionIDChar(command[end]) {
-			refs = append(refs, start)
-		}
-		offset = end
-	}
-}
-
-func isSessionIDChar(c byte) bool {
-	return c == '-' || c == '_' || c == '.' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	return regexp.MustCompile(`>\s*["']?[^\s"'>]*` + cacheFileRefPattern(sessionID)).MatchString(command)
 }
 
 // CredentialsReissued reports whether the last Start reset the session credentials to connect.
@@ -314,18 +272,7 @@ func (s *ClientStarter) CredentialsReissued() bool {
 func (s *ClientStarter) reissueCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID, launcherType string, isTerminal bool) (clientapi.LauncherClientModel, error) {
 	ctx := cobraCmd.Context()
 
-	canReset, err := s.CanResetCredentials(ctx, apiClient, sessionID)
-	if err != nil {
-		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: check credentials reset failed", err, sessionID, clientID, launcherType, isTerminal)
-		return clientapi.LauncherClientModel{}, fmt.Errorf("credentials for session %s are not available on this machine, and checking whether they can be reissued failed: %w", sessionID, err)
-	}
-	if !canReset {
-		err = fmt.Errorf("credentials for session %s are not available on this machine and cannot be reissued. request access again to connect", sessionID)
-		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials cannot be reissued", err, sessionID, clientID, launcherType, isTerminal)
-		return clientapi.LauncherClientModel{}, err
-	}
-
-	_, err = fmt.Fprintf(cobraCmd.OutOrStdout(), "\n%s Credentials for this session are not available on this machine. Resetting credentials to connect with %s...\n", styles.NoticeMsgPrefix, color.Green.Sprint(clientID))
+	_, err := fmt.Fprintf(cobraCmd.OutOrStdout(), "\n%s Credentials for this session are not available on this machine. Resetting credentials to connect with %s...\n", styles.NoticeMsgPrefix, color.Green.Sprint(clientID))
 	if err != nil {
 		return clientapi.LauncherClientModel{}, err
 	}

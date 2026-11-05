@@ -63,9 +63,6 @@ func testClientStarter(tty bool, clients []clientapi.LauncherClientModel, consum
 			return "WRAPPED(" + command + ")", nil
 		},
 		IsRunningInTerminal: func() bool { return tty },
-		CanResetCredentials: func(_ context.Context, _ *aponoapi.AponoClient, _ string) (bool, error) {
-			return false, nil
-		},
 		ResetCredentials: func(_ context.Context, _ *aponoapi.AponoClient, _ string) error {
 			return errors.New("ResetCredentials must not be called unless the test opts in")
 		},
@@ -906,6 +903,9 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 		PasswordEncoding:  "url",
 	}
 	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, aponoapi.ConsumedByAponoCli, nil)
+	s.ResetCredentials = func(_ context.Context, _ *aponoapi.AponoClient, _ string) error {
+		return errors.New("credentials cannot be reset")
+	}
 
 	err := s.Start(newCobraCmd(), nil, "sess-missing", "tableplus", nil)
 	if err == nil {
@@ -914,8 +914,8 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls when cache missing, got %d", len(*runs))
 	}
-	if !strings.Contains(err.Error(), "request access again") {
-		t.Errorf("expected error to tell the user to request access again, got %q", err.Error())
+	if !strings.Contains(err.Error(), "credentials cannot be reset") || !strings.Contains(err.Error(), "apono access reset-credentials sess-missing") {
+		t.Errorf("expected the reset API error and the manual reset hint, got %q", err.Error())
 	}
 }
 
@@ -947,7 +947,6 @@ func reissueStarter(t *testing.T, tty bool) (*ClientStarter, *[]runShellCall, *i
 	})
 
 	resets, fetches := 0, 0
-	s.CanResetCredentials = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (bool, error) { return true, nil }
 	s.ResetCredentials = func(_ context.Context, _ *aponoapi.AponoClient, _ string) error {
 		resets++
 		return nil
@@ -1029,24 +1028,6 @@ func TestStart_cacheMissing_resetFails_suggestsManualReset(t *testing.T) {
 	}
 	if len(*runs) != 0 {
 		t.Errorf("expected no commands run when the reset fails, got %+v", *runs)
-	}
-}
-
-func TestStart_cacheMissing_resetCheckFails_surfacesAPIError(t *testing.T) {
-	s, _, resets, _ := reissueStarter(t, true)
-	s.CanResetCredentials = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (bool, error) {
-		return false, errors.New("503 service unavailable")
-	}
-
-	err := s.Start(newCobraCmd(), nil, reissueSessionID, "tableplus", nil)
-	if err == nil || !strings.Contains(err.Error(), "503 service unavailable") {
-		t.Fatalf("expected the API error in the message, got %v", err)
-	}
-	if strings.Contains(err.Error(), "already viewed") {
-		t.Errorf("an API failure must not be reported as viewed credentials, got %q", err.Error())
-	}
-	if *resets != 0 {
-		t.Errorf("expected no reset when the check fails, got %d", *resets)
 	}
 }
 
