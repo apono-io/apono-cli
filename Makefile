@@ -65,7 +65,7 @@ test: ## go test
 .PHONY: e2e
 e2e: ## end-to-end tests: real apono binary against a mock API (set E2E_PG_URL / E2E_KIND_KUBECONFIG for real resources)
 	$(call print-target)
-	go test -tags e2e -race -count=1 -timeout 15m ./e2e/...
+	go test -v -tags e2e -race -count=1 -timeout 15m ./e2e/...
 
 .PHONY: diff
 diff: ## git diff
