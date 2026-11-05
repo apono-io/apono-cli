@@ -80,6 +80,10 @@ brews:
     homepage: "https://www.apono.io"
     description: "View, request and receive permissions to services, DBs and applications."
     license: "Apache-2.0"
+    caveats: |
+      macOS: to enable or update "Open in Terminal" / "Open in App" launches
+      from the Apono Portal and Slack, run any apono command once in a terminal
+      (e.g. `apono login`), or run `apono access-handler register`.
     test: |
       system "#{bin}/apono version"
     install: |

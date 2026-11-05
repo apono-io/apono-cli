@@ -49,15 +49,18 @@ if [[ -z "$session" || -z "$account" || -z "$client" ]]; then
   echo "missing required params in: $uri" >&2
   exit 64
 fi
-if [[ "$session$account$client" == *%* ]]; then
-  echo "URL-encoded characters not supported in launch params" >&2
+if [[ "$account$client" == *%* ]]; then
+  echo "URL-encoded characters not supported in account/client params" >&2
   exit 64
 fi
-log INFO "parsed launch params session=$session account=$account client=$client"
+session_has_pct=no
+[[ "$session" == *%* ]] && session_has_pct=yes
+log INFO "parsed launch params session=$session account=$account client=$client session_has_pct=$session_has_pct"
 if ! command -v apono >/dev/null 2>&1; then
   echo "apono CLI not found on PATH" >&2
   exit 127
 fi
 log INFO "apono resolved; handing off to access use"
 export _APONO_ACCOUNT_ID_="$account"
-exec apono access use "$session" --client "$client" >/dev/null
+export _APONO_SESSION_URL_ENCODED_=1
+exec apono access use --client "$client" -- "$session" >/dev/null

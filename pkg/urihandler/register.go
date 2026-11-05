@@ -50,10 +50,8 @@ var infoPlistEntries = []struct {
 	{"CFBundleURLTypes", "-array", urlTypesValue},
 }
 
-// EnsureRegistered builds and registers the apono:// handler bundle when missing.
-// No-op on non-macOS, in non-interactive contexts, or when a bundle is already on disk.
 func EnsureRegistered(in io.Reader) error {
-	if bundleExists() {
+	if bundleExists() && handlerScriptUpToDate() {
 		return nil
 	}
 	return Reregister(in)
@@ -233,4 +231,16 @@ func bundleExists() bool {
 	}
 	_, err = os.Stat(filepath.Join(home, bundleParentDir, bundleDirName))
 	return err == nil
+}
+
+func handlerScriptUpToDate() bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	installed, err := os.ReadFile(filepath.Join(home, bundleParentDir, bundleDirName, "Contents", "Resources", "handler.sh")) //nolint:gosec // path is built from home dir and fixed bundle constants
+	if err != nil {
+		return false
+	}
+	return string(installed) == handlerShellTemplate
 }
