@@ -179,15 +179,6 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	}
 }
 
-// resolveCachedCredentials makes sure the cached password the invocation needs exists, and
-// substitutes it for the password placeholder. Invocations read the cache either through the
-// placeholder or directly from the shell (e.g. `$(base64 -d -i ~/.apono/cache/<session>)`), in
-// which case a missing file silently becomes an empty password.
-//
-// The backend only renders the commands that write the cache while the credentials are new, so a
-// missing cache with nothing in this launch to write it means the credentials were already handed
-// out (printed instructions, another machine). Only then are the credentials reissued and the
-// launcher refreshed; whenever something would write the cache, the launch proceeds as before.
 func (s *ClientStarter) resolveCachedCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID string, client clientapi.LauncherClientModel, isTerminal, headless bool) (clientapi.LauncherClientModel, error) {
 	if !usesCachedPassword(client.InvocationCommand, sessionID) {
 		return client, nil
@@ -198,9 +189,6 @@ func (s *ClientStarter) resolveCachedCredentials(cobraCmd *cobra.Command, apiCli
 
 	if cachedPasswordMissing(sessionID) && !launchCachesPassword(client, sessionID) {
 		if headless {
-			// Headless output is discarded, so an error here is invisible: launch as before and let
-			// the client report the failed login. A placeholder cannot be substituted, which always
-			// failed - keep failing, with an actionable message for the handler log.
 			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials not cached", nil, sessionID, clientID, launcherType, isTerminal)
 			if strings.Contains(client.InvocationCommand, passwordPlaceholder) {
 				return client, credentialsUnavailableError(sessionID, clientID)
@@ -236,39 +224,28 @@ func cachedPasswordMissing(sessionID string) bool {
 	return errors.Is(err, fs.ErrNotExist)
 }
 
-// launchCachesPassword reports whether this launch writes the session's cached password: an auth
-// command (rendered only for new credentials; already run, or deferred into the new terminal for
-// headless launches) or an invocation that writes the cache itself, like the `cli` launcher.
 func launchCachesPassword(client clientapi.LauncherClientModel, sessionID string) bool {
 	return strings.TrimSpace(utils.FromNullableString(client.AuthCommand)) != "" ||
 		writesCachedPassword(client.InvocationCommand, sessionID)
 }
 
-// cacheFileRefPattern matches `.apono/cache/<sessionID>`, but not a longer session id sharing the prefix.
 func cacheFileRefPattern(sessionID string) string {
 	return regexp.QuoteMeta(cacheDirMarker+sessionID) + `(?:[^A-Za-z0-9._-]|$)`
 }
 
-// usesCachedPassword reports whether the command needs the session's cached password, through
-// the placeholder or by reading `.apono/cache/<sessionID>` itself.
 func usesCachedPassword(command, sessionID string) bool {
 	return strings.Contains(command, passwordPlaceholder) ||
 		regexp.MustCompile(cacheFileRefPattern(sessionID)).MatchString(command)
 }
 
-// writesCachedPassword reports whether the command redirects output into the session's cache file,
-// e.g. `base64 > ~/.apono/cache/<sessionID>`.
 func writesCachedPassword(command, sessionID string) bool {
 	return regexp.MustCompile(`>\s*["']?[^\s"'>]*` + cacheFileRefPattern(sessionID)).MatchString(command)
 }
 
-// CredentialsReissued reports whether the last Start reset the session credentials to connect.
 func (s *ClientStarter) CredentialsReissued() bool {
 	return s.reissued
 }
 
-// reissueCredentials resets the session credentials, fetches the launcher again and runs
-// its new auth command, which caches the fresh password for the invocation to use.
 func (s *ClientStarter) reissueCredentials(cobraCmd *cobra.Command, apiClient *aponoapi.AponoClient, sessionID, clientID, launcherType string, isTerminal bool) (clientapi.LauncherClientModel, error) {
 	ctx := cobraCmd.Context()
 
