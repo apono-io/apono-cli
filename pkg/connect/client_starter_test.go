@@ -835,9 +835,12 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls when cache missing, got %d", len(*runs))
 	}
-	want := "you have already viewed these credentials manually. To connect via tableplus, please reset them by running `apono access reset-credentials sess-missing`"
-	if err.Error() != want {
-		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
+	if !strings.Contains(err.Error(), "resolve credentials") {
+		t.Errorf("expected error to mention credential resolution, got %q", err.Error())
+	}
+	var viewedErr *CredentialsAlreadyViewedError
+	if errors.As(err, &viewedErr) {
+		t.Errorf("a missing cache file must not be reported as already-viewed credentials, got %q", err.Error())
 	}
 }
 
@@ -857,7 +860,11 @@ func TestStart_consumedElsewhere_inTerminal_suggestsReset(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls, got %d", len(*runs))
 	}
-	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running `apono access reset-credentials sess-1`"
+	var viewedErr *CredentialsAlreadyViewedError
+	if !errors.As(err, &viewedErr) {
+		t.Fatalf("expected *CredentialsAlreadyViewedError, got %T", err)
+	}
+	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running: `apono access reset-credentials sess-1`"
 	if err.Error() != want {
 		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
 	}
@@ -985,5 +992,50 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 	}
 	if !strings.Contains((*runs)[1].combined, "hello") {
 		t.Errorf("expected invocation to have substituted password from cache populated by auth, got %q", (*runs)[1].combined)
+	}
+}
+
+func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
+	// Empty HOME: the check must not depend on the local credentials cache,
+	// which a client's auth command may only populate later during Start.
+	t.Setenv("HOME", t.TempDir())
+
+	dbeaver := newClientModel("dbeaver", ClientKindGUI, "populate-cache", `dbeaver -con "password=__APONO_PASSWORD__"`)
+	dbeaver.DisplayName = "DBeaver"
+	clients := []clientapi.LauncherClientModel{dbeaver}
+
+	tests := []struct {
+		name       string
+		consumedBy string
+		wantErr    bool
+	}{
+		{name: "viewed in portal", consumedBy: "portal", wantErr: true},
+		{name: "consumed by cli, cache not populated yet", consumedBy: aponoapi.ConsumedByAponoCli, wantErr: false},
+		{name: "fresh credentials", consumedBy: "", wantErr: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := CheckCredentialsConsumedElsewhere(&ClientFetchResult{Clients: clients, ConsumedBy: tc.consumedBy}, "sess-1", "dbeaver")
+			if (got != nil) != tc.wantErr {
+				t.Fatalf("CheckCredentialsConsumedElsewhere() = %v, wantErr %v", got, tc.wantErr)
+			}
+			if got != nil && (got.SessionID != "sess-1" || got.ClientName != "DBeaver") {
+				t.Errorf("unexpected error fields: %+v", got)
+			}
+		})
+	}
+}
+
+func TestCredentialsAlreadyViewedError_messageAndError(t *testing.T) {
+	e := &CredentialsAlreadyViewedError{SessionID: "sess-1", ClientName: "DBeaver"}
+
+	if got, want := e.ResetCommand(), "apono access reset-credentials sess-1"; got != want {
+		t.Errorf("ResetCommand() = %q, want %q", got, want)
+	}
+	if got, want := e.Message(e.ResetCommand()), "You have already viewed these credentials manually. To connect via DBeaver, please reset them by running: apono access reset-credentials sess-1"; got != want {
+		t.Errorf("Message() = %q, want %q", got, want)
+	}
+	if got := e.Error(); !strings.HasPrefix(got, "you have already viewed") || !strings.Contains(got, "`apono access reset-credentials sess-1`") {
+		t.Errorf("Error() = %q", got)
 	}
 }

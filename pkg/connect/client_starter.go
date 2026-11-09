@@ -91,8 +91,8 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	// Portal and Slack show their own "credentials already in use" prompt before
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
-	if isTerminal && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
-		err = credentialsAlreadyViewedError(sessionID, clientDisplayName(result.Clients, clientID))
+	if viewedErr := CheckCredentialsConsumedElsewhere(result, sessionID, clientID); isTerminal && viewedErr != nil {
+		err = viewedErr
 		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials already used elsewhere", err, sessionID, clientID, "", isTerminal)
 		return err
 	}
@@ -124,9 +124,6 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		pwd, readErr := readCachedPassword(sessionID)
 		if readErr != nil {
 			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
-			if errors.Is(readErr, os.ErrNotExist) {
-				return credentialsAlreadyViewedError(sessionID, clientDisplayName(result.Clients, clientID))
-			}
 			return fmt.Errorf("resolve credentials: %w", readErr)
 		}
 		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
@@ -207,8 +204,42 @@ func clientDisplayName(clients []clientapi.LauncherClientModel, id string) strin
 	return id
 }
 
-func credentialsAlreadyViewedError(sessionID, clientName string) error {
-	return fmt.Errorf("you have already viewed these credentials manually. To connect via %s, please reset them by running `apono access reset-credentials %s`", clientName, sessionID)
+const resetCredentialsCommandPrefix = "apono access reset-credentials "
+
+// CredentialsAlreadyViewedError means the session's credentials were consumed
+// outside the CLI (e.g. viewed in the portal) and must be reset before the
+// launcher can use them.
+type CredentialsAlreadyViewedError struct {
+	SessionID  string
+	ClientName string
+}
+
+// ResetCommand is the command that issues a fresh set of credentials.
+func (e *CredentialsAlreadyViewedError) ResetCommand() string {
+	return resetCredentialsCommandPrefix + e.SessionID
+}
+
+// Message renders the user-facing text; resetCommand lets callers style the
+// command (e.g. color it) without duplicating the wording.
+func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
+	return fmt.Sprintf("You have already viewed these credentials manually. To connect via %s, please reset them by running: %s", e.ClientName, resetCommand)
+}
+
+func (e *CredentialsAlreadyViewedError) Error() string {
+	msg := e.Message("`" + e.ResetCommand() + "`")
+	// Go error strings start lowercase.
+	return strings.ToLower(msg[:1]) + msg[1:]
+}
+
+// CheckCredentialsConsumedElsewhere returns a *CredentialsAlreadyViewedError when
+// the credentials were consumed outside the CLI (e.g. viewed in the portal).
+// It relies only on the server-reported consumer, so it is safe to call before
+// the client's auth command has populated the local credentials cache.
+func CheckCredentialsConsumedElsewhere(result *ClientFetchResult, sessionID, clientID string) *CredentialsAlreadyViewedError {
+	if result.ConsumedBy == "" || result.ConsumedBy == aponoapi.ConsumedByAponoCli {
+		return nil
+	}
+	return &CredentialsAlreadyViewedError{SessionID: sessionID, ClientName: clientDisplayName(result.Clients, clientID)}
 }
 
 func availableIDs(clients []clientapi.LauncherClientModel) string {
