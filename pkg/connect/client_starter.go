@@ -206,21 +206,15 @@ func clientDisplayName(clients []clientapi.LauncherClientModel, id string) strin
 
 const resetCredentialsCommandPrefix = "apono access reset-credentials "
 
-// CredentialsAlreadyViewedError means the session's credentials were consumed
-// outside the CLI (e.g. viewed in the portal) and must be reset before the
-// launcher can use them.
 type CredentialsAlreadyViewedError struct {
 	SessionID  string
 	ClientName string
 }
 
-// ResetCommand is the command that issues a fresh set of credentials.
 func (e *CredentialsAlreadyViewedError) ResetCommand() string {
 	return resetCredentialsCommandPrefix + e.SessionID
 }
 
-// Message renders the user-facing text; resetCommand lets callers style the
-// command (e.g. color it) without duplicating the wording.
 func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
 	return fmt.Sprintf("You have already viewed these credentials manually. To connect via %s, please reset them by running: %s", e.ClientName, resetCommand)
 }
@@ -231,10 +225,6 @@ func (e *CredentialsAlreadyViewedError) Error() string {
 	return strings.ToLower(msg[:1]) + msg[1:]
 }
 
-// CheckCredentialsConsumedElsewhere returns a *CredentialsAlreadyViewedError when
-// the credentials were consumed outside the CLI (e.g. viewed in the portal).
-// It relies only on the server-reported consumer, so it is safe to call before
-// the client's auth command has populated the local credentials cache.
 func CheckCredentialsConsumedElsewhere(result *ClientFetchResult, sessionID, clientID string) *CredentialsAlreadyViewedError {
 	if result.ConsumedBy == "" || result.ConsumedBy == aponoapi.ConsumedByAponoCli {
 		return nil
