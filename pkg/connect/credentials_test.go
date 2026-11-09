@@ -173,3 +173,40 @@ func TestReadCachedPassword_invalidBase64_errorWrapped(t *testing.T) {
 		t.Fatal("expected error for invalid base64, got nil")
 	}
 }
+
+func TestReadCachedPassword_sessionIDWithSlashes_readsNestedFile(t *testing.T) {
+	// RDS sessions backed by Secrets Manager paths have "/" in the ID
+	// (DVL-12422); the auth command writes the cache file under nested dirs.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sessionID := "aws-rds-mysql-dev/mysql/eu1-payments-dev-aurora-cluster-d4bfac"
+	path := filepath.Join(home, ".apono", "cache", sessionID)
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatalf("mkdir cache: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(base64.StdEncoding.EncodeToString([]byte(passwordWithSpecials+"\n"))), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+
+	got, err := readCachedPassword(sessionID)
+	if err != nil {
+		t.Fatalf("readCachedPassword: %v", err)
+	}
+	if got != passwordWithSpecials {
+		t.Errorf("readCachedPassword = %q, want %q", got, passwordWithSpecials)
+	}
+}
+
+func TestReadCachedPassword_rejectsPathOutsideCacheDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	// A file that a traversal ID would resolve to must never be read.
+	if err := os.WriteFile(filepath.Join(home, "secret"), []byte(base64.StdEncoding.EncodeToString([]byte("x"))), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	for _, id := range []string{"../../secret", "a/../../../secret", "..", "", "."} {
+		if _, err := readCachedPassword(id); err == nil {
+			t.Errorf("readCachedPassword(%q): expected error, got nil", id)
+		}
+	}
+}

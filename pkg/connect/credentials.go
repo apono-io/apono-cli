@@ -21,8 +21,12 @@ const (
 )
 
 func readCachedPassword(sessionID string) (string, error) {
-	path := filepath.Join(utils.DefaultCacheDir(), sessionID)
-	raw, err := os.ReadFile(filepath.Clean(path))
+	cacheDir := filepath.Clean(utils.DefaultCacheDir())
+	path := filepath.Join(cacheDir, sessionID)
+	if rel, err := filepath.Rel(cacheDir, path); err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid session id %q: cache path escapes cache directory", sessionID)
+	}
+	raw, err := os.ReadFile(path) //nolint:gosec // path is confined to the cache directory above
 	if err != nil {
 		return "", fmt.Errorf("read cache file: %w", err)
 	}

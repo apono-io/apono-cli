@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -25,6 +26,8 @@ const (
 
 	accountIDEnvVar = "_APONO_ACCOUNT_ID_"
 )
+
+const sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
 
 type accessUseCommandFlags struct {
 	outputFormat               string
@@ -67,9 +70,16 @@ func AccessDetails() *cobra.Command {
 
 			shipHandlerLog(cmd.Context())
 
-			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), args[0]).Execute()
+			sessionURLEncoded := os.Getenv(sessionURLEncodedEnvVar) != ""
+			_ = os.Unsetenv(sessionURLEncodedEnvVar)
+			sessionID, err := resolveSessionIDArg(args[0], sessionURLEncoded)
 			if err != nil {
-				return fmt.Errorf("access session with id %s not found", args[0])
+				return err
+			}
+
+			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+			if err != nil {
+				return fmt.Errorf("access session with id %s not found", sessionID)
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
@@ -146,6 +156,22 @@ func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) erro
 	cmd.SetContext(aponoapi.CreateClientContext(cmd.Context(), overrideClient))
 	cmd.SetContext(config.CreateProfileContext(cmd.Context(), string(profileName)))
 	return nil
+}
+
+func resolveSessionIDArg(arg string, urlEncoded bool) (string, error) {
+	if !urlEncoded {
+		return arg, nil
+	}
+	decoded, err := url.PathUnescape(arg)
+	if err != nil {
+		return "", fmt.Errorf("invalid session id in launch URL: %w", err)
+	}
+	for _, r := range decoded {
+		if r < 0x20 || r == 0x7f {
+			return "", fmt.Errorf("invalid session id in launch URL: contains control characters")
+		}
+	}
+	return decoded, nil
 }
 
 func resolveOutputFormat(cmdFlags *accessUseCommandFlags) string {
