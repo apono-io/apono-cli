@@ -221,7 +221,6 @@ func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
 
 func (e *CredentialsAlreadyViewedError) Error() string {
 	msg := e.Message("`" + e.ResetCommand() + "`")
-	// Go error strings start lowercase.
 	return strings.ToLower(msg[:1]) + msg[1:]
 }
 
