@@ -158,7 +158,7 @@ func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error 
 }
 
 func printCredentialsAlreadyViewedNotice(cmd *cobra.Command, viewedErr *connect.CredentialsAlreadyViewedError) error {
-	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s\n\n", styles.NoticeMsgPrefix, viewedErr.Message(color.Green.Sprint(viewedErr.ResetCommand())))
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n\n", viewedErr.Message(color.Green.Sprint(viewedErr.ResetCommand())))
 	return err
 }
 

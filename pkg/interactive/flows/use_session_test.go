@@ -94,7 +94,7 @@ func TestPrintCredentialsAlreadyViewedNotice(t *testing.T) {
 
 	got := out.String()
 	for _, want := range []string{
-		"You have already viewed these credentials manually. To connect via DBeaver, please reset them by running:",
+		"You have already viewed these credentials manually. To connect via DBeaver, please reset them by running",
 		"apono access reset-credentials postgresql-my-local-15d822",
 	} {
 		if !strings.Contains(got, want) {

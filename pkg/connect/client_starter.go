@@ -216,7 +216,7 @@ func (e *CredentialsAlreadyViewedError) ResetCommand() string {
 }
 
 func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
-	return fmt.Sprintf("You have already viewed these credentials manually. To connect via %s, please reset them by running: %s", e.ClientName, resetCommand)
+	return fmt.Sprintf("You have already viewed these credentials manually. To connect via %s, please reset them by running %s", e.ClientName, resetCommand)
 }
 
 func (e *CredentialsAlreadyViewedError) Error() string {

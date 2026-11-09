@@ -864,7 +864,7 @@ func TestStart_consumedElsewhere_inTerminal_suggestsReset(t *testing.T) {
 	if !errors.As(err, &viewedErr) {
 		t.Fatalf("expected *CredentialsAlreadyViewedError, got %T", err)
 	}
-	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running: `apono access reset-credentials sess-1`"
+	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running `apono access reset-credentials sess-1`"
 	if err.Error() != want {
 		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
 	}
@@ -1030,7 +1030,7 @@ func TestCredentialsAlreadyViewedError_messageAndError(t *testing.T) {
 	if got, want := e.ResetCommand(), "apono access reset-credentials sess-1"; got != want {
 		t.Errorf("ResetCommand() = %q, want %q", got, want)
 	}
-	if got, want := e.Message(e.ResetCommand()), "You have already viewed these credentials manually. To connect via DBeaver, please reset them by running: apono access reset-credentials sess-1"; got != want {
+	if got, want := e.Message(e.ResetCommand()), "You have already viewed these credentials manually. To connect via DBeaver, please reset them by running apono access reset-credentials sess-1"; got != want {
 		t.Errorf("Message() = %q, want %q", got, want)
 	}
 	if got := e.Error(); !strings.HasPrefix(got, "you have already viewed") || !strings.Contains(got, "`apono access reset-credentials sess-1`") {
