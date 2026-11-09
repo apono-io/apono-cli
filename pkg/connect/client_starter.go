@@ -92,7 +92,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
 	if isTerminal && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
-		err = fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
+		err = credentialsAlreadyViewedError(sessionID, clientDisplayName(result.Clients, clientID))
 		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials already used elsewhere", err, sessionID, clientID, "", isTerminal)
 		return err
 	}
@@ -124,6 +124,9 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 		pwd, readErr := readCachedPassword(sessionID)
 		if readErr != nil {
 			s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: resolve credentials failed", readErr, sessionID, clientID, launcherType, isTerminal)
+			if errors.Is(readErr, os.ErrNotExist) {
+				return credentialsAlreadyViewedError(sessionID, clientDisplayName(result.Clients, clientID))
+			}
 			return fmt.Errorf("resolve credentials: %w", readErr)
 		}
 		encodedPwd := encodePassword(pwd, client.PasswordEncoding)
@@ -195,6 +198,17 @@ func findClient(clients []clientapi.LauncherClientModel, id string) (clientapi.L
 		}
 	}
 	return clientapi.LauncherClientModel{}, false
+}
+
+func clientDisplayName(clients []clientapi.LauncherClientModel, id string) string {
+	if c, ok := findClient(clients, id); ok && strings.TrimSpace(c.DisplayName) != "" {
+		return c.DisplayName
+	}
+	return id
+}
+
+func credentialsAlreadyViewedError(sessionID, clientName string) error {
+	return fmt.Errorf("you have already viewed these credentials manually. To connect via %s, please reset them by running `apono access reset-credentials %s`", clientName, sessionID)
 }
 
 func availableIDs(clients []clientapi.LauncherClientModel) string {

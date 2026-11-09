@@ -835,8 +835,31 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls when cache missing, got %d", len(*runs))
 	}
-	if !strings.Contains(err.Error(), "resolve credentials") {
-		t.Errorf("expected error to mention credential resolution, got %q", err.Error())
+	want := "you have already viewed these credentials manually. To connect via tableplus, please reset them by running `apono access reset-credentials sess-missing`"
+	if err.Error() != want {
+		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
+	}
+}
+
+func TestStart_consumedElsewhere_inTerminal_suggestsReset(t *testing.T) {
+	tableplus := clientapi.LauncherClientModel{
+		Id:                "tableplus",
+		DisplayName:       "TablePlus",
+		LauncherType:      ClientKindGUI,
+		InvocationCommand: "invocation-cmd",
+	}
+	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, "portal", nil)
+
+	err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus", nil)
+	if err == nil {
+		t.Fatal("expected error when credentials were consumed elsewhere, got nil")
+	}
+	if len(*runs) != 0 {
+		t.Errorf("expected no runShell calls, got %d", len(*runs))
+	}
+	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running `apono access reset-credentials sess-1`"
+	if err.Error() != want {
+		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
 	}
 }
 
