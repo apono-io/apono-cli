@@ -996,8 +996,6 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 }
 
 func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
-	// Empty HOME: the check must not depend on the local credentials cache,
-	// which a client's auth command may only populate later during Start.
 	t.Setenv("HOME", t.TempDir())
 
 	dbeaver := newClientModel("dbeaver", ClientKindGUI, "populate-cache", `dbeaver -con "password=__APONO_PASSWORD__"`)
