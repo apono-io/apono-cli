@@ -22,12 +22,40 @@ clip() {
   local v="${1//[[:cntrl:]]/}"
   print -r -- "${v[1,$2]}"
 }
+# safe_token prints $1 when it is a plain identifier matching the ERE in $2,
+# and <redacted> otherwise, so free text from a malformed URL is never logged.
+safe_token() {
+  if [[ "$1" =~ "$2" ]]; then
+    print -r -- "$1"
+  else
+    print -r -- "<redacted>"
+  fi
+}
+# describe_target logs only scheme://host of the text before '?'. Userinfo
+# (user:password@) and any path are dropped and reported as yes/no flags.
+describe_target() {
+  local t="$1" scheme rest authority host has_userinfo=no has_path=no
+  if [[ "$t" != *://* ]]; then
+    print -r -- "target=<redacted> has_userinfo=no has_path=no"
+    return
+  fi
+  scheme="${t%%://*}"
+  rest="${t#*://}"
+  authority="${rest%%/*}"
+  [[ "$rest" == */* ]] && has_path=yes
+  host="$authority"
+  if [[ "$authority" == *@* ]]; then
+    has_userinfo=yes
+    host="${authority##*@}"
+  fi
+  print -r -- "target=$(safe_token "$scheme" '^[A-Za-z][A-Za-z0-9+.-]{0,15}$')://$(safe_token "$host" '^[A-Za-z0-9.-]{1,64}$') has_userinfo=$has_userinfo has_path=$has_path"
+}
 # describe_uri logs the shape of the launch URL: target, parameter names, and
 # values only for the known launch parameters. Unknown parameter values are
-# never logged.
+# never logged, and unknown parameter names only when they are plain
+# identifiers.
 describe_uri() {
-  local u="$1" target query="" kv name entries=()
-  target="${u%%\?*}"
+  local u="$1" query="" kv name entries=()
   [[ "$u" == *\?* ]] && query="${u#*\?}"
   for kv in ${(s:&:)query}; do
     name="${kv%%=*}"
@@ -39,10 +67,10 @@ describe_uri() {
           entries+=("$name")
         fi
         ;;
-      *) entries+=("$(clip "$name" 64)=<redacted>") ;;
+      *) entries+=("$(safe_token "$name" '^[A-Za-z0-9_-]{1,32}$')=<redacted>") ;;
     esac
   done
-  print -r -- "target=$(clip "$target" 64) params=[${(j:,:)entries}]"
+  print -r -- "$(describe_target "${u%%\?*}") params=[${(j:,:)entries}]"
 }
 
 fail_reason=unknown

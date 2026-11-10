@@ -66,11 +66,53 @@ func TestHandlerScript_invalidURL_logsReasonAndShape(t *testing.T) {
 		forbidden []string
 	}{
 		{"missing uri", "", []string{"reason=missing_uri"}, nil},
-		{"unsupported target", "https://example.com/?x=1", []string{"reason=unsupported_target", "target=https://example.com/", "x=<redacted>"}, []string{"x=1"}},
+		{
+			"unsupported target",
+			"https://example.com/?x=1",
+			[]string{"reason=unsupported_target", "target=https://example.com has_userinfo=no has_path=yes", "x=<redacted>"},
+			[]string{"x=1"},
+		},
+		{
+			"target without scheme is redacted",
+			"garbage-SECRET?x=1",
+			[]string{"reason=unsupported_target", "target=<redacted>"},
+			[]string{"SECRET"},
+		},
+		{
+			"userinfo before the query is dropped",
+			"apono://alice-SECRET:p4ssw0rd@connect?session=s",
+			[]string{"reason=unsupported_target", "target=apono://connect has_userinfo=yes has_path=no"},
+			[]string{"p4ssw0rd", "alice", "SECRET"},
+		},
+		{
+			"path before the query is dropped",
+			"apono://connect/SECRET-PATH?session=s",
+			[]string{"reason=unsupported_target", "target=apono://connect has_userinfo=no has_path=yes"},
+			[]string{"SECRET"},
+		},
+		{
+			"host that is not a plain name is redacted",
+			"apono://SECRET host<x>?session=s",
+			[]string{"reason=unsupported_target", "target=apono://<redacted>"},
+			[]string{"SECRET"},
+		},
+		{
+			"parameter without '=' is not logged as a name",
+			"apono://connect?eyJhbGciOiJIUzI1NiJ9.SECRET&session=s",
+			[]string{"reason=missing_params", "params=[<redacted>=<redacted>,session=s]"},
+			[]string{"SECRET", "eyJ"},
+		},
+		{
+			"plain unknown parameter name is kept",
+			"apono://connect?session=s&my_flag-1=SECRET",
+			[]string{"reason=missing_params", "my_flag-1=<redacted>"},
+			[]string{"SECRET"},
+		},
 		{"missing params", "apono://connect?session=a%2Fb&account=acc", []string{"reason=missing_params", "session=a%2Fb", "account=acc"}, nil},
 		{
 			"encoded account", "apono://connect?session=s&account=a%20c&client=c&token=SECRET",
-			[]string{"reason=encoded_account_client", "account=a%20c", "token=<redacted>"}, []string{"SECRET"},
+			[]string{"reason=encoded_account_client", "account=a%20c", "token=<redacted>"},
+			[]string{"SECRET"},
 		},
 		{"control characters stripped", "apono://connect?session=x%0A&client=c\nERROR\tforged", []string{"reason=missing_params"}, nil},
 	}
@@ -104,8 +146,10 @@ func TestHandlerScript_invalidURL_logsReasonAndShape(t *testing.T) {
 				}
 			}
 			for _, unwanted := range tc.forbidden {
-				if strings.Contains(failure.Message, unwanted) {
-					t.Errorf("failure message %q must not contain %q", failure.Message, unwanted)
+				for _, l := range lines {
+					if strings.Contains(l.Message, unwanted) {
+						t.Errorf("handler log line %q must not contain %q", l.Message, unwanted)
+					}
 				}
 			}
 		})
