@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/connect"
 )
 
 func sessionWithCredentials(status string, canReset bool) *clientapi.AccessSessionClientModel {
@@ -78,5 +79,29 @@ func TestMaybePrintResetCredentialsSuggestion(t *testing.T) {
 				t.Errorf("output = %q, wantMessage = %v", out.String(), tt.wantMessage)
 			}
 		})
+	}
+}
+
+func TestPrintCredentialsAlreadyViewedNotice(t *testing.T) {
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	err := printCredentialsAlreadyViewedNotice(cmd, &connect.CredentialsAlreadyViewedError{SessionID: "postgresql-my-local-15d822", ClientName: "DBeaver"})
+	if err != nil {
+		t.Fatalf("printCredentialsAlreadyViewedNotice() error = %v", err)
+	}
+
+	got := out.String()
+	for _, want := range []string{
+		"You have already viewed these credentials manually. To connect via DBeaver, please reset them by running",
+		"apono access reset-credentials postgresql-my-local-15d822",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output %q missing %q", got, want)
+		}
+	}
+	if strings.Contains(got, "Problem to connect?") {
+		t.Errorf("output should not contain the generic reset notice: %q", got)
 	}
 }

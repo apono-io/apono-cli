@@ -91,8 +91,8 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	// Portal and Slack show their own "credentials already in use" prompt before
 	// firing the apono:// URI, so a headless (executed from protocol handler) run can trust that. A terminal user typed
 	// the command directly and never saw that prompt - surface it here ourselves.
-	if isTerminal && result.ConsumedBy != "" && result.ConsumedBy != aponoapi.ConsumedByAponoCli {
-		err = fmt.Errorf("credentials for this session were already used elsewhere. reset them with `apono access reset-credentials %s` and try again", sessionID)
+	if viewedErr := CheckCredentialsConsumedElsewhere(result, sessionID, clientID); isTerminal && viewedErr != nil {
+		err = viewedErr
 		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: credentials already used elsewhere", err, sessionID, clientID, "", isTerminal)
 		return err
 	}
@@ -195,6 +195,41 @@ func findClient(clients []clientapi.LauncherClientModel, id string) (clientapi.L
 		}
 	}
 	return clientapi.LauncherClientModel{}, false
+}
+
+func clientDisplayName(clients []clientapi.LauncherClientModel, id string) string {
+	if c, ok := findClient(clients, id); ok && strings.TrimSpace(c.DisplayName) != "" {
+		return c.DisplayName
+	}
+	return id
+}
+
+// ResetCredentialsCommandPrefix is the CLI command (without the session ID) that resets a session's credentials.
+const ResetCredentialsCommandPrefix = "apono access reset-credentials "
+
+type CredentialsAlreadyViewedError struct {
+	SessionID  string
+	ClientName string
+}
+
+func (e *CredentialsAlreadyViewedError) ResetCommand() string {
+	return ResetCredentialsCommandPrefix + e.SessionID
+}
+
+func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
+	return fmt.Sprintf("You have already viewed these credentials manually. To connect via %s, please reset them by running %s", e.ClientName, resetCommand)
+}
+
+func (e *CredentialsAlreadyViewedError) Error() string {
+	msg := e.Message("`" + e.ResetCommand() + "`")
+	return strings.ToLower(msg[:1]) + msg[1:]
+}
+
+func CheckCredentialsConsumedElsewhere(result *ClientFetchResult, sessionID, clientID string) *CredentialsAlreadyViewedError {
+	if result.ConsumedBy == "" || result.ConsumedBy == aponoapi.ConsumedByAponoCli {
+		return nil
+	}
+	return &CredentialsAlreadyViewedError{SessionID: sessionID, ClientName: clientDisplayName(result.Clients, clientID)}
 }
 
 func availableIDs(clients []clientapi.LauncherClientModel) string {

@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	resetCredentialsCommand = "apono access reset-credentials "
-	launcherAliasCommand    = "apono access use %s --client %s"
+	launcherAliasCommand = "apono access use %s --client %s"
 )
 
 func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClient, requestIDFilter string) error {
@@ -80,6 +79,9 @@ func RunUseSessionInteractiveFlow(cmd *cobra.Command, client *aponoapi.AponoClie
 		if err != nil {
 			return err
 		}
+		if viewedErr := connect.CheckCredentialsConsumedElsewhere(result, session.Id, selectedID); viewedErr != nil {
+			return printCredentialsAlreadyViewedNotice(cmd, viewedErr)
+		}
 		err = printLauncherAliasSuggestion(cmd, session.Id, selectedID)
 		if err != nil {
 			return err
@@ -129,7 +131,7 @@ func printSessionInstructions(cmd *cobra.Command, client *aponoapi.AponoClient, 
 }
 
 func printResetCredentialsSuggestion(cmd *cobra.Command, sessionID string) error {
-	resetCommand := resetCredentialsCommand + sessionID
+	resetCommand := connect.ResetCredentialsCommandPrefix + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s To get new set of credentials, run: %s\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
 	return err
 }
@@ -149,8 +151,13 @@ func printLauncherAliasSuggestion(cmd *cobra.Command, sessionID, clientID string
 }
 
 func PrintErrorConnectingSuggestion(cmd *cobra.Command, sessionID string) error {
-	resetCommand := resetCredentialsCommand + sessionID
+	resetCommand := connect.ResetCredentialsCommandPrefix + sessionID
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s Problem to connect? Reset credentials using this command: %s\n\n", styles.NoticeMsgPrefix, color.Green.Sprint(resetCommand))
+	return err
+}
+
+func printCredentialsAlreadyViewedNotice(cmd *cobra.Command, viewedErr *connect.CredentialsAlreadyViewedError) error {
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n\n", viewedErr.Message(color.Green.Sprint(viewedErr.ResetCommand())))
 	return err
 }
 
