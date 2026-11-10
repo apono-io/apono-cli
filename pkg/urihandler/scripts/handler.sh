@@ -4,8 +4,7 @@ zmodload zsh/datetime 2>/dev/null || true
 
 invocation="$$-${EPOCHSECONDS:-$(date +%s)}"
 logfile="${HOME}/Library/Application Support/apono-cli/handler.log"
-# Lines are shipped later, by the next `apono access use`, so each one records
-# when it happened (at=, epoch seconds) and which click wrote it (inv=).
+
 log() { print -r -- "$1"$'\t'"$2 at=${EPOCHREALTIME:-$(date +%s)} inv=$invocation" >> "$logfile" 2>/dev/null || true }
 describe_path() {
   local brew=no userbin=no
@@ -22,8 +21,7 @@ clip() {
   local v="${1//[[:cntrl:]]/}"
   print -r -- "${v[1,$2]}"
 }
-# safe_token prints $1 when it is a plain identifier matching the ERE in $2,
-# and <redacted> otherwise, so free text from a malformed URL is never logged.
+
 safe_token() {
   if [[ "$1" =~ "$2" ]]; then
     print -r -- "$1"
@@ -31,8 +29,7 @@ safe_token() {
     print -r -- "<redacted>"
   fi
 }
-# describe_target logs only scheme://host of the text before '?'. Userinfo
-# (user:password@) and any path are dropped and reported as yes/no flags.
+
 describe_target() {
   local t="$1" scheme rest authority host has_userinfo=no has_path=no
   if [[ "$t" != *://* ]]; then
@@ -50,10 +47,7 @@ describe_target() {
   fi
   print -r -- "target=$(safe_token "$scheme" '^[A-Za-z][A-Za-z0-9+.-]{0,15}$')://$(safe_token "$host" '^[A-Za-z0-9.-]{1,64}$') has_userinfo=$has_userinfo has_path=$has_path"
 }
-# describe_uri logs the shape of the launch URL: target, parameter names, and
-# values only for the known launch parameters. Unknown parameter values are
-# never logged, and unknown parameter names only when they are plain
-# identifiers.
+
 describe_uri() {
   local u="$1" query="" kv name entries=()
   [[ "$u" == *\?* ]] && query="${u#*\?}"
