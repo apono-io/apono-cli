@@ -383,9 +383,9 @@ func TestStart_shellNonZeroExit_returnsErrorWithStderr(t *testing.T) {
 }
 
 func TestStart_TTY_consumedByOther_blocks(t *testing.T) {
-	clients := []clientapi.LauncherClientModel{
-		newClientModel("dbeaver", ClientKindGUI, "s", "i"),
-	}
+	dbeaver := newClientModel("dbeaver", ClientKindGUI, "s", "i")
+	dbeaver.DisplayName = "DBeaver"
+	clients := []clientapi.LauncherClientModel{dbeaver}
 	s, runs, _ := testClientStarter(true, clients, "someone-else", nil)
 
 	err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
@@ -395,8 +395,13 @@ func TestStart_TTY_consumedByOther_blocks(t *testing.T) {
 	if len(*runs) != 0 {
 		t.Errorf("expected no runShell calls when blocked on consumedBy, got %d", len(*runs))
 	}
-	if !strings.Contains(err.Error(), "reset") {
-		t.Errorf("expected error to mention reset, got %q", err.Error())
+	var viewedErr *CredentialsAlreadyViewedError
+	if !errors.As(err, &viewedErr) {
+		t.Fatalf("expected *CredentialsAlreadyViewedError, got %T", err)
+	}
+	want := "you have already viewed these credentials manually. To connect via DBeaver, please reset them by running `apono access reset-credentials sess-1`"
+	if err.Error() != want {
+		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
 	}
 }
 
@@ -844,32 +849,6 @@ func TestStart_placeholderButCacheMissing_returnsError(t *testing.T) {
 	}
 }
 
-func TestStart_consumedElsewhere_inTerminal_suggestsReset(t *testing.T) {
-	tableplus := clientapi.LauncherClientModel{
-		Id:                "tableplus",
-		DisplayName:       "TablePlus",
-		LauncherType:      ClientKindGUI,
-		InvocationCommand: "invocation-cmd",
-	}
-	s, runs, _ := testClientStarter(true, []clientapi.LauncherClientModel{tableplus}, "portal", nil)
-
-	err := s.Start(newCobraCmd(), nil, "sess-1", "tableplus", nil)
-	if err == nil {
-		t.Fatal("expected error when credentials were consumed elsewhere, got nil")
-	}
-	if len(*runs) != 0 {
-		t.Errorf("expected no runShell calls, got %d", len(*runs))
-	}
-	var viewedErr *CredentialsAlreadyViewedError
-	if !errors.As(err, &viewedErr) {
-		t.Fatalf("expected *CredentialsAlreadyViewedError, got %T", err)
-	}
-	want := "you have already viewed these credentials manually. To connect via TablePlus, please reset them by running `apono access reset-credentials sess-1`"
-	if err.Error() != want {
-		t.Errorf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
-	}
-}
-
 func TestStart_authFails_invocationSkipped(t *testing.T) {
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("dbeaver", ClientKindGUI, "auth-cmd", "invocation-cmd"),
@@ -996,8 +975,6 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 }
 
 func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-
 	dbeaver := newClientModel("dbeaver", ClientKindGUI, "populate-cache", `dbeaver -con "password=__APONO_PASSWORD__"`)
 	dbeaver.DisplayName = "DBeaver"
 	clients := []clientapi.LauncherClientModel{dbeaver}

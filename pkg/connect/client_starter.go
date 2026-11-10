@@ -204,7 +204,8 @@ func clientDisplayName(clients []clientapi.LauncherClientModel, id string) strin
 	return id
 }
 
-const resetCredentialsCommandPrefix = "apono access reset-credentials "
+// ResetCredentialsCommandPrefix is the CLI command (without the session ID) that resets a session's credentials.
+const ResetCredentialsCommandPrefix = "apono access reset-credentials "
 
 type CredentialsAlreadyViewedError struct {
 	SessionID  string
@@ -212,7 +213,7 @@ type CredentialsAlreadyViewedError struct {
 }
 
 func (e *CredentialsAlreadyViewedError) ResetCommand() string {
-	return resetCredentialsCommandPrefix + e.SessionID
+	return ResetCredentialsCommandPrefix + e.SessionID
 }
 
 func (e *CredentialsAlreadyViewedError) Message(resetCommand string) string {
