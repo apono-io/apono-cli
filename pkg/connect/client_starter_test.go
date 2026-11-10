@@ -382,9 +382,11 @@ func TestStart_shellNonZeroExit_returnsErrorWithStderr(t *testing.T) {
 	}
 }
 
+const dbeaverDisplayName = "DBeaver"
+
 func TestStart_TTY_consumedByOther_blocks(t *testing.T) {
 	dbeaver := newClientModel("dbeaver", ClientKindGUI, "s", "i")
-	dbeaver.DisplayName = "DBeaver"
+	dbeaver.DisplayName = dbeaverDisplayName
 	clients := []clientapi.LauncherClientModel{dbeaver}
 	s, runs, _ := testClientStarter(true, clients, "someone-else", nil)
 
@@ -976,7 +978,7 @@ func TestStart_authFirstThenSubstitution(t *testing.T) {
 
 func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
 	dbeaver := newClientModel("dbeaver", ClientKindGUI, "populate-cache", `dbeaver -con "password=__APONO_PASSWORD__"`)
-	dbeaver.DisplayName = "DBeaver"
+	dbeaver.DisplayName = dbeaverDisplayName
 	clients := []clientapi.LauncherClientModel{dbeaver}
 
 	tests := []struct {
@@ -994,7 +996,7 @@ func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
 			if (got != nil) != tc.wantErr {
 				t.Fatalf("CheckCredentialsConsumedElsewhere() = %v, wantErr %v", got, tc.wantErr)
 			}
-			if got != nil && (got.SessionID != "sess-1" || got.ClientName != "DBeaver") {
+			if got != nil && (got.SessionID != "sess-1" || got.ClientName != dbeaverDisplayName) {
 				t.Errorf("unexpected error fields: %+v", got)
 			}
 		})
@@ -1002,7 +1004,7 @@ func TestCheckCredentialsConsumedElsewhere(t *testing.T) {
 }
 
 func TestCredentialsAlreadyViewedError_messageAndError(t *testing.T) {
-	e := &CredentialsAlreadyViewedError{SessionID: "sess-1", ClientName: "DBeaver"}
+	e := &CredentialsAlreadyViewedError{SessionID: "sess-1", ClientName: dbeaverDisplayName}
 
 	if got, want := e.ResetCommand(), "apono access reset-credentials sess-1"; got != want {
 		t.Errorf("ResetCommand() = %q, want %q", got, want)
