@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/logshipping"
@@ -62,6 +63,24 @@ func DrainLog(path string) ([]LogLine, error) {
 	}
 
 	return parseLines(data), nil
+}
+
+const (
+	FieldHandlerAt  = "handler_at"
+	FieldHandlerInv = "handler_inv"
+)
+
+var handlerStamp = regexp.MustCompile(` at=([0-9]+(?:\.[0-9]+)?) inv=([0-9]+-[0-9]+)$`)
+
+func SplitStamp(message string) (string, map[string]string) {
+	m := handlerStamp.FindStringSubmatchIndex(message)
+	if m == nil {
+		return message, nil
+	}
+	return message[:m[0]], map[string]string{
+		FieldHandlerAt:  message[m[2]:m[3]],
+		FieldHandlerInv: message[m[4]:m[5]],
+	}
 }
 
 func parseLines(data []byte) []LogLine {

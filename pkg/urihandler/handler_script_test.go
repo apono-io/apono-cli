@@ -5,21 +5,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 )
 
-var eventStamp = regexp.MustCompile(` at=[0-9]+(\.[0-9]+)? inv=([0-9]+-[0-9]+)$`)
-
 // stampOf returns the click id a handler line ends with, or "" if the line has
 // no at=/inv= suffix.
 func stampOf(message string) string {
-	m := eventStamp.FindStringSubmatch(message)
-	if m == nil {
-		return ""
-	}
-	return m[2]
+	_, fields := SplitStamp(message)
+	return fields[FieldHandlerInv]
 }
 
 // runHandlerScript executes the embedded handler.sh with zsh against an isolated
@@ -28,6 +22,9 @@ func runHandlerScript(t *testing.T, uri string) (int, []LogLine) {
 	t.Helper()
 	zsh, err := exec.LookPath("zsh")
 	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatal("zsh is required to test handler.sh in CI")
+		}
 		t.Skip("zsh not available")
 	}
 	home := t.TempDir()

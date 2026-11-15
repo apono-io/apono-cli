@@ -25,6 +25,7 @@ func shipHandlerLog(ctx context.Context) {
 		return
 	}
 	for _, line := range lines {
-		logshipping.Report(ctx, logshipping.CallerHandler, line.Level, line.Message, nil)
+		message, fields := urihandler.SplitStamp(line.Message)
+		logshipping.Report(ctx, logshipping.CallerHandler, line.Level, message, fields)
 	}
 }
