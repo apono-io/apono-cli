@@ -41,6 +41,9 @@ jobs:
           gpg_private_key: ${{ secrets.APONO_GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.APONO_GPG_PASSPHRASE }}
 
+      - name: Install zsh (required by handler.sh tests)
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
       - name: Build
         run: make ci
 

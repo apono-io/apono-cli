@@ -199,3 +199,44 @@ func TestDrainLog_overByteCap_countsDroppedLines(t *testing.T) {
 		t.Fatalf("expected an INFO notice counting %d dropped lines, got %+v", wantDropped, lines[0])
 	}
 }
+
+func TestSplitStamp(t *testing.T) {
+	cases := []struct {
+		name       string
+		in         string
+		wantMsg    string
+		wantFields map[string]string
+	}{
+		{
+			name:       "fractional at",
+			in:         "received launch request at=1794310893.873583 inv=73015-1794310893",
+			wantMsg:    "received launch request",
+			wantFields: map[string]string{FieldHandlerAt: "1794310893.873583", FieldHandlerInv: "73015-1794310893"},
+		},
+		{
+			name:       "integer at (date +%s fallback)",
+			in:         "invalid launch URL code=64 reason=missing_uri brew=no userbin=no at=1794310893 inv=1-1794310893",
+			wantMsg:    "invalid launch URL code=64 reason=missing_uri brew=no userbin=no",
+			wantFields: map[string]string{FieldHandlerAt: "1794310893", FieldHandlerInv: "1-1794310893"},
+		},
+		{name: "no stamp (older CLI line)", in: "received launch request", wantMsg: "received launch request"},
+		{name: "stamp not at end", in: "x at=1 inv=2-3 trailing", wantMsg: "x at=1 inv=2-3 trailing"},
+		{name: "malformed inv", in: "x at=1 inv=abc", wantMsg: "x at=1 inv=abc"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			msg, fields := SplitStamp(tc.in)
+			if msg != tc.wantMsg {
+				t.Errorf("message = %q, want %q", msg, tc.wantMsg)
+			}
+			if len(fields) != len(tc.wantFields) {
+				t.Fatalf("fields = %v, want %v", fields, tc.wantFields)
+			}
+			for k, v := range tc.wantFields {
+				if fields[k] != v {
+					t.Errorf("fields[%q] = %q, want %q", k, fields[k], v)
+				}
+			}
+		})
+	}
+}
