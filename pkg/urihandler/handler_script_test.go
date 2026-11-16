@@ -20,6 +20,11 @@ func stampOf(message string) string {
 // HOME and a PATH without apono, and returns the exit code and drained lines.
 func runHandlerScript(t *testing.T, uri string) (int, []LogLine) {
 	t.Helper()
+	return runHandlerScriptWithHome(t, t.TempDir(), uri)
+}
+
+func runHandlerScriptWithHome(t *testing.T, home, uri string) (int, []LogLine) {
+	t.Helper()
 	zsh, err := exec.LookPath("zsh")
 	if err != nil {
 		if os.Getenv("CI") != "" {
@@ -27,7 +32,6 @@ func runHandlerScript(t *testing.T, uri string) (int, []LogLine) {
 		}
 		t.Skip("zsh not available")
 	}
-	home := t.TempDir()
 	logDir := filepath.Join(home, bundleParentDir)
 	if err = os.MkdirAll(logDir, 0o700); err != nil {
 		t.Fatal(err)
@@ -170,5 +174,82 @@ func TestHandlerScript_encodedSession_passesParsingStep(t *testing.T) {
 	}
 	if !parsed {
 		t.Errorf("expected a parsed launch params line, got %+v", lines)
+	}
+}
+
+const launchURI = "apono://connect?session=s1&account=acc&client=cli"
+
+// writeRecordedPath stores value as the binary path the CLI recorded.
+func writeRecordedPath(t *testing.T, home, value string) {
+	t.Helper()
+	dir := filepath.Join(home, bundleParentDir)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, binaryPathFileName), []byte(value), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// DVL-12493: apono is not on the handler's PATH (e.g. added only in ~/.zshrc),
+// so the handler must use the path the CLI recorded.
+func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
+	home := t.TempDir()
+	binDir := t.TempDir()
+	bin := filepath.Join(binDir, "apono")
+	argvFile := filepath.Join(binDir, "argv")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"" + argvFile + "\"\n"
+	if err := os.WriteFile(bin, []byte(script), 0o700); err != nil { //nolint:gosec // fake binary must be executable
+		t.Fatal(err)
+	}
+	writeRecordedPath(t, home, bin+"\n")
+
+	code, lines := runHandlerScriptWithHome(t, home, launchURI)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; lines: %+v", code, lines)
+	}
+	argv, err := os.ReadFile(argvFile)
+	if err != nil {
+		t.Fatalf("recorded binary was not executed: %v", err)
+	}
+	if want := "access\nuse\n--client\ncli\n--\ns1\n"; string(argv) != want {
+		t.Errorf("argv = %q, want %q", argv, want)
+	}
+	last := lines[len(lines)-1].Message
+	if !strings.HasPrefix(last, "apono resolved; handing off to access use via=recorded ") {
+		t.Errorf("last line = %q", last)
+	}
+	for _, l := range lines { // the recorded binary path is never logged
+		if strings.Contains(l.Message, binDir) || strings.Contains(l.Message, home) {
+			t.Errorf("line leaks a path: %q", l.Message)
+		}
+	}
+}
+
+func TestHandlerScript_notFound_logsRecordedState(t *testing.T) {
+	cases := map[string]string{
+		"missing": "",                   // CLI never recorded a path
+		"stale":   "/nonexistent/apono", // binary moved or uninstalled
+	}
+	for want, recorded := range cases {
+		t.Run(want, func(t *testing.T) {
+			home := t.TempDir()
+			if recorded != "" {
+				writeRecordedPath(t, home, recorded+"\n")
+			}
+			code, lines := runHandlerScriptWithHome(t, home, launchURI)
+			if code != 127 {
+				t.Fatalf("exit code = %d, want 127", code)
+			}
+			last := lines[len(lines)-1]
+			if last.Level != "WARN" || !strings.HasPrefix(last.Message, "apono CLI not found on PATH code=127 recorded="+want+" ") {
+				t.Errorf("last line = %+v", last)
+			}
+			for _, l := range lines { // paths are never logged
+				if strings.Contains(l.Message, home) || strings.Contains(l.Message, "nonexistent") {
+					t.Errorf("line leaks a path: %q", l.Message)
+				}
+			}
+		})
 	}
 }

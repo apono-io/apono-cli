@@ -13,7 +13,7 @@ import (
 
 func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 	wantSubstrings := []string{
-		`exec apono access use`,
+		`exec "$apono_bin" access use`,
 		`export _APONO_ACCOUNT_ID_="$account"`,
 		`--client "$client"`,
 		`exit 64`,
@@ -31,13 +31,13 @@ func TestHandlerShellTemplate_invokesPATHResolvedApono(t *testing.T) {
 func TestHandlerShellTemplate_writesTraceAndFailureContext(t *testing.T) {
 	wantSubstrings := []string{
 		filepath.Join(bundleParentDir, handlerLogFileName), // log path agrees with HandlerLogPath
-		"log INFO",              // step logging
-		"command -v apono",      // explicit resolve check before exec
-		"trap",                  // failure backstop
-		"describe_path",         // install-dir reachability captured on failure
-		"level=ERROR",           // a malformed launch URL still pages
-		"level=WARN",            // per-machine failures do not
-		"exec apono access use", // still hands off to the CLI
+		"log INFO",          // step logging
+		"whence -p apono",   // explicit resolve check before exec
+		"trap",              // failure backstop
+		"describe_path",     // install-dir reachability captured on failure
+		"level=ERROR",       // a malformed launch URL still pages
+		"level=WARN",        // per-machine failures do not
+		`exec "$apono_bin"`, // still hands off to the CLI
 	}
 	for _, want := range wantSubstrings {
 		if !strings.Contains(handlerShellTemplate, want) {
@@ -77,6 +77,19 @@ func writeInstalledHandler(t *testing.T, home, body string) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "handler.sh"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRecordBinaryPath(t *testing.T) {
+	dir := t.TempDir()
+	recordBinaryPath(dir)
+	got, err := os.ReadFile(filepath.Join(dir, binaryPathFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	exe, _ := os.Executable()
+	if string(got) != exe+"\n" {
+		t.Errorf("recorded %q, want %q", got, exe+"\n")
 	}
 }
 

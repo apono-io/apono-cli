@@ -73,7 +73,7 @@ trap '
   if [[ $code -ne 0 ]]; then
     case $code in
       64)  level=ERROR; reason="invalid launch URL"; detail="reason=$fail_reason $(describe_uri "$uri") " ;;
-      127) level=WARN;  reason="apono CLI not found on PATH"; detail="" ;;
+      127) level=WARN;  reason="apono CLI not found on PATH"; detail="recorded=$recorded " ;;
       *)   level=WARN;  reason="handler failed"; detail="" ;;
     esac
     log "$level" "$reason code=$code $detail$(describe_path)"
@@ -114,11 +114,24 @@ fi
 session_has_pct=no
 [[ "$session" == *%* ]] && session_has_pct=yes
 log INFO "parsed launch params session=$(clip "$session" 200) account=$(clip "$account" 200) client=$(clip "$client" 200) session_has_pct=$session_has_pct"
-if ! command -v apono >/dev/null 2>&1; then
-  echo "apono CLI not found on PATH" >&2
-  exit 127
+# `zsh -l` does not read ~/.zshrc, so apono may be missing from PATH here even
+# though the user's terminal finds it. Fall back to the absolute path the CLI
+# records when it registers this handler (DVL-12493).
+apono_bin="$(whence -p apono 2>/dev/null)" || apono_bin=""
+via=path recorded=missing
+if [[ -z "$apono_bin" ]]; then
+  via=recorded
+  binary_path_file="${HOME}/Library/Application Support/apono-cli/apono-path"
+  if [[ -r "$binary_path_file" ]]; then
+    recorded=stale
+    IFS= read -r apono_bin < "$binary_path_file" || true
+  fi
+  if [[ "$apono_bin" != /* || ! -f "$apono_bin" || ! -x "$apono_bin" ]]; then
+    echo "Apono CLI not found. Install it, then run 'apono access-handler register' in a terminal." >&2
+    exit 127
+  fi
 fi
-log INFO "apono resolved; handing off to access use"
+log INFO "apono resolved; handing off to access use via=$via"
 export _APONO_ACCOUNT_ID_="$account"
 export _APONO_SESSION_URL_ENCODED_=1
-exec apono access use --client "$client" -- "$session" >/dev/null
+exec "$apono_bin" access use --client "$client" -- "$session" >/dev/null
