@@ -179,7 +179,6 @@ func TestHandlerScript_encodedSession_passesParsingStep(t *testing.T) {
 
 const launchURI = "apono://connect?session=s1&account=acc&client=cli"
 
-// writeRecordedPath stores value as the binary path the CLI recorded.
 func writeRecordedPath(t *testing.T, home, value string) {
 	t.Helper()
 	dir := filepath.Join(home, bundleParentDir)
@@ -191,8 +190,6 @@ func writeRecordedPath(t *testing.T, home, value string) {
 	}
 }
 
-// DVL-12493: apono is not on the handler's PATH (e.g. added only in ~/.zshrc),
-// so the handler must use the path the CLI recorded.
 func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
 	home := t.TempDir()
 	binDir := t.TempDir()
@@ -219,7 +216,7 @@ func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
 	if !strings.HasPrefix(last, "apono resolved; handing off to access use via=recorded ") {
 		t.Errorf("last line = %q", last)
 	}
-	for _, l := range lines { // the recorded binary path is never logged
+	for _, l := range lines {
 		if strings.Contains(l.Message, binDir) || strings.Contains(l.Message, home) {
 			t.Errorf("line leaks a path: %q", l.Message)
 		}
@@ -228,8 +225,8 @@ func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
 
 func TestHandlerScript_notFound_logsRecordedState(t *testing.T) {
 	cases := map[string]string{
-		"missing": "",                   // CLI never recorded a path
-		"stale":   "/nonexistent/apono", // binary moved or uninstalled
+		"missing": "",
+		"stale":   "/nonexistent/apono",
 	}
 	for want, recorded := range cases {
 		t.Run(want, func(t *testing.T) {
@@ -245,7 +242,7 @@ func TestHandlerScript_notFound_logsRecordedState(t *testing.T) {
 			if last.Level != "WARN" || !strings.HasPrefix(last.Message, "apono CLI not found on PATH code=127 recorded="+want+" ") {
 				t.Errorf("last line = %+v", last)
 			}
-			for _, l := range lines { // paths are never logged
+			for _, l := range lines {
 				if strings.Contains(l.Message, home) || strings.Contains(l.Message, "nonexistent") {
 					t.Errorf("line leaks a path: %q", l.Message)
 				}

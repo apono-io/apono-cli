@@ -114,9 +114,6 @@ fi
 session_has_pct=no
 [[ "$session" == *%* ]] && session_has_pct=yes
 log INFO "parsed launch params session=$(clip "$session" 200) account=$(clip "$account" 200) client=$(clip "$client" 200) session_has_pct=$session_has_pct"
-# `zsh -l` does not read ~/.zshrc, so apono may be missing from PATH here even
-# though the user's terminal finds it. Fall back to the absolute path the CLI
-# records when it registers this handler (DVL-12493).
 apono_bin="$(whence -p apono 2>/dev/null)" || apono_bin=""
 via=path recorded=missing
 if [[ -z "$apono_bin" ]]; then

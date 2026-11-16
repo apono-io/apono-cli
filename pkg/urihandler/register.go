@@ -31,7 +31,7 @@ const (
 	legacyBundleDir                 = "Applications"
 	bundleParentDirPerm os.FileMode = 0o700
 	handlerScriptPerm   os.FileMode = 0o600
-	binaryPathFileName              = "apono-path" // read by scripts/handler.sh
+	binaryPathFileName              = "apono-path"
 )
 
 const lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
@@ -110,10 +110,6 @@ func bundlePath() (string, error) {
 	return filepath.Join(parent, bundleDirName), nil
 }
 
-// recordBinaryPath saves the running binary's path for handler.sh, which uses it
-// when apono is not on its login-shell PATH (DVL-12493). Symlinks are not
-// resolved on purpose: /opt/homebrew/bin/apono survives `brew upgrade`, the
-// versioned Cellar path does not. Best-effort: the handler still tries PATH first.
 func recordBinaryPath(dir string) {
 	exe, err := os.Executable()
 	if err != nil || !filepath.IsAbs(exe) {
