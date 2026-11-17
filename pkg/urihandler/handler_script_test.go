@@ -205,7 +205,7 @@ func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; lines: %+v", code, lines)
 	}
-	argv, err := os.ReadFile(argvFile)
+	argv, err := os.ReadFile(filepath.Clean(argvFile))
 	if err != nil {
 		t.Fatalf("recorded binary was not executed: %v", err)
 	}
@@ -226,13 +226,14 @@ func TestHandlerScript_usesRecordedPathWhenNotOnPATH(t *testing.T) {
 func TestHandlerScript_notFound_logsRecordedState(t *testing.T) {
 	cases := map[string]string{
 		"missing": "",
-		"stale":   "/nonexistent/apono",
+		"stale":   "/nonexistent/apono\n",
+		"invalid": "\n",
 	}
 	for want, recorded := range cases {
 		t.Run(want, func(t *testing.T) {
 			home := t.TempDir()
-			if recorded != "" {
-				writeRecordedPath(t, home, recorded+"\n")
+			if want != "missing" {
+				writeRecordedPath(t, home, recorded)
 			}
 			code, lines := runHandlerScriptWithHome(t, home, launchURI)
 			if code != 127 {

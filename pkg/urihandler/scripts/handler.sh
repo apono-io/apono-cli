@@ -120,8 +120,9 @@ if [[ -z "$apono_bin" ]]; then
   via=recorded
   binary_path_file="${HOME}/Library/Application Support/apono-cli/apono-path"
   if [[ -r "$binary_path_file" ]]; then
-    recorded=stale
     IFS= read -r apono_bin < "$binary_path_file" || true
+    recorded=invalid
+    [[ "$apono_bin" == /* ]] && recorded=stale
   fi
   if [[ "$apono_bin" != /* || ! -f "$apono_bin" || ! -x "$apono_bin" ]]; then
     echo "Apono CLI not found. Install it, then run 'apono access-handler register' in a terminal." >&2

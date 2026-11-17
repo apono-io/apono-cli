@@ -53,6 +53,11 @@ var infoPlistEntries = []struct {
 
 func EnsureRegistered(in io.Reader) error {
 	if bundleExists() && handlerScriptUpToDate() {
+		if urlHandlerSupported() && terminal.IsRunning(in) {
+			if bundleDir, err := bundlePath(); err == nil {
+				recordBinaryPath(filepath.Dir(bundleDir))
+			}
+		}
 		return nil
 	}
 	return Reregister(in)
@@ -111,11 +116,19 @@ func bundlePath() (string, error) {
 }
 
 func recordBinaryPath(dir string) {
-	exe, err := os.Executable()
+	exe, err := exec.LookPath("apono")
+	if err != nil || !filepath.IsAbs(exe) {
+		exe, err = os.Executable()
+	}
 	if err != nil || !filepath.IsAbs(exe) {
 		return
 	}
-	_ = os.WriteFile(filepath.Join(dir, binaryPathFileName), []byte(exe+"\n"), handlerScriptPerm)
+	path := filepath.Join(dir, binaryPathFileName)
+	content := exe + "\n"
+	if current, err := os.ReadFile(filepath.Clean(path)); err == nil && string(current) == content {
+		return
+	}
+	_ = os.WriteFile(path, []byte(content), handlerScriptPerm)
 }
 
 func removeLegacyBundle(out io.Writer) {

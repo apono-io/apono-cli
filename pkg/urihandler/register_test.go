@@ -80,16 +80,90 @@ func writeInstalledHandler(t *testing.T, home, body string) {
 	}
 }
 
-func TestRecordBinaryPath(t *testing.T) {
+func TestRecordBinaryPath_replacesStalePath(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
 	dir := t.TempDir()
+	path := filepath.Join(dir, binaryPathFileName)
+	if err := os.WriteFile(path, []byte("/old/location/apono\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	recordBinaryPath(dir)
-	got, err := os.ReadFile(filepath.Join(dir, binaryPathFileName))
+	got, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		t.Fatal(err)
 	}
 	exe, _ := os.Executable()
 	if string(got) != exe+"\n" {
 		t.Errorf("recorded %q, want %q", got, exe+"\n")
+	}
+}
+
+func TestRecordBinaryPath_prefersAponoOnPATH(t *testing.T) {
+	binDir := t.TempDir()
+	onPath := filepath.Join(binDir, "apono")
+	if err := os.WriteFile(onPath, []byte("#!/bin/sh\n"), 0o700); err != nil { //nolint:gosec // fake binary must be executable
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+	dir := t.TempDir()
+	recordBinaryPath(dir)
+	got, err := os.ReadFile(filepath.Clean(filepath.Join(dir, binaryPathFileName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != onPath+"\n" {
+		t.Errorf("recorded %q, want %q", got, onPath+"\n")
+	}
+}
+
+func TestUnregister_keepsRecordedPathWhenUnregisterFails(t *testing.T) {
+	if runtime.GOOS != utils.DarwinOS {
+		t.Skip("darwin only")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, bundleParentDir)
+	if err := os.MkdirAll(filepath.Join(dir, bundleDirName), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, binaryPathFileName)
+	if err := os.WriteFile(path, []byte("/x/apono\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Unregister(&bytes.Buffer{}); err == nil {
+		t.Fatal("expected lsregister -u to fail for a fake bundle")
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("recorded path must survive a failed unregister, stat err = %v", err)
+	}
+}
+
+func TestHandlerShellTemplate_readsRecordedPathFromGoLocation(t *testing.T) {
+	want := filepath.Join(bundleParentDir, binaryPathFileName)
+	if !strings.Contains(handlerShellTemplate, want) {
+		t.Errorf("handler.sh must read the recorded path from %q", want)
+	}
+}
+
+func TestUnregister_removesRecordedPath(t *testing.T) {
+	if runtime.GOOS != utils.DarwinOS {
+		t.Skip("darwin only")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, bundleParentDir)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, binaryPathFileName)
+	if err := os.WriteFile(path, []byte("/x/apono\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Unregister(&bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("expected %s to be removed, stat err = %v", path, err)
 	}
 }
 

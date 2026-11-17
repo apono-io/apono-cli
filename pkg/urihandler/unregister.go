@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func Unregister(out io.Writer) error {
@@ -19,8 +20,10 @@ func Unregister(out io.Writer) error {
 	}
 
 	removeLegacyBundle(out)
+	recordedPath := filepath.Join(filepath.Dir(bundleDir), binaryPathFileName)
 
 	if _, statErr := os.Stat(bundleDir); os.IsNotExist(statErr) {
+		_ = os.Remove(recordedPath)
 		_, err = fmt.Fprintln(out, "Protocol handler is not registered")
 		return err
 	}
@@ -32,6 +35,7 @@ func Unregister(out io.Writer) error {
 	if err = os.RemoveAll(bundleDir); err != nil {
 		return fmt.Errorf("remove %s: %w", bundleDir, err)
 	}
+	_ = os.Remove(recordedPath)
 
 	_, err = fmt.Fprintln(out, "Unregistered apono:// handler")
 	return err
