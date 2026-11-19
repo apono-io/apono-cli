@@ -31,6 +31,7 @@ const (
 	legacyBundleDir                 = "Applications"
 	bundleParentDirPerm os.FileMode = 0o700
 	handlerScriptPerm   os.FileMode = 0o600
+	binaryPathFileName              = "apono-path"
 )
 
 const lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
@@ -52,6 +53,11 @@ var infoPlistEntries = []struct {
 
 func EnsureRegistered(in io.Reader) error {
 	if bundleExists() && handlerScriptUpToDate() {
+		if urlHandlerSupported() && terminal.IsRunning(in) {
+			if bundleDir, err := bundlePath(); err == nil {
+				recordBinaryPath(filepath.Dir(bundleDir))
+			}
+		}
 		return nil
 	}
 	return Reregister(in)
@@ -87,6 +93,7 @@ func Register(out io.Writer) error {
 	}
 
 	removeLegacyBundle(out)
+	recordBinaryPath(filepath.Dir(bundleDir))
 
 	if err = registerWithLaunchServices(bundleDir); err != nil {
 		return fmt.Errorf("register with LaunchServices: %w", err)
@@ -106,6 +113,22 @@ func bundlePath() (string, error) {
 		return "", fmt.Errorf("mkdir %s: %w", parent, err)
 	}
 	return filepath.Join(parent, bundleDirName), nil
+}
+
+func recordBinaryPath(dir string) {
+	exe, err := exec.LookPath("apono")
+	if err != nil || !filepath.IsAbs(exe) {
+		exe, err = os.Executable()
+	}
+	if err != nil || !filepath.IsAbs(exe) {
+		return
+	}
+	path := filepath.Join(dir, binaryPathFileName)
+	content := exe + "\n"
+	if current, err := os.ReadFile(filepath.Clean(path)); err == nil && string(current) == content {
+		return
+	}
+	_ = os.WriteFile(path, []byte(content), handlerScriptPerm)
 }
 
 func removeLegacyBundle(out io.Writer) {
