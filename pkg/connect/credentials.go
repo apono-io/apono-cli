@@ -20,6 +20,43 @@ const (
 	redactedMarker = "***"
 )
 
+var awsErrorMarkers = []string{
+	"aws: [ERROR]",
+	"aws: error:",
+	"An error occurred (",
+	"SSO session",
+	"SSO Token",
+	"Token has expired",
+	"Unable to locate credentials",
+	"The config profile (",
+	"Error when retrieving",
+	"You must specify a region",
+	"Could not connect to the endpoint URL",
+}
+
+func awsErrorLines(output string) (kept []string, withheld int) {
+	for _, line := range strings.Split(output, "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if containsAnyMarker(line, awsErrorMarkers) {
+			kept = append(kept, line)
+			continue
+		}
+		withheld++
+	}
+	return kept, withheld
+}
+
+func containsAnyMarker(line string, markers []string) bool {
+	for _, marker := range markers {
+		if strings.Contains(line, marker) {
+			return true
+		}
+	}
+	return false
+}
+
 func readCachedPassword(sessionID string) (string, error) {
 	cacheDir := filepath.Clean(utils.DefaultCacheDir())
 	path := filepath.Join(cacheDir, sessionID)
