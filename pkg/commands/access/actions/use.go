@@ -1,6 +1,8 @@
 package actions
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,9 +13,11 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/analytics"
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
+	"github.com/apono-io/apono-cli/pkg/clientapi"
 	"github.com/apono-io/apono-cli/pkg/config"
 	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/interactive/flows"
+	"github.com/apono-io/apono-cli/pkg/logshipping"
 	"github.com/apono-io/apono-cli/pkg/services"
 	"github.com/apono-io/apono-cli/pkg/utils"
 )
@@ -28,6 +32,14 @@ const (
 )
 
 const sessionURLEncodedEnvVar = "_APONO_SESSION_URL_ENCODED_"
+
+const (
+	launcherLogPrefix  = "launcher:"
+	accessUseLogPrefix = "access use:"
+
+	fieldAccessSessionID = "access_session_id"
+	fieldClientID        = "client_id"
+)
 
 type accessUseCommandFlags struct {
 	outputFormat               string
@@ -77,9 +89,10 @@ func AccessDetails() *cobra.Command {
 				return err
 			}
 
-			session, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSession(cmd.Context(), sessionID).Execute()
+			session, err := connect.FetchSession(cmd.Context(), client, sessionID)
 			if err != nil {
-				return fmt.Errorf("access session with id %s not found", sessionID)
+				reportSessionFetchFailure(cmd.Context(), sessionID, cmdFlags.clientID, err)
+				return err
 			}
 
 			if cmd.Flags().Changed(clientFlagName) {
@@ -103,8 +116,7 @@ func AccessDetails() *cobra.Command {
 			connectionDetailsOutputFormat := resolveOutputFormat(cmdFlags)
 
 			if cmdFlags.shouldExecuteAccessCommand && connectionDetailsOutputFormat == services.CliOutputFormat {
-				err = services.ExecuteAccessDetails(cmd, client, session)
-				return flows.PrintErrorConnectingSuggestionOnFailure(cmd, session, err)
+				return executeAccessCommand(cmd, client, session)
 			}
 
 			if !utils.Contains(session.ConnectionMethods, connectionDetailsOutputFormat) {
@@ -113,6 +125,7 @@ func AccessDetails() *cobra.Command {
 
 			accessDetails, customInstructionMessage, err := services.GetSessionDetails(cmd.Context(), client, session.Id, connectionDetailsOutputFormat)
 			if err != nil {
+				reportAccessDetailsFetchFailure(cmd.Context(), session.Id, err)
 				return err
 			}
 
@@ -140,6 +153,60 @@ func AccessDetails() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive(runFlagName, clientFlagName)
 
 	return cmd
+}
+
+func executeAccessCommand(cmd *cobra.Command, client *aponoapi.AponoClient, session *clientapi.AccessSessionClientModel) error {
+	err := services.ExecuteAccessDetails(cmd, client, session)
+	reportAccessDetailsFetchFailure(cmd.Context(), session.Id, err)
+	if isAccessSessionUnavailable(err) {
+		return err
+	}
+	return flows.PrintErrorConnectingSuggestionOnFailure(cmd, session, err)
+}
+
+func reportSessionFetchFailure(ctx context.Context, sessionID, clientID string, err error) {
+	logPrefix := accessUseLogPrefix
+	if clientID != "" {
+		logPrefix = launcherLogPrefix
+	}
+
+	var unavailableErr *aponoapi.AccessSessionUnavailableError
+	var apiErr *aponoapi.APIError
+	switch {
+	case errors.As(err, &unavailableErr) && unavailableErr.Reason == aponoapi.AccessSessionReasonNotFound:
+		reportFetchFailure(ctx, logshipping.LevelWarn, logPrefix+" session not found", sessionID, clientID, err)
+	case errors.As(err, &unavailableErr):
+		reportFetchFailure(ctx, logshipping.LevelWarn, logPrefix+" session not active", sessionID, clientID, err)
+	case errors.As(err, &apiErr):
+		reportFetchFailure(ctx, logshipping.LevelError, logPrefix+" fetch session failed", sessionID, clientID, err)
+	}
+}
+
+func reportAccessDetailsFetchFailure(ctx context.Context, sessionID string, err error) {
+	message := accessUseLogPrefix + " fetch session details failed"
+
+	var apiErr *aponoapi.APIError
+	switch {
+	case isAccessSessionUnavailable(err):
+		reportFetchFailure(ctx, logshipping.LevelWarn, message, sessionID, "", err)
+	case errors.As(err, &apiErr):
+		reportFetchFailure(ctx, logshipping.LevelError, message, sessionID, "", err)
+	}
+}
+
+func reportFetchFailure(ctx context.Context, level, message, sessionID, clientID string, err error) {
+	httpStatus, reason := aponoapi.FailureFields(err)
+	logshipping.Report(ctx, logshipping.CallerCLI, level, message, map[string]string{
+		fieldAccessSessionID:            sessionID,
+		fieldClientID:                   clientID,
+		aponoapi.FailureFieldHTTPStatus: httpStatus,
+		aponoapi.FailureFieldReason:     reason,
+	})
+}
+
+func isAccessSessionUnavailable(err error) bool {
+	var unavailableErr *aponoapi.AccessSessionUnavailableError
+	return errors.As(err, &unavailableErr)
 }
 
 func overrideProfileClientByAccountID(cmd *cobra.Command, accountID string) error {

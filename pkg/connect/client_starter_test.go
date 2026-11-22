@@ -1016,3 +1016,98 @@ func TestCredentialsAlreadyViewedError_messageAndError(t *testing.T) {
 		t.Errorf("Error() = %q", got)
 	}
 }
+
+func TestStart_fetchFails_shipsOneWarnAndWrapsOnlyUntypedErrors(t *testing.T) {
+	const fetchFailedMessage = "launcher: fetch session details failed"
+	const wrapPrefix = "could not fetch session details: "
+
+	notActiveErr := &aponoapi.AccessSessionUnavailableError{
+		Reason:      aponoapi.AccessSessionReasonNotActive,
+		SessionID:   "sess-1",
+		SessionName: "prod-db",
+		HTTPStatus:  404,
+	}
+	serverErr := &aponoapi.APIError{HTTPStatus: 500, Message: "500 Internal Server Error: boom"}
+	transportErr := &aponoapi.APIError{Message: "connection refused"}
+	plainErr := errors.New("something else broke")
+
+	tests := []struct {
+		name           string
+		fetchErr       error
+		wantError      string
+		wantHTTPStatus string
+		wantReason     string
+	}{
+		{
+			name:           "unavailable session is returned unwrapped",
+			fetchErr:       notActiveErr,
+			wantError:      notActiveErr.Error(),
+			wantHTTPStatus: "404",
+			wantReason:     aponoapi.AccessSessionReasonNotActive,
+		},
+		{
+			name:           "api error keeps the wrap",
+			fetchErr:       serverErr,
+			wantError:      wrapPrefix + serverErr.Error(),
+			wantHTTPStatus: "500",
+		},
+		{
+			name:      "transport failure keeps the wrap and has no status",
+			fetchErr:  transportErr,
+			wantError: wrapPrefix + transportErr.Error(),
+		},
+		{
+			name:      "untyped error keeps the wrap",
+			fetchErr:  plainErr,
+			wantError: wrapPrefix + plainErr.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, runs, _ := testClientStarter(true, nil, "", nil)
+			s.FetchClients = func(_ context.Context, _ *aponoapi.AponoClient, _ string) (*ClientFetchResult, error) {
+				return nil, tt.fetchErr
+			}
+			entries := captureReports(s)
+
+			err := s.Start(newCobraCmd(), nil, "sess-1", "dbeaver", nil)
+
+			if err == nil || err.Error() != tt.wantError {
+				t.Fatalf("expected error %q, got %v", tt.wantError, err)
+			}
+			if !errors.Is(err, tt.fetchErr) {
+				t.Fatalf("expected the fetch error to stay reachable, got %T", err)
+			}
+			if len(*runs) != 0 {
+				t.Fatalf("expected no shell command, got %d", len(*runs))
+			}
+
+			var failures []shippedEntry
+			for _, entry := range *entries {
+				if entry.level == logshipping.LevelWarn || entry.level == logshipping.LevelError {
+					failures = append(failures, entry)
+				}
+			}
+			if len(failures) != 1 {
+				t.Fatalf("expected exactly 1 failure report, got %+v", failures)
+			}
+			failure := failures[0]
+			if failure.level != logshipping.LevelWarn || failure.message != fetchFailedMessage {
+				t.Fatalf("expected WARN %q, got %s %q", fetchFailedMessage, failure.level, failure.message)
+			}
+			wantFields := map[string]string{
+				fieldAccessSessionID:            "sess-1",
+				fieldClientID:                   "dbeaver",
+				fieldLauncherType:               "",
+				fieldIsTerminal:                 "true",
+				fieldError:                      tt.fetchErr.Error(),
+				aponoapi.FailureFieldHTTPStatus: tt.wantHTTPStatus,
+				aponoapi.FailureFieldReason:     tt.wantReason,
+			}
+			if !maps.Equal(failure.fields, wantFields) {
+				t.Fatalf("expected fields %+v, got %+v", wantFields, failure.fields)
+			}
+		})
+	}
+}
