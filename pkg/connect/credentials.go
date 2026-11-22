@@ -20,26 +20,28 @@ const (
 	redactedMarker = "***"
 )
 
-var awsErrorMarkers = []string{
-	"aws: [ERROR]",
-	"aws: error:",
+const (
+	awsErrorLinePrefix    = "aws: [ERROR]: "
+	maxAwsErrorLineLength = 500
+)
+
+var awsErrorMessageStarts = []string{
 	"An error occurred (",
-	"SSO session",
-	"SSO Token",
-	"Token has expired",
+	"The SSO session",
+	"Error loading SSO Token",
+	"Error when retrieving token from sso",
 	"Unable to locate credentials",
 	"The config profile (",
-	"Error when retrieving",
-	"You must specify a region",
-	"Could not connect to the endpoint URL",
+	"The source_profile ",
 }
 
 func awsErrorLines(output string) (kept []string, withheld int) {
 	for _, line := range strings.Split(output, "\n") {
-		if strings.TrimSpace(line) == "" {
+		line = strings.TrimSpace(line)
+		if line == "" {
 			continue
 		}
-		if containsAnyMarker(line, awsErrorMarkers) {
+		if isAwsErrorLine(line) {
 			kept = append(kept, line)
 			continue
 		}
@@ -48,9 +50,13 @@ func awsErrorLines(output string) (kept []string, withheld int) {
 	return kept, withheld
 }
 
-func containsAnyMarker(line string, markers []string) bool {
-	for _, marker := range markers {
-		if strings.Contains(line, marker) {
+func isAwsErrorLine(line string) bool {
+	if len(line) > maxAwsErrorLineLength {
+		return false
+	}
+	message := strings.TrimPrefix(line, awsErrorLinePrefix)
+	for _, start := range awsErrorMessageStarts {
+		if strings.HasPrefix(message, start) {
 			return true
 		}
 	}
