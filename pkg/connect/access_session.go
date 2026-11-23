@@ -16,12 +16,12 @@ type ClientFetchResult struct {
 }
 
 func FetchAccessDetails(ctx context.Context, apiClient *aponoapi.AponoClient, sessionID string) (*clientapi.AccessSessionDetailsClientModel, error) {
-	details, _, err := apiClient.ClientAPI.AccessSessionsAPI.
+	details, resp, err := apiClient.ClientAPI.AccessSessionsAPI.
 		GetAccessSessionAccessDetails(ctx, sessionID).
 		ConsumedBy(aponoapi.ConsumedByAponoCli).
 		Execute()
 	if err != nil {
-		return nil, err
+		return nil, ClassifyAccessDetailsError(ctx, apiClient, sessionID, err, resp)
 	}
 	return details, nil
 }

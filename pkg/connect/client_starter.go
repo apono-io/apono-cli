@@ -70,7 +70,11 @@ func (s *ClientStarter) resolveClients(ctx context.Context, apiClient *aponoapi.
 	}
 	result, err := s.FetchClients(ctx, apiClient, sessionID)
 	if err != nil {
-		s.reportLauncher(ctx, logshipping.LevelWarn, "launcher: fetch session details failed", err, sessionID, clientID, "", isTerminal)
+		s.reportFetchFailure(ctx, err, sessionID, clientID, isTerminal)
+		var unavailableErr *aponoapi.AccessSessionUnavailableError
+		if errors.As(err, &unavailableErr) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("could not fetch session details: %w", err)
 	}
 	s.reportLauncher(ctx, logshipping.LevelInfo, "launcher: session details fetched", nil, sessionID, clientID, "", isTerminal)
@@ -279,6 +283,16 @@ func (s *ClientStarter) reportLauncher(ctx context.Context, level, message strin
 		fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
 	}
 	s.Report(ctx, level, message, fields)
+}
+
+func (s *ClientStarter) reportFetchFailure(ctx context.Context, cause error, sessionID, clientID string, isTerminal bool) {
+	if s.Report == nil {
+		return
+	}
+	fields := launcherFields(sessionID, clientID, "", isTerminal)
+	fields[fieldError] = withoutSecrets(cause, s.secrets).Error()
+	fields[aponoapi.FailureFieldHTTPStatus], fields[aponoapi.FailureFieldReason] = aponoapi.FailureFields(cause)
+	s.Report(ctx, logshipping.LevelWarn, "launcher: fetch session details failed", fields)
 }
 
 func (s *ClientStarter) reportCommandFailure(ctx context.Context, level, message string, exitCode int, cause error, sessionID, clientID, launcherType string, isTerminal bool) {

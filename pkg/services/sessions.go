@@ -13,6 +13,7 @@ import (
 
 	"github.com/apono-io/apono-cli/pkg/aponoapi"
 	"github.com/apono-io/apono-cli/pkg/clientapi"
+	"github.com/apono-io/apono-cli/pkg/connect"
 	"github.com/apono-io/apono-cli/pkg/styles"
 	"github.com/apono-io/apono-cli/pkg/utils"
 
@@ -85,11 +86,16 @@ func ExecuteAccessDetails(cobraCmd *cobra.Command, client *aponoapi.AponoClient,
 		return err
 	}
 
-	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).
+	accessDetails, resp, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(cobraCmd.Context(), session.Id).
 		ConsumedBy(aponoapi.ConsumedByAponoCli).
 		Execute()
 	if err != nil {
-		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, err)
+		classifiedErr := connect.ClassifyAccessDetailsError(cobraCmd.Context(), client, session.Id, err, resp)
+		var unavailableErr *aponoapi.AccessSessionUnavailableError
+		if errors.As(classifiedErr, &unavailableErr) {
+			return classifiedErr
+		}
+		return fmt.Errorf("error getting access details for session id %s: %w", session.Id, classifiedErr)
 	}
 
 	command, err := resolveKubeCliCommand(cobraCmd, client, session, accessDetails.GetCli())
@@ -172,11 +178,11 @@ func executeCommand(cobraCmd *cobra.Command, command string) error {
 }
 
 func GetSessionDetails(ctx context.Context, client *aponoapi.AponoClient, sessionID string, outputFormat string) (string, CustomInstructionMessage, error) {
-	accessDetails, _, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).
+	accessDetails, resp, err := client.ClientAPI.AccessSessionsAPI.GetAccessSessionAccessDetails(ctx, sessionID).
 		ConsumedBy(aponoapi.ConsumedByAponoCli).
 		Execute()
 	if err != nil {
-		return "", "", err
+		return "", "", connect.ClassifyAccessDetailsError(ctx, client, sessionID, err, resp)
 	}
 
 	return RenderAccessDetails(accessDetails, outputFormat)

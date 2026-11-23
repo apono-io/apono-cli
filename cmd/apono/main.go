@@ -42,9 +42,17 @@ func main() {
 		}
 
 		fmt.Fprintln(os.Stderr, "Error:", err.Error())
-		fmt.Fprintln(os.Stderr, "Use '--help' to see usage.")
+		if !isFailedSessionFetch(err) {
+			fmt.Fprintln(os.Stderr, "Use '--help' to see usage.")
+		}
 		os.Exit(1)
 	}
+}
+
+func isFailedSessionFetch(err error) bool {
+	var unavailableErr *aponoapi.AccessSessionUnavailableError
+	var apiErr *aponoapi.APIError
+	return errors.As(err, &unavailableErr) || errors.As(err, &apiErr)
 }
 
 func execute(runner *apono.Runner) error {
