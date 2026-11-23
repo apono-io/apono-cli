@@ -171,13 +171,14 @@ func reportSessionFetchFailure(ctx context.Context, sessionID, clientID string, 
 	}
 
 	var unavailableErr *aponoapi.AccessSessionUnavailableError
-	var apiErr *aponoapi.APIError
 	switch {
+	case errors.Is(err, context.Canceled):
+		return
 	case errors.As(err, &unavailableErr) && unavailableErr.Reason == aponoapi.AccessSessionReasonNotFound:
 		reportFetchFailure(ctx, logshipping.LevelWarn, logPrefix+" session not found", sessionID, clientID, err)
 	case errors.As(err, &unavailableErr):
 		reportFetchFailure(ctx, logshipping.LevelWarn, logPrefix+" session not active", sessionID, clientID, err)
-	case errors.As(err, &apiErr):
+	default:
 		reportFetchFailure(ctx, logshipping.LevelError, logPrefix+" fetch session failed", sessionID, clientID, err)
 	}
 }

@@ -48,10 +48,15 @@ func (e *AccessSessionUnavailableError) Error() string {
 type APIError struct {
 	HTTPStatus int
 	Message    string
+	Err        error
 }
 
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+func (e *APIError) Unwrap() error {
+	return e.Err
 }
 
 type responseBodyCarrier interface {
@@ -68,11 +73,11 @@ func DescribeAPIError(err error, resp *http.Response) error {
 	}
 
 	if resp == nil {
-		return &APIError{Message: err.Error()}
+		return &APIError{Message: err.Error(), Err: err}
 	}
 
 	if resp.StatusCode < http.StatusMultipleChoices {
-		return &APIError{HTTPStatus: resp.StatusCode, Message: err.Error()}
+		return &APIError{HTTPStatus: resp.StatusCode, Message: err.Error(), Err: err}
 	}
 
 	message := resp.Status
@@ -80,7 +85,7 @@ func DescribeAPIError(err error, resp *http.Response) error {
 		message = fmt.Sprintf("%s: %s", resp.Status, serverMessage)
 	}
 
-	return &APIError{HTTPStatus: resp.StatusCode, Message: message}
+	return &APIError{HTTPStatus: resp.StatusCode, Message: message, Err: err}
 }
 
 func FailureFields(err error) (httpStatus, reason string) {
