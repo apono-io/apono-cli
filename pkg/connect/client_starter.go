@@ -119,7 +119,7 @@ func (s *ClientStarter) Start(cobraCmd *cobra.Command, apiClient *aponoapi.Apono
 	if authCommand != "" && !headlessTerminalLauncher {
 		exitCode, authErr := s.executeCommand(cobraCmd, authCommand)
 		if authErr != nil {
-			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: auth command failed", exitCode, nil, sessionID, clientID, launcherType, isTerminal)
+			s.reportCommandFailure(ctx, logshipping.LevelWarn, "launcher: auth command failed", exitCode, authFailureCause(authErr), sessionID, clientID, launcherType, isTerminal)
 			return authErr
 		}
 	}
@@ -190,6 +190,17 @@ func (s *ClientStarter) executeCommand(cobraCmd *cobra.Command, command string) 
 		return exitCode, fmt.Errorf("client exited with code %d\n%s", exitCode, stderr)
 	}
 	return exitCode, nil
+}
+
+func authFailureCause(authErr error) error {
+	cliLine, commandOutput, _ := strings.Cut(authErr.Error(), "\n")
+	keptLines, withheld := awsErrorLines(commandOutput)
+	causeLines := []string{cliLine}
+	if withheld > 0 {
+		causeLines = append(causeLines, fmt.Sprintf("[%d output lines withheld]", withheld))
+	}
+	causeLines = append(causeLines, keptLines...)
+	return errors.New(strings.Join(causeLines, "\n"))
 }
 
 func findClient(clients []clientapi.LauncherClientModel, id string) (clientapi.LauncherClientModel, bool) {

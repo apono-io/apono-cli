@@ -876,14 +876,15 @@ func TestStart_authFails_invocationSkipped(t *testing.T) {
 	}
 }
 
-func TestStart_authFails_shipsStructuredFieldsOnly(t *testing.T) {
+func TestStart_authFails_shipsOnlyAwsErrorLinesOfCommandOutput(t *testing.T) {
 	const authOutput = "auth-cmd output marker"
+	const awsErrorLine = "An error occurred (AccessDenied) when calling the AssumeRole operation"
 
 	clients := []clientapi.LauncherClientModel{
 		newClientModel("dbeaver", ClientKindGUI, "auth-cmd", "invocation-cmd"),
 	}
 	s, _, _ := testClientStarter(true, clients, aponoapi.ConsumedByAponoCli, func() (int, string, error) {
-		return 7, authOutput, nil
+		return 7, authOutput + "\n" + awsErrorLine, nil
 	})
 	entries := captureReports(s)
 
@@ -909,9 +910,13 @@ func TestStart_authFails_shipsStructuredFieldsOnly(t *testing.T) {
 		fieldLauncherType:    ClientKindGUI,
 		fieldIsTerminal:      "true",
 		fieldExitCode:        "7",
+		fieldError:           "client exited with code 7\n[1 output lines withheld]\n" + awsErrorLine,
 	}
 	if !maps.Equal(authEntry.fields, want) {
 		t.Errorf("shipped fields = %+v, want exactly %+v", authEntry.fields, want)
+	}
+	if strings.Contains(authEntry.fields[fieldError], authOutput) {
+		t.Errorf("the shipped error must not carry the auth command output, got %q", authEntry.fields[fieldError])
 	}
 }
 
