@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/apono-io/apono-cli/pkg/utils"
@@ -23,6 +24,7 @@ const (
 const (
 	awsErrorLinePrefix    = "aws: [ERROR]: "
 	maxAwsErrorLineLength = 500
+	awsAccountIDLength    = 12
 )
 
 var awsErrorMessageStarts = []string{
@@ -35,6 +37,13 @@ var awsErrorMessageStarts = []string{
 	"The source_profile ",
 }
 
+var (
+	digitRun              = regexp.MustCompile(`\d+`)
+	awsAssumedRoleSession = regexp.MustCompile(`(assumed-role/[^/\s]+/)\S+`)
+	awsIamUserName        = regexp.MustCompile(`(:user/)\S+`)
+	emailAddress          = regexp.MustCompile(`[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`)
+)
+
 func awsErrorLines(output string) (kept []string, withheld int) {
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
@@ -42,7 +51,7 @@ func awsErrorLines(output string) (kept []string, withheld int) {
 			continue
 		}
 		if isAwsErrorLine(line) {
-			kept = append(kept, line)
+			kept = append(kept, withoutAwsIdentity(line))
 			continue
 		}
 		withheld++
@@ -61,6 +70,18 @@ func isAwsErrorLine(line string) bool {
 		}
 	}
 	return false
+}
+
+func withoutAwsIdentity(line string) string {
+	line = digitRun.ReplaceAllStringFunc(line, func(digits string) string {
+		if len(digits) == awsAccountIDLength {
+			return redactedMarker
+		}
+		return digits
+	})
+	line = awsAssumedRoleSession.ReplaceAllString(line, "${1}"+redactedMarker)
+	line = awsIamUserName.ReplaceAllString(line, "${1}"+redactedMarker)
+	return emailAddress.ReplaceAllString(line, redactedMarker)
 }
 
 func readCachedPassword(sessionID string) (string, error) {
